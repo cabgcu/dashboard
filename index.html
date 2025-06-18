@@ -1,23 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <!-- ==== Custom Font (Thunder) ==== -->
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
+  <title>CAB Event Evaluation Responses</title>
   <style>
     @font-face {
       font-family: 'Thunder';
       src: url('Thunder-Regular.otf') format('opentype');
-      font-weight: normal;
-      font-style: normal;
     }
-  </style>
-
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1.0" />
-  <title>CAB Event Evaluation Responses</title>
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500&display=swap" rel="stylesheet" />
-
-  <!-- ==== Global Styles ==== -->
-  <style>
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       background: url('https://i.imgur.com/IYZzkfE.png') no-repeat center center fixed;
@@ -26,78 +17,44 @@
       margin: 0;
       padding: 2rem;
     }
-
-    /* ---------- Header ---------- */
-    .header-container {
-      text-align: center;
-      margin-bottom: 2.5rem;
-      animation: fadeIn 1.5s ease;
-    }
+    .header-container { text-align: center; margin-bottom: 2.5rem; }
     h1 {
       font-family: 'Thunder', sans-serif;
       font-size: 2.2rem;
       color: #fff;
       backdrop-filter: blur(6px);
-      margin-bottom: 0.3rem;
-      transition: all 0.3s ease;
-    }
-    h1:hover {
-      text-shadow: 0 0 12px rgba(255, 255, 255, 0.25);
     }
     .header-subtitle {
       font-size: 1rem;
-      color: #fff;              /* changed from #ccc */
-      font-weight: 400;
-      margin-top: 0;
+      color: #fff;
       font-style: italic;
       opacity: 0.9;
     }
-
-    /* ---------- Animations ---------- */
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(-10px); }
-      to   { opacity: 1; transform: translateY(0);   }
-    }
-    @keyframes expand {
-      from { max-height: 0; opacity: 0; }
-      to   { max-height: 1000px; opacity: 1; }
-    }
-
-    /* ---------- Search Bar ---------- */
     #search {
       display: block;
       margin: 2rem auto;
       padding: 0.8rem 1.2rem;
       font-size: 1.1rem;
-      border-radius: 8px;
       border: none;
-      background: rgba(0, 0, 0, 0.6);
-      color: #fff;              /* ensure input text is white */
+      border-radius: 8px;
+      background: rgba(0,0,0,0.6);
+      color: #fff;
       backdrop-filter: blur(10px);
       max-width: 900px;
     }
-    #search::placeholder {       /* white placeholder text   */
-      color: #fff;
-      opacity: 1;
-    }
-
-    /* ---------- Collapsible Blocks ---------- */
-    summary::marker { display: none; }
+    #search::placeholder { color: #fff; opacity: 1; }
     details {
-      background: rgba(0, 0, 0, 0.65);
+      background: rgba(0,0,0,0.65);
       border: 1px solid rgba(255,255,255,0.08);
       border-radius: 12px;
       margin-bottom: 1.5rem;
       backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
       overflow: hidden;
-      transition: background 0.3s ease, border 0.3s ease;
     }
     details[open] {
-      background: rgba(0, 0, 0, 0.75);
+      background: rgba(0,0,0,0.75);
       border: 1px solid rgba(255,255,255,0.15);
       backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
     }
     summary {
       cursor: pointer;
@@ -109,33 +66,25 @@
       justify-content: space-between;
       align-items: center;
     }
-    .summary-left {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
+    .summary-left { display: flex; align-items: center; gap: 0.75rem; }
+    .event-label { font-size: 1.1rem; font-weight: 600; color: #fff; }
+    .dropdown { font-size: 1rem; color: #ccc; transition: transform 0.3s ease; }
+    details[open] summary .dropdown { transform: rotate(180deg); }
+    .stars { font-size: 0.95rem; color: #ccc; }
+    .overview-text {
+      font-size: 0.9rem;
+      color: #aaa;
+      margin: 0.4rem 1.6rem 1rem;
+      font-style: italic;
     }
-    .stars {
-      font-family: system-ui;
-      font-size: 0.95rem;
-      color: #ccc;
-    }
-    details[open] > .response-block {
-      animation: expand 0.5s ease;
-    }
-
-    /* ---------- Response Cards ---------- */
-    .response-block {
-      border-top: 1px solid rgba(255,255,255,0.15);
-      padding: 1rem 1.6rem;
-    }
+    .response-block { padding: 1rem 1.6rem; border-top: 1px solid rgba(255,255,255,0.15); }
     .response {
       margin-bottom: 1.8rem;
       padding: 1.2rem;
-      background: rgba(0, 0, 0, 0.6);
+      background: rgba(0,0,0,0.6);
       border: 1px solid rgba(255,255,255,0.08);
       border-radius: 12px;
       backdrop-filter: blur(10px);
-      -webkit-backdrop-filter: blur(10px);
     }
     .review-title {
       font-weight: 600;
@@ -145,43 +94,19 @@
       border-bottom: 1px solid rgba(255,255,255,0.12);
       padding-bottom: 0.5rem;
     }
-    .field {
-      margin-bottom: 1.2rem;
-      padding-bottom: 1.2rem;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    }
-    .label {
-      font-weight: 500;
-      font-size: 0.85rem;
-      color: #ccc;
-      margin-bottom: 0.2rem;
-    }
-    .value {
-      font-size: 1.05rem;
-      font-weight: 400;
-      color: #fff;
-      line-height: 1.4;
-    }
-
-    /* ---------- Overview Text ---------- */
-    .overview-text {
-      font-size: 0.9rem;
-      color: #aaa;
-      margin: 0.4rem 1.6rem 1rem;
-      font-style: italic;
-    }
-
-    /* ---------- Scroll-to-Top Button ---------- */
+    .field { margin-bottom: 1.2rem; padding-bottom: 1.2rem; border-bottom: 1px solid rgba(255,255,255,0.1); }
+    .label { font-weight: 500; font-size: 0.85rem; color: #ccc; margin-bottom: 0.2rem; }
+    .value { font-size: 1.05rem; color: #fff; line-height: 1.4; }
     #topBtn {
       position: fixed;
       bottom: 30px;
       right: 30px;
+      width: 40px;
+      height: 40px;
       background: rgba(0,0,0,0.6);
       color: white;
       border: 1px solid #555;
       border-radius: 50%;
-      width: 40px;
-      height: 40px;
       font-size: 20px;
       cursor: pointer;
       z-index: 999;
@@ -189,47 +114,31 @@
     }
   </style>
 </head>
-
 <body>
-  <!-- ===== Header ===== -->
   <div class="header-container">
-    <img src="https://i.imgur.com/oqrmQSC.png"
-         alt="CAB Logo"
-         style="width:100px; margin-bottom:-0.3rem; margin-top:0.5rem; filter:drop-shadow(0 0 4px rgba(0,0,0,0.4));" />
+    <img src="https://i.imgur.com/oqrmQSC.png" alt="CAB Logo" style="width:100px; margin-bottom:-0.3rem; margin-top:0.5rem;" />
     <h1>Event Evaluation Responses</h1>
-    <p class="header-subtitle">
-      Anonymous student feedback collected live from each CAB event
-    </p>
+    <p class="header-subtitle">Anonymous student feedback collected live from each CAB event</p>
   </div>
-
-  <!-- ===== Search Bar ===== -->
   <input type="text" id="search" placeholder="Search for an event…" />
+  <div id="dash"></div>
+  <button id="topBtn">↑</button>
 
-  <!-- ===== Scroll-to-Top Button ===== -->
-  <button id="topBtn" title="Back to top">↑</button>
-
-  <!-- ===== Main Script ===== -->
   <script>
-    /* ---------- Google Sheets IDs ---------- */
-    const sheetID   = "1CqmQKvOkcLFV8XyzFrjK4H85skJCwRgSEwiP8j_6pMM";
+    const sheetID = "1CqmQKvOkcLFV8XyzFrjK4H85skJCwRgSEwiP8j_6pMM";
     const RAW_SHEET = "Survey Responses";
     const OVW_SHEET = "Response overview";
 
-    /* ---------- Fetch Helper ---------- */
     async function fetchSheet(sheetName) {
-      const url = \`https://docs.google.com/spreadsheets/d/\${sheetID}/gviz/tq?tqx=out:json&sheet=\${encodeURIComponent(sheetName)}\`;
+      const url = `https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(sheetName)}`;
       const raw = await fetch(url).then(r => r.text());
       return JSON.parse(raw.substring(47, raw.length - 2));
     }
 
-    /* ---------- Utility Functions ---------- */
     function extractEvent(row) {
-      return (
-        row["Which Event Would You Like To Survey?"] ||
-        row["Which Student Market Would You Like To Survey?"] ||
-        row["Event Name"] ||
-        "Unknown Event"
-      );
+      return row["Which Event Would You Like To Survey?"] ||
+             row["Which Student Market Would You Like To Survey?"] ||
+             row["Event Name"] || "Unknown Event";
     }
 
     function stars(n) {
@@ -238,202 +147,112 @@
       return "★★★★★".slice(0, s) + "☆☆☆☆☆".slice(0, 5 - s);
     }
 
-    /* ---------- PDF Export Button ---------- */
-    function createPDFButton(eventName, detailsEl) {
+    function createPDFButton(eventName, detailsEl, ratingMap, briefMap) {
       const btn = document.createElement("button");
       btn.textContent = "Download PDF";
-      btn.style.cssText = \`
-        margin: 1rem 1.6rem;
-        padding: 0.6rem 1rem;
-        font-size: 0.9rem;
-        border: none;
-        border-radius: 6px;
-        background: rgba(255,255,255,0.12);
-        color: #fff;
-        cursor: pointer;
-        backdrop-filter: blur(5px);
-      \`;
-
+      btn.style.cssText = "margin:1rem 1.6rem; padding:0.6rem 1rem; font-size:0.9rem; border:none; border-radius:6px; background:rgba(255,255,255,0.12); color:#fff; cursor:pointer; backdrop-filter:blur(5px);";
       btn.addEventListener("click", () => {
-        /* clone the responses block for print-friendly output */
-        const clone = detailsEl.cloneNode(true);
-        const responsesHTML =
-          clone.querySelector(".response-block")?.innerHTML || "";
-
-        const html = \`
-          <html>
-            <head>
-              <title>\${eventName} Feedback</title>
-              <style>
-                body { font-family: Arial, sans-serif; padding: 2rem; color: #000; }
-                h2   { margin-top: 0; }
-                .response { margin-bottom: 1rem; border: 1px solid #ccc; padding: 1rem; border-radius: 8px; }
-                .review-title { font-weight: bold; margin-bottom: 0.5rem; }
-                .label { font-weight: bold; font-size: 0.85rem; margin-bottom: 0.2rem; }
-                .value { font-size: 1rem; margin-bottom: 0.6rem; }
-              </style>
-            </head>
-            <body>
-              <h2>\${eventName} – Student Feedback</h2>
-              \${responsesHTML}
-            </body>
-          </html>
-        \`;
-
+        const responsesHTML = detailsEl.querySelector(".response-block")?.innerHTML || "";
+        const rating = ratingMap[eventName];
+        const thoughts = briefMap[eventName];
+        const html = `
+          <html><head><title>${eventName}</title><style>
+          body { font-family: Arial; padding: 2rem; color: #000; }
+          .response { margin-bottom: 1rem; border: 1px solid #ccc; padding: 1rem; border-radius: 8px; }
+          .review-title { font-weight: bold; }
+          .label { font-weight: bold; font-size: 0.85rem; }
+          .value { font-size: 1rem; }
+          .summary-box { background: #f0f0f0; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; }
+          .stars { color: #444; font-size: 0.95rem; }
+          .thoughts { font-style: italic; color: #555; font-size: 0.85rem; }
+          </style></head><body>
+          <div class='summary-box'>
+            <h2>${eventName}</h2>
+            ${rating ? `<div class='stars'>${"★".repeat(Math.round(rating))}${"☆".repeat(5 - Math.round(rating))} (${rating.toFixed(1)}/5.0)</div>` : ""}
+            ${thoughts ? `<div class='thoughts'>${thoughts}</div>` : ""}
+          </div>
+          ${responsesHTML}</body></html>`;
         const win = window.open("", "_blank");
         win.document.write(html);
         win.document.close();
-        win.focus();
         win.print();
       });
-
       return btn;
     }
 
-    /* ---------- Main Rendering ---------- */
     (async () => {
-      const [overview, rawRes] = await Promise.all([
-        fetchSheet(OVW_SHEET),
-        fetchSheet(RAW_SHEET),
-      ]);
-
-      /* ----- Build lookup maps from the overview sheet ----- */
-      const ratingMap = {};
-      const briefMap  = {};
+      const [overview, rawRes] = await Promise.all([fetchSheet(OVW_SHEET), fetchSheet(RAW_SHEET)]);
+      const ratingMap = {}, briefMap = {}, groups = {};
       const ovwHeaders = overview.table.cols.map(c => c.label);
-
       overview.table.rows.forEach(r => {
-        const row = ovwHeaders.reduce((o, h, i) => {
-          o[h] = r.c[i] ? r.c[i].v : "";
-          return o;
-        }, {});
+        const row = ovwHeaders.reduce((acc, h, i) => (acc[h] = r.c[i]?.v || "", acc), {});
         if (row["Event Name"]) {
-          ratingMap[row["Event Name"]] = Number(row["Overall Rating"]);
-          briefMap[row["Event Name"]]  = row["General Thoughts"] || "";
+          ratingMap[row["Event Name"]] = +row["Overall Rating"];
+          briefMap[row["Event Name"]] = row["General Thoughts"] || "";
         }
       });
 
-      /* ----- Parse raw responses ----- */
       const rawHeaders = rawRes.table.cols.map(c => c.label);
       const rawRows = rawRes.table.rows.map(r =>
-        rawHeaders.reduce((o, h, i) => {
-          o[h] = r.c[i] ? r.c[i].v : "";
-          return o;
-        }, {})
+        rawHeaders.reduce((o, h, i) => (o[h] = r.c[i]?.v || "", o), {})
       );
 
-      /* ----- Group responses by event ----- */
-      const groups = {};
       rawRows.forEach(r => {
         const event = extractEvent(r);
         if (!groups[event]) groups[event] = [];
         groups[event].push(r);
       });
 
-      /* ----- Create dash container ----- */
-      const dash = document.createElement("div");
-      dash.id = "dash";
-      document.body.insertBefore(dash, document.getElementById("topBtn"));
-
+      const dash = document.getElementById("dash");
       const searchInput = document.getElementById("search");
 
       function render(filter = "") {
         dash.innerHTML = "";
-        let hasResults = false;
-
-        /* sort events alphabetically descending */
-        Object.entries(groups)
-          .sort((a, b) => b[0].localeCompare(a[0]))
-          .forEach(([event, responses]) => {
-
-            if (!event.toLowerCase().includes(filter.toLowerCase())) return;
-            hasResults = true;
-
-            const det = document.createElement("details");
-
-            /* ----- Summary line ----- */
-            const sum = document.createElement("summary");
-            const rating = ratingMap[event];
-            const overviewText = briefMap[event];
-
-            sum.innerHTML = \`
-              <span class="summary-left">
-                <span class="event-label">\${event}</span>
-                <span class="dropdown">▼</span>
-              </span>
-              <span class="stars">
-                \${rating ? \`\${stars(rating)} (\${rating.toFixed(1)}/5.0)\` : ""}
-              </span>
-            \`;
-            det.appendChild(sum);
-
-            /* ----- Overview blurb ----- */
-            if (overviewText) {
-              const desc = document.createElement("div");
-              desc.className = "overview-text";
-              desc.textContent = overviewText;
-              det.appendChild(desc);
-            }
-
-            /* ----- Response cards ----- */
-            const block = document.createElement("div");
-            block.className = "response-block";
-
-            responses.forEach((res, i) => {
-              const div = document.createElement("div");
-              div.className = "response";
-
-              const title = document.createElement("div");
-              title.className = "review-title";
-              title.textContent = \`Student Survey #\${i + 1}\`;
-              div.appendChild(title);
-
-              Object.entries(res).forEach(([label, val]) => {
-                if (!val) return;
-                if (
-                  label.includes("Timestamp") ||
-                  label.includes("Student ID") ||
-                  label.includes("Which Event") ||
-                  label.includes("Which Student Market")
-                ) return;
-
-                const field = document.createElement("div");
-                field.className = "field";
-                field.innerHTML = \`
-                  <div class="label">\${label}</div>
-                  <div class="value">\${val}</div>
-                \`;
-                div.appendChild(field);
-              });
-
-              block.appendChild(div);
+        Object.entries(groups).sort().forEach(([event, responses]) => {
+          if (!event.toLowerCase().includes(filter.toLowerCase())) return;
+          const det = document.createElement("details");
+          const sum = document.createElement("summary");
+          const rating = ratingMap[event];
+          const overview = briefMap[event];
+          sum.innerHTML = `<span class="summary-left"><span class="event-label">${event}</span><span class="dropdown">▼</span></span><span class="stars">${rating ? `${stars(rating)} (${rating.toFixed(1)}/5.0)` : ""}</span>`;
+          det.appendChild(sum);
+          if (overview) {
+            const blurb = document.createElement("div");
+            blurb.className = "overview-text";
+            blurb.textContent = overview;
+            det.appendChild(blurb);
+          }
+          const block = document.createElement("div");
+          block.className = "response-block";
+          responses.forEach((res, i) => {
+            const div = document.createElement("div");
+            div.className = "response";
+            const title = document.createElement("div");
+            title.className = "review-title";
+            title.textContent = `Student Survey #${i + 1}`;
+            div.appendChild(title);
+            Object.entries(res).forEach(([label, val]) => {
+              if (!val || /Timestamp|Student ID|Which Event|Which Student Market/.test(label)) return;
+              const field = document.createElement("div");
+              field.className = "field";
+              field.innerHTML = `<div class="label">${label}</div><div class="value">${val}</div>`;
+              div.appendChild(field);
             });
-
-            det.appendChild(block);
-
-            /* ----- PDF Export Button ----- */
-            const pdfBtn = createPDFButton(event, det);
-            det.appendChild(pdfBtn);
-
-            dash.appendChild(det);
+            block.appendChild(div);
           });
-
-        if (!hasResults) {
-          dash.innerHTML =
-            "<p style='text-align:center; color:white; font-size:1rem;'>No matching events found. Try another search.</p>";
-        }
+          det.appendChild(block);
+          det.appendChild(createPDFButton(event, det, ratingMap, briefMap));
+          dash.appendChild(det);
+        });
       }
 
-      /* initial render & search filter hook */
       render();
       searchInput.addEventListener("input", () => render(searchInput.value));
     })();
 
-    /* ---------- Scroll-to-Top ---------- */
     document.getElementById("topBtn").addEventListener("click", () =>
       window.scrollTo({ top: 0, behavior: "smooth" })
     );
   </script>
 </body>
 </html>
-
