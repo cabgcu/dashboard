@@ -2,143 +2,242 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>CAB Event Survey Responses</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Event Survey Dashboard</title>
   <style>
-    @font-face {
-      font-family: 'Thunder';
-      src: url('Thunder-Regular.otf') format('opentype');
-    }
     body {
-      background: url('https://i.imgur.com/IYZzkfE.png') no-repeat center center fixed;
-      background-size: cover;
-      color: #fff;
+      margin: 0;
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-      padding: 2rem;
-    }
-    .header-container {
-      text-align: center;
-      margin-bottom: 2rem;
-    }
-    h1 {
-      font-family: 'Thunder', sans-serif;
-      font-size: 2.5rem;
-      margin: 0.5rem 0;
-    }
-    .header-subtitle {
-      font-style: italic;
+      background: url('https://i.imgur.com/pFP28BQ.jpeg') center/cover no-repeat fixed;
       color: #fff;
+      opacity: 0;
+      animation: fadeIn 1.2s ease forwards;
     }
-    #search {
-      display: block;
-      margin: 1rem auto 1.5rem;
-      padding: 0.4rem 0.75rem;
-      font-size: 0.95rem;
-      max-width: 400px;
-      width: 100%;
-      border-radius: 8px;
-      border: none;
-      background: rgba(0, 0, 0, 0.6);
-      color: #fff;
-      box-shadow: 0 0 6px rgba(255, 255, 255, 0.1);
-      font-family: inherit;
-      text-align: center;
-    }
-    #search::placeholder {
-      color: #eee;
-      opacity: 1;
-    }
-    summary::marker { display: none; }
-    details {
-      background: rgba(0,0,0,0.6);
-      border: 1px solid rgba(255,255,255,0.08);
-      border-radius: 10px;
-      margin-bottom: 1.2rem;
-      overflow: hidden;
-    }
-    summary {
+    @keyframes fadeIn { to { opacity: 1; } }
+
+    .topbar {
+      position: sticky;
+      top: 0;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      cursor: pointer;
-      padding: 1rem 1.2rem;
+      padding: 1rem 2rem;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(10px);
+      z-index: 10;
     }
-    .summary-left {
+
+    .topbar-left {
       display: flex;
       align-items: center;
-      gap: 0.5rem;
+      gap: 1rem;
     }
-    .event-label {
-      font-weight: 600;
+
+    .topbar-left img {
+      height: 50px;
     }
-    .dropdown {
-      transition: transform 0.3s ease;
+
+    .title {
+      font-size: 1.8rem;
+      font-weight: bold;
     }
-    details[open] .dropdown {
-      transform: rotate(180deg);
+
+    .topbar-controls {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
     }
-    .stars {
+
+    #search,
+    #sortMode {
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      border: none;
+      font-size: 1rem;
+    }
+
+    #search {
+      background: rgba(255, 255, 255, 0.2);
+      color: white;
+    }
+
+    #sortMode {
+      appearance: none;
+      background-color: rgba(255, 255, 255, 0.2);
+      color: white;
+      padding: 0.5rem 2.25rem 0.5rem 1rem;
+      border-radius: 8px;
+      background-image: url("data:image/svg+xml,%3Csvg fill='white' viewBox='0 0 24 24' width='18' height='18' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 0.6rem center;
+      background-size: 1rem;
+      min-width: 180px;
+    }
+
+    #dashboard {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1.5rem;
+      padding: 2rem;
+    }
+
+    .card {
+      background: rgba(0, 0, 0, 0.55);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 1.2rem;
+      backdrop-filter: blur(8px);
+      opacity: 0;
+      transform: translateY(20px);
+      animation: slideFade 0.6s ease forwards;
+    }
+
+    @keyframes slideFade {
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .card h2 {
+      font-size: 1.2rem;
+      margin-bottom: 0.4rem;
+    }
+
+    .rating {
+      font-size: 1.4rem;
+      font-weight: bold;
+      color: #ffc107;
+    }
+
+    .resp-count {
+      font-size: 0.8rem;
+      color: #aaa;
+      margin-bottom: 0.8rem;
+    }
+
+    .summary {
+      font-style: italic;
       font-size: 0.9rem;
       color: #ccc;
-      white-space: nowrap;
-    }
-    .response-block {
-      padding: 1rem 1.2rem;
-      border-top: 1px solid rgba(255,255,255,0.08);
-    }
-    .response {
-      margin-bottom: 1.5rem;
-      padding: 1rem;
-      background: rgba(0,0,0,0.6);
-      border: 1px solid rgba(255,255,255,0.08);
-      border-radius: 8px;
-    }
-    .review-title {
-      font-weight: bold;
-      margin-bottom: 0.75rem;
-    }
-    .field {
       margin-bottom: 1rem;
     }
-    .label {
-      font-weight: 500;
-      font-size: 0.85rem;
-      color: #ccc;
+
+    .actions {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
     }
-    .value {
-      font-size: 1rem;
-      color: #fff;
-    }
-    .overview-text {
-      margin: 0 1.2rem 1rem;
-      font-style: italic;
-      color: #ccc;
-      font-size: 0.9rem;
-    }
-    .pdf-btn {
-      margin: 1rem 1.2rem;
+
+    .btn {
       padding: 0.4rem 0.75rem;
       font-size: 0.85rem;
-      background: rgba(255,255,255,0.12);
-      color: #fff;
+      background: rgba(255, 255, 255, 0.15);
       border: none;
-      border-radius: 5px;
+      border-radius: 6px;
+      color: white;
       cursor: pointer;
+    }
+
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0, 0, 0, 0.85);
+      backdrop-filter: blur(5px);
+      z-index: 100;
+      overflow-y: auto;
+      padding: 3rem 2rem;
+      opacity: 0;
+      transform: scale(0.98);
+      transition: opacity 0.3s ease, transform 0.3s ease;
+    }
+
+    .modal.show {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    .modal-content {
+      max-width: 800px;
+      margin: auto;
+      background: rgba(255, 255, 255, 0.05);
+      padding: 2rem;
+      border-radius: 12px;
+      color: #fff;
+    }
+
+    .close-btn {
+      display: block;
+      margin-left: auto;
+      background: rgba(255, 255, 255, 0.2);
+      border: none;
+      padding: 0.5rem 1rem;
+      color: #fff;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-bottom: 1rem;
+    }
+
+    .response-card {
+      background: rgba(255, 255, 255, 0.05);
+      padding: 1.5rem 1.8rem;
+      border-radius: 10px;
+      margin-bottom: 2rem;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      line-height: 1.6;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    }
+
+    .response-card h4 {
+      margin-bottom: 1rem;
+      font-size: 1.1rem;
+      color: #fff;
+    }
+
+    .qa {
+      margin-bottom: 1rem;
+    }
+
+    .qa .label {
+      font-weight: 600;
+      font-size: 0.9rem;
+      margin-bottom: 0.2rem;
+      color: #ddd;
+    }
+
+    .qa .value {
+      font-size: 1rem;
+      color: #fff;
+      margin-left: 0.5rem;
     }
   </style>
 </head>
 <body>
-  <div class="header-container">
-    <img src="https://i.imgur.com/oqrmQSC.png" alt="CAB Logo" style="width:100px;">
-    <h1>Event Survey Responses</h1>
-    <p class="header-subtitle">Anonymous student feedback collected live from each CAB event</p>
+  <div class="topbar">
+    <div class="topbar-left">
+      <img src="https://i.imgur.com/oqrmQSC.png" alt="CAB Logo">
+      <div class="title">Event Survey Dashboard</div>
+    </div>
+    <div class="topbar-controls">
+      <input id="search" type="text" placeholder="Search event…">
+      <select id="sortMode">
+        <option value="rating">⭐ Rating</option>
+        <option value="az">🔤 A–Z</option>
+        <option value="recent">🕒 Recent</option>
+      </select>
+    </div>
   </div>
 
-  <div style="text-align: center;">
-    <input type="text" id="search" placeholder="Search for an event..." />
-  </div>
+  <div id="dashboard"></div>
 
-  <div id="dash"></div>
+  <div id="modal" class="modal">
+    <div class="modal-content">
+      <button id="closeBtn" class="close-btn">Close</button>
+      <div id="modalBody"></div>
+    </div>
+  </div>
 
   <script>
     const sheetID = "1CqmQKvOkcLFV8XyzFrjK4H85skJCwRgSEwiP8j_6pMM";
@@ -151,50 +250,7 @@
       return JSON.parse(raw.substring(47, raw.length - 2));
     }
 
-    function extractEvent(r){
-      return r["Which Event Would You Like To Survey?"] || r["Which Student Market Would You Like To Survey?"] || r["Event Name"] || "Unknown Event";
-    }
-
-    function stars(n){
-      if (!n) return "";
-      const s = Math.round(n);
-      return "★★★★★".slice(0, s) + "☆☆☆☆☆".slice(0, 5 - s);
-    }
-
-    function createPDFButton(eventName, detailsEl, ratingMap, briefMap){
-      const btn = document.createElement("button");
-      btn.textContent = "Download PDF";
-      btn.className = "pdf-btn";
-      btn.addEventListener("click", () => {
-        const clone = detailsEl.cloneNode(true);
-        const responsesHTML = clone.querySelector(".response-block")?.innerHTML || "";
-        const rating = ratingMap[eventName];
-        const thoughts = briefMap[eventName];
-        const html = `
-          <html><head><title>${eventName}</title>
-          <style>
-            body { font-family: Arial, sans-serif; padding: 2rem; color: #000; }
-            .response { border: 1px solid #ccc; padding: 1rem; margin-bottom: 1rem; border-radius: 8px; }
-            .review-title { font-weight: bold; margin-bottom: 0.5rem; }
-            .label { font-weight: bold; font-size: 0.85rem; margin-bottom: 0.2rem; }
-            .value { font-size: 1rem; margin-bottom: 0.6rem; }
-            .summary-box { background: #f0f0f0; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; }
-            .stars { font-size: 0.95rem; color: #444; }
-            .thoughts { font-style: italic; font-size: 0.9rem; color: #555; margin-top: 0.3rem; }
-          </style></head><body>
-          <div class="summary-box"><h2>${eventName}</h2>
-          ${rating ? `<div class="stars">${"★".repeat(Math.round(rating))}${"☆".repeat(5 - Math.round(rating))} (${rating.toFixed(1)}/5.0)</div>` : ""}
-          ${thoughts ? `<div class="thoughts">${thoughts}</div>` : ""}
-          </div>${responsesHTML}</body></html>
-        `;
-        const win = window.open("", "_blank");
-        win.document.write(html);
-        win.document.close();
-        win.focus();
-        win.print();
-      });
-      return btn;
-    }
+    const stars = n => "★★★★★".slice(0, Math.round(n)) + "☆☆☆☆☆".slice(0, 5 - Math.round(n));
 
     (async () => {
       const [overview, rawRes] = await Promise.all([fetchSheet(OVW_SHEET), fetchSheet(RAW_SHEET)]);
@@ -222,62 +278,112 @@
 
       const groups = {};
       rawRows.forEach(r => {
-        const event = extractEvent(r);
+        const event = r["Which Event Would You Like To Survey?"] || r["Which Student Market Would You Like To Survey?"] || r["Event Name"] || "Unknown Event";
         if (!groups[event]) groups[event] = [];
         groups[event].push(r);
       });
 
-      const dash = document.getElementById("dash");
-      const searchInput = document.getElementById("search");
+      const dashboard = document.getElementById("dashboard");
+      const modal = document.getElementById("modal");
+      const modalBody = document.getElementById("modalBody");
+      const closeBtn = document.getElementById("closeBtn");
 
-      function render(filter = "") {
-        dash.innerHTML = "";
-        let hasResults = false;
-        Object.entries(groups).sort((a, b) => b[0].localeCompare(a[0])).forEach(([event, responses]) => {
+      function render(filter = "", sort = "rating") {
+        dashboard.innerHTML = "";
+        let entries = Object.entries(groups);
+
+        if (sort === "rating") entries.sort((a,b) => (ratingMap[b[0]] || 0) - (ratingMap[a[0]] || 0));
+        if (sort === "az") entries.sort((a,b) => a[0].localeCompare(b[0]));
+        if (sort === "recent") entries.sort((a,b) => new Date(b[1][0]?.Timestamp || 0) - new Date(a[1][0]?.Timestamp || 0));
+
+        entries.forEach(([event, responses], i) => {
           if (!event.toLowerCase().includes(filter.toLowerCase())) return;
-          hasResults = true;
-          const det = document.createElement("details");
-          const sum = document.createElement("summary");
+
+          const card = document.createElement("div");
+          card.className = "card";
+          card.style.animationDelay = `${i * 0.1}s`;
+
           const rating = ratingMap[event];
           const overview = briefMap[event];
-          sum.innerHTML = `<span class="summary-left"><span class="event-label">${event} (${responses.length} responses)</span><span class="dropdown">▼</span></span><span class="stars">${rating ? `${stars(rating)} (${rating.toFixed(1)}/5.0)` : ""}</span>`;
-          det.appendChild(sum);
-          if (overview) {
-            const desc = document.createElement("div");
-            desc.className = "overview-text";
-            desc.textContent = overview;
-            det.appendChild(desc);
-          }
-          const block = document.createElement("div");
-          block.className = "response-block";
-          responses.forEach((res, i) => {
-            const div = document.createElement("div");
-            div.className = "response";
-            const title = document.createElement("div");
-            title.className = "review-title";
-            title.textContent = `Student Survey #${i + 1}`;
-            div.appendChild(title);
-            Object.entries(res).forEach(([label, val]) => {
-              if (!val || label.includes("Timestamp") || label.includes("Student ID") || label.includes("Which Event") || label.includes("Which Student Market")) return;
-              const field = document.createElement("div");
-              field.className = "field";
-              field.innerHTML = `<div class="label">${label}</div><div class="value">${val}</div>`;
-              div.appendChild(field);
-            });
-            block.appendChild(div);
-          });
-          det.appendChild(block);
-          det.appendChild(createPDFButton(event, det, ratingMap, briefMap));
-          dash.appendChild(det);
-        });
+          const count = responses.length;
 
-        if (!hasResults) {
-          dash.innerHTML = "<p style='text-align:center; color: white; font-size: 1rem;'>No matching events found. Try another search.</p>";
-        }
+          card.innerHTML = `
+            <h2>${event}</h2>
+            <div class="rating">${rating ? `${stars(rating)} (${rating.toFixed(1)}/5.0)` : ""}</div>
+            <div class="resp-count">${count} response${count !== 1 ? "s" : ""}</div>
+            <div class="summary">${overview || "No summary available."}</div>
+            <div class="actions">
+              <button class="btn view-btn">View Feedback</button>
+              <button class="btn pdf-btn">Download PDF</button>
+            </div>
+          `;
+
+          card.querySelector(".view-btn").addEventListener("click", () => {
+            modalBody.innerHTML = "";
+            responses.forEach((res, j) => {
+              const div = document.createElement("div");
+              div.className = "response-card";
+              div.innerHTML = `<h4>Response #${j + 1}</h4>`;
+              Object.entries(res).forEach(([label, val]) => {
+                if (!val || label.includes("Timestamp") || label.includes("Student ID") || label.includes("Which Event")) return;
+                div.innerHTML += `<div class="qa"><div class="label">${label}</div><div class="value">${val}</div></div>`;
+              });
+              modalBody.appendChild(div);
+            });
+            modal.style.display = 'block';
+            setTimeout(() => modal.classList.add('show'), 10);
+          });
+
+          card.querySelector(".pdf-btn").addEventListener("click", () => {
+            const temp = document.createElement("div");
+            responses.forEach((res, j) => {
+              const div = document.createElement("div");
+              div.className = "response";
+              div.innerHTML = `<h4>Response #${j + 1}</h4>`;
+              Object.entries(res).forEach(([label, val]) => {
+                if (!val || label.includes("Timestamp") || label.includes("Student ID") || label.includes("Which Event")) return;
+                div.innerHTML += `<div><strong>${label}:</strong> ${val}</div>`;
+              });
+              temp.appendChild(div);
+            });
+            const html = `
+              <html><head><title>${event}</title>
+              <style>
+                body { font-family: Arial, sans-serif; padding: 2rem; color: #000; }
+                .response { border: 1px solid #ccc; padding: 1rem; margin-bottom: 1rem; border-radius: 8px; }
+              </style></head><body>
+              <div style="margin-bottom: 2rem;">
+                <img src="https://i.imgur.com/xFzbl45.png" alt="CAB Logo" style="height:50px;margin-bottom:1rem;">
+                <h2>${event}</h2>
+                ${rating ? `<div>${stars(rating)} (${rating.toFixed(1)}/5.0)</div>` : ""}
+                ${overview ? `<div style="font-style:italic">${overview}</div>` : ""}
+              </div>${temp.innerHTML}</body></html>
+            `;
+            const win = window.open("", "_blank");
+            win.document.write(html);
+            win.document.close();
+            win.focus();
+            win.print();
+          });
+
+          dashboard.appendChild(card);
+        });
       }
 
+      closeBtn.addEventListener("click", () => {
+        modal.classList.remove("show");
+        setTimeout(() => modal.style.display = 'none', 300);
+      });
+
+      document.getElementById("search").addEventListener("input", e => {
+        render(e.target.value, document.getElementById("sortMode").value);
+      });
+
+      document.getElementById("sortMode").addEventListener("change", e => {
+        render(document.getElementById("search").value, e.target.value);
+      });
+
       render();
-      searchInput.addEventListener("input", () => render(searchInput.value));
     })();
   </script>
 </body>
