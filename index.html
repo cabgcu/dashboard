@@ -4,160 +4,111 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Event Survey Dashboard</title>
+
+  <!-- ========== STYLES ========== -->
   <style>
-    /* ---------- Base styles ---------- */
+    /* ----- page fade-in ----- */
     body{
-      margin:0;
-      font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
-      background:url('https://i.imgur.com/pFP28BQ.jpeg') center/cover no-repeat fixed;
-      color:#fff;
-      opacity:0;
-      animation:fadeIn 1.2s ease forwards;
+      margin:0;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+      background:url('https://i.imgur.com/pFP28BQ.jpeg') center/cover fixed;
+      color:#fff;opacity:0;animation:fadeIn 1.2s ease forwards;
     }
     @keyframes fadeIn{to{opacity:1}}
 
-    /* ---------- Top bar ---------- */
+    /* ----- key animations ----- */
+    @keyframes slideFade{to{opacity:1;transform:none}}
+    @keyframes zoomIn  {from{opacity:0;transform:scale(.96)}to{opacity:1;transform:scale(1)}}
+    @keyframes fadeStagger{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+    /* ----- top bar ----- */
     .topbar{
-      position:sticky;top:0;
-      display:flex;justify-content:space-between;align-items:center;
-      padding:1rem 2rem;
-      background:rgba(0,0,0,.6);
-      backdrop-filter:blur(10px);
-      z-index:10;
+      position:sticky;top:0;display:flex;justify-content:space-between;align-items:center;
+      padding:1rem 2rem;background:rgba(0,0,0,.6);backdrop-filter:blur(10px);z-index:10;
+      flex-wrap:wrap;
     }
-    .topbar-left{display:flex;align-items:center;gap:1rem}
+    .topbar-left{display:flex;align-items:center;gap:1rem;margin-bottom:.4rem}
     .topbar-left img{height:50px}
     .title{font-size:1.8rem;font-weight:bold}
-    .topbar-controls{display:flex;gap:1rem;align-items:center}
+    .topbar-controls{display:flex;gap:1rem;align-items:center;flex-wrap:wrap}
 
-    /* shared input / select look */
+    /* shared input look */
     #search,#sortMode{
-      width:260px;
-      padding:.55rem 1rem;
-      font-size:1rem;
-      border:none;border-radius:8px;
-      background:rgba(255,255,255,.2);
-      color:#fff;
+      padding:.55rem 1rem;border:none;border-radius:8px;font-size:1rem;
+      background:rgba(255,255,255,.2);color:#fff;
     }
     #sortMode{
-      appearance:none;
-      padding:.55rem 2.25rem .55rem 1rem;
+      appearance:none;padding-right:2.3rem;min-width:180px;
       background-image:url("data:image/svg+xml,%3Csvg fill='white' viewBox='0 0 24 24' width='18' height='18' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
-      background-repeat:no-repeat;
-      background-position:right .6rem center;
-      background-size:1rem;
-      min-width:180px;
+      background-repeat:no-repeat;background-position:right .6rem center;background-size:1rem;
     }
 
-    /* ---------- Dashboard grid ---------- */
-    #dashboard{
-      display:grid;
-      grid-template-columns:repeat(auto-fit,minmax(300px,1fr));
-      gap:1.5rem;
-      padding:2rem;
-    }
+    /* ----- dashboard grid ----- */
+    #dashboard{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));
+      gap:1.5rem;padding:2rem}
     .card{
-      background:rgba(0,0,0,.55);
-      border:1px solid rgba(255,255,255,.1);
-      border-radius:12px;
-      padding:1.2rem;
-      backdrop-filter:blur(8px);
-      opacity:0;transform:translateY(20px);
+      background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.1);border-radius:12px;
+      padding:1.2rem;backdrop-filter:blur(8px);opacity:0;transform:translateY(20px);
       animation:slideFade .6s ease forwards;
     }
-    @keyframes slideFade{to{opacity:1;transform:none}}
-    .card h2{font-size:1.2rem;margin:.4rem 0}
+    .card h2{font-size:1.2rem;margin:.3rem 0}
     .rating{font-size:1.4rem;font-weight:bold;color:#ffc107}
-    .resp-count{font-size:.8rem;color:#aaa;margin-bottom:.8rem}
+    .resp-count{font-size:.8rem;color:#aaa;margin-bottom:.6rem}
     .summary{font-style:italic;font-size:.9rem;color:#ccc;margin-bottom:1rem}
-    .actions{display:flex;flex-wrap:wrap;gap:.5rem}
+    .actions{display:flex;gap:.5rem;flex-wrap:wrap}
     .btn{
-      padding:.45rem .9rem;font-size:.85rem;
-      background:rgba(255,255,255,.15);
-      border:none;border-radius:6px;color:#fff;cursor:pointer;
+      padding:.45rem .9rem;font-size:.85rem;border:none;border-radius:6px;
+      background:rgba(255,255,255,.15);color:#fff;cursor:pointer;transition:transform .2s ease;
     }
+    .btn:hover{transform:scale(1.05)}
 
-    /* ---------- Modal ---------- */
+    /* ----- modal ----- */
     .modal{
-      position:fixed;top:0;left:0;width:100%;height:100%;
-      background:rgba(0,0,0,.85);backdrop-filter:blur(5px);
-      z-index:100;display:none;overflow:auto;
-      padding:3rem 2rem;
-      opacity:0;transform:scale(.98);
+      position:fixed;top:0;left:0;width:100%;height:100%;display:none;
+      background:rgba(0,0,0,.85);backdrop-filter:blur(5px);z-index:100;
+      overflow:auto;padding:3rem 2rem;opacity:0;transform:scale(.98);
       transition:opacity .3s ease,transform .3s ease;
     }
     .modal.show{opacity:1;transform:scale(1)}
     .modal-content{
-      max-width:800px;margin:auto;
-      background:rgba(255,255,255,.05);
-      padding:2rem;border-radius:12px;color:#fff;
-      /* NEW: limit height & scroll */
+      max-width:800px;margin:auto;background:rgba(255,255,255,.05);
+      padding:2rem;border-radius:12px;animation:zoomIn .3s ease-out;color:#fff;
       max-height:90vh;overflow-y:auto;
     }
-    .close-btn{
-      margin-left:auto;margin-bottom:1rem;
-      padding:.5rem 1rem;border:none;border-radius:6px;
-      background:rgba(255,255,255,.2);color:#fff;cursor:pointer;
-    }
+    .close-btn{margin-left:auto;margin-bottom:1rem;padding:.5rem 1rem;border:none;
+      border-radius:6px;background:rgba(255,255,255,.2);color:#fff;cursor:pointer}
     .response-card{
-      background:rgba(255,255,255,.05);
-      padding:1.5rem 1.8rem;border-radius:10px;margin-bottom:2rem;
-      border:1px solid rgba(255,255,255,.15);line-height:1.6;
-      box-shadow:0 4px 12px rgba(0,0,0,.2);
+      background:rgba(255,255,255,.05);padding:1.4rem 1.6rem;border-radius:10px;
+      margin-bottom:2rem;border:1px solid rgba(255,255,255,.15);
+      line-height:1.55;box-shadow:0 4px 12px rgba(0,0,0,.2);
+      opacity:0;transform:translateY(10px);animation:fadeStagger .4s ease forwards;
+      animation-delay:var(--delay,0s);
     }
-    .response-card h4{margin-bottom:1rem;font-size:1.1rem}
     .qa{margin-bottom:1rem}
-    .qa .label{font-weight:600;font-size:.9rem;margin-bottom:.2rem;color:#ddd}
-    .qa .value{font-size:1rem;color:#fff;margin-left:.5rem}
+    .qa .label{font-weight:600;font-size:.9rem;color:#ddd;margin-bottom:.15rem}
+    .qa .value{font-size:1rem;margin-left:.5rem}
 
-    /* ---------- Mobile (≤640 px) ---------- */
+    /* ----- mobile tweaks ----- */
     @media(max-width:640px){
-      .topbar{flex-direction:column;align-items:flex-start;gap:.8rem;padding:.8rem 1rem}
+      .topbar{flex-direction:column;align-items:flex-start;padding:.8rem 1rem}
       .title{font-size:1.4rem}
-
-      .topbar-controls{
-        width:100%;flex-direction:column;gap:.6rem;
-      }
-      #search,#sortMode{
-        width:100%;
-        font-size:.88rem;
-        padding:.55rem .95rem;
-      }
-      #sortMode{
-        background-position:right .75rem center;
-        background-size:1rem;
-      }
-
+      .topbar-controls{width:100%;flex-direction:column;gap:.6rem}
+      #search,#sortMode{width:100%;font-size:.88rem;padding:.55rem .95rem}
       #dashboard{grid-template-columns:1fr;padding:1.2rem;gap:1rem}
-      .card{padding:1rem}
-      .card h2{font-size:1.05rem}
-      .rating{font-size:1.2rem}
-
-      .modal-content{
-        width:100%;max-width:92%;
-        padding:1.2rem;
-        margin:2rem auto;
-        /* Safe-area padding on iPhones with bottom bar */
-        padding-bottom:calc(env(safe-area-inset-bottom) + 1.2rem);
-      }
-      .response-card{padding:1rem 1.2rem;font-size:.95rem}
-      .qa .label{font-size:.85rem}
-      .qa .value{font-size:.95rem}
-    }
-
-    /* ---------- Small-tablet portrait (641–900 px) ---------- */
-    @media(min-width:641px) and (max-width:900px){
-      #dashboard{grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+      .card{padding:1rem}.card h2{font-size:1.05rem}.rating{font-size:1.2rem}
+      .modal-content{max-width:92%;padding:1.2rem;margin:2rem auto;
+        padding-bottom:calc(env(safe-area-inset-bottom)+1.2rem)}
     }
   </style>
 </head>
 <body>
-  <!-- Top bar -->
+
+  <!-- ===== Top bar ===== -->
   <div class="topbar">
     <div class="topbar-left">
       <img src="https://i.imgur.com/oqrmQSC.png" alt="CAB Logo">
       <div class="title">Event Survey Dashboard</div>
     </div>
+
     <div class="topbar-controls">
       <input id="search" type="text" placeholder="Search event…">
       <select id="sortMode">
@@ -168,10 +119,10 @@
     </div>
   </div>
 
-  <!-- Dashboard -->
+  <!-- ===== Dashboard ===== -->
   <div id="dashboard"></div>
 
-  <!-- Modal -->
+  <!-- ===== Modal ===== -->
   <div id="modal" class="modal">
     <div class="modal-content">
       <button id="closeBtn" class="close-btn">Close</button>
@@ -179,142 +130,138 @@
     </div>
   </div>
 
-  <!-- Script -->
+  <!-- ========== SCRIPT ========== -->
   <script>
     const sheetID   = "1CqmQKvOkcLFV8XyzFrjK4H85skJCwRgSEwiP8j_6pMM";
     const RAW_SHEET = "Survey Responses";
     const OVW_SHEET = "Response overview";
 
-    async function fetchSheet(name){
-      const url = `https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(name)}`;
-      const raw = await fetch(url).then(r=>r.text());
-      return JSON.parse(raw.substring(47,raw.length-2));
-    }
+    /* global holders so render() can use them */
+    let ratingMap = {}, briefMap = {}, groups = {};
+
+    /* --- helper --- */
     const stars = n=>"★★★★★".slice(0,Math.round(n))+"☆☆☆☆☆".slice(0,5-Math.round(n));
 
+    /* --- fetch Google Sheet data --- */
+    async function fetchSheet(name){
+      const url=`https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(name)}`;
+      const raw=await fetch(url).then(r=>r.text());
+      return JSON.parse(raw.substring(47,raw.length-2));
+    }
+
+    /* --- build page --- */
     (async()=>{
-      const [overview,rawRes]=await Promise.all([fetchSheet(OVW_SHEET),fetchSheet(RAW_SHEET)]);
+      const [overview,raw]=await Promise.all([fetchSheet(OVW_SHEET),fetchSheet(RAW_SHEET)]);
 
-      /* --- Build rating / summary maps --- */
-      const ratingMap={},briefMap={};
-      const ovwHeaders=overview.table.cols.map(c=>c.label);
+      /* map ratings / summaries */
+      const oHdr=overview.table.cols.map(c=>c.label);
       overview.table.rows.forEach(r=>{
-        const row=ovwHeaders.reduce((o,h,i)=>{o[h]=r.c[i]?r.c[i].v:"";return o;},{});
-        if(row["Event Name"]){
-          ratingMap[row["Event Name"]]=Number(row["Overall Rating"]);
-          briefMap[row["Event Name"]]=row["General Thoughts"]||"";
-        }
+        const row=oHdr.reduce((o,h,i)=>{o[h]=r.c[i]?r.c[i].v:"";return o;},{});
+        ratingMap[row["Event Name"]]=+row["Overall Rating"]||0;
+        briefMap [row["Event Name"]]=row["General Thoughts"]||"";
       });
 
-      /* --- Group raw responses by event --- */
-      const rawHeaders=rawRes.table.cols.map(c=>c.label);
-      const rawRows=rawRes.table.rows.map(r=>rawHeaders.reduce((o,h,i)=>{o[h]=r.c[i]?r.c[i].v:"";return o;},{}));
-
-      const groups={};
-      rawRows.forEach(r=>{
-        const event=r["Which Event Would You Like To Survey?"]||
-                    r["Which Student Market Would You Like To Survey?"]||
-                    r["Event Name"]||"Unknown Event";
-        (groups[event]=groups[event]||[]).push(r);
+      /* group raw rows */
+      const rHdr=raw.table.cols.map(c=>c.label);
+      raw.table.rows.forEach(r=>{
+        const row=rHdr.reduce((o,h,i)=>{o[h]=r.c[i]?r.c[i].v:"";return o;},{});
+        const evt=row["Which Event Would You Like To Survey?"]||row["Which Student Market Would You Like To Survey?"]||row["Event Name"]||"Unknown Event";
+        (groups[evt]=groups[evt]||[]).push(row);
       });
 
-      const dashboard=document.getElementById("dashboard");
-      const modal=document.getElementById("modal");
-      const modalBody=document.getElementById("modalBody");
-      const closeBtn=document.getElementById("closeBtn");
-
-      function render(filter="",sort="rating"){
-        dashboard.innerHTML="";
-        let entries=Object.entries(groups);
-        if(sort==="rating")entries.sort((a,b)=>(ratingMap[b[0]]||0)-(ratingMap[a[0]]||0));
-        if(sort==="az")entries.sort((a,b)=>a[0].localeCompare(b[0]));
-        if(sort==="recent")entries.sort((a,b)=>new Date(b[1][0]?.Timestamp||0)-new Date(a[1][0]?.Timestamp||0));
-
-        entries.forEach(([event,responses],i)=>{
-          if(!event.toLowerCase().includes(filter.toLowerCase()))return;
-
-          const card=document.createElement("div");
-          card.className="card";
-          card.style.animationDelay=`${i*0.1}s`;
-
-          const rating=ratingMap[event];
-          const overview=briefMap[event];
-          const count=responses.length;
-
-          card.innerHTML=`
-            <h2>${event}</h2>
-            <div class="rating">${rating?`${stars(rating)} (${rating.toFixed(1)}/5.0)`:""}</div>
-            <div class="resp-count">${count} response${count!==1?"s":""}</div>
-            <div class="summary">${overview||"No summary available."}</div>
-            <div class="actions">
-              <button class="btn view-btn">View Feedback</button>
-              <button class="btn pdf-btn">Download PDF</button>
-            </div>
-          `;
-
-          /* --- View feedback modal --- */
-          card.querySelector(".view-btn").addEventListener("click",()=>{
-            modalBody.innerHTML="";
-            responses.forEach((res,j)=>{
-              const div=document.createElement("div");
-              div.className="response-card";
-              div.innerHTML=`<h4>Response #${j+1}</h4>`;
-              Object.entries(res).forEach(([label,val])=>{
-                if(!val||/Timestamp|Student ID|Which Event/i.test(label))return;
-                div.innerHTML+=`
-                  <div class="qa">
-                    <div class="label">${label}</div>
-                    <div class="value">${val}</div>
-                  </div>`;
-              });
-              modalBody.appendChild(div);
-            });
-            modal.style.display="block";
-            requestAnimationFrame(()=>modal.classList.add("show"));
-          });
-
-          /* --- PDF download --- */
-          card.querySelector(".pdf-btn").addEventListener("click",()=>{
-            const temp=document.createElement("div");
-            responses.forEach((res,j)=>{
-              const div=document.createElement("div");
-              div.className="response";
-              div.innerHTML=`<h4>Response #${j+1}</h4>`;
-              Object.entries(res).forEach(([label,val])=>{
-                if(!val||/Timestamp|Student ID|Which Event/i.test(label))return;
-                div.innerHTML+=`<div><strong>${label}:</strong> ${val}</div>`;
-              });
-              temp.appendChild(div);
-            });
-            const html=`
-              <html><head><title>${event}</title>
-              <style>
-                body{font-family:Arial,sans-serif;padding:2rem;color:#000;}
-                .response{border:1px solid #ccc;padding:1rem;margin-bottom:1rem;border-radius:8px;}
-              </style></head><body>
-              <div style="margin-bottom:2rem;">
-                <img src="https://i.imgur.com/xFzbl45.png" alt="CAB Logo" style="height:50px;margin-bottom:1rem;">
-                <h2>${event}</h2>
-                ${rating?`<div>${stars(rating)} (${rating.toFixed(1)}/5.0)</div>`:""}
-                ${overview?`<div style="font-style:italic">${overview}</div>`:""}
-              </div>${temp.innerHTML}</body></html>`;
-            const win=window.open("","_blank");
-            win.document.write(html);win.document.close();win.focus();win.print();
-          });
-
-          dashboard.appendChild(card);
-        });
-      }
-
-      closeBtn.addEventListener("click",()=>{
-        modal.classList.remove("show");
-        setTimeout(()=>modal.style.display="none",300);
-      });
-      document.getElementById("search").addEventListener("input",e=>render(e.target.value,document.getElementById("sortMode").value));
-      document.getElementById("sortMode").addEventListener("change",e=>render(document.getElementById("search").value,e.target.value));
-
-      render();
+      render();                           // first paint
     })();
+
+    /* ---- render cards ---- */
+    const dash=document.getElementById("dashboard");
+    function render(filter="",sort="rating"){
+      dash.innerHTML="";
+      let entries=Object.entries(groups);
+      if(sort==="rating")entries.sort((a,b)=>(ratingMap[b[0]]||0)-(ratingMap[a[0]]||0));
+      if(sort==="az")     entries.sort((a,b)=>a[0].localeCompare(b[0]));
+      if(sort==="recent") entries.sort((a,b)=>new Date(b[1][0]?.Timestamp||0)-new Date(a[1][0]?.Timestamp||0));
+
+      entries.forEach(([evt,resps],i)=>{
+        if(!evt.toLowerCase().includes(filter.toLowerCase()))return;
+
+        const card=document.createElement("div");
+        card.className="card";card.style.animationDelay=`${i*.1}s`;
+        const rt=ratingMap[evt], sum=briefMap[evt], cnt=resps.length;
+
+        card.innerHTML=`
+          <h2>${evt}</h2>
+          <div class="rating">${rt?`${stars(rt)} (${rt.toFixed(1)}/5.0)`:""}</div>
+          <div class="resp-count">${cnt} response${cnt!==1?"s":""}</div>
+          <div class="summary">${sum||"No summary available."}</div>
+          <div class="actions">
+            <button class="btn view-btn">View Feedback</button>
+            <button class="btn pdf-btn">Download PDF</button>
+          </div>`;
+        dash.appendChild(card);
+
+        /* modal open */
+        card.querySelector(".view-btn").onclick=()=>{
+          const modal=document.getElementById("modal");
+          const body=document.getElementById("modalBody");
+          body.innerHTML="";
+          resps.forEach((row,j)=>{
+            const wrap=document.createElement("div");
+            wrap.className="response-card";wrap.style.setProperty("--delay",`${j*.05}s`);
+            wrap.innerHTML=`<h4>Response #${j+1}</h4>`;
+            Object.entries(row).forEach(([lab,val])=>{
+              if(!val||/Timestamp|Student ID|Which Event/i.test(lab))return;
+              wrap.innerHTML+=`<div class="qa"><div class="label">${lab}</div><div class="value">${val}</div></div>`;
+            });
+            body.appendChild(wrap);
+          });
+          modal.style.display="block";setTimeout(()=>modal.classList.add("show"),10);
+        };
+
+        /* PDF download */
+        card.querySelector(".pdf-btn").onclick=()=>{
+          /* build simple print doc */
+          const wrapper=document.createElement("div");
+          resps.forEach((row,j)=>{
+            const div=document.createElement("div");
+            div.style="border:1px solid #ccc;padding:1rem;margin:1rem 0;border-radius:8px";
+            div.innerHTML=`<h4>Response #${j+1}</h4>`;
+            Object.entries(row).forEach(([lab,val])=>{
+              if(!val||/Timestamp|Student ID|Which Event/i.test(lab))return;
+              div.innerHTML+=`<div style="margin:.3rem 0"><strong>${lab}:</strong> ${val}</div>`;
+            });
+            wrapper.appendChild(div);
+          });
+
+          const html=`<!DOCTYPE html>
+            <html><head><title>${evt}</title>
+            <style>
+              body{font-family:Arial,Helvetica,sans-serif;padding:2rem;color:#000;}
+              h2{margin:.5rem 0}
+            </style></head><body>
+            <div style="margin-bottom:2rem">
+              <img src="https://i.imgur.com/xFzbl45.png" style="height:50px;margin-bottom:1rem" alt="CAB Black Logo">
+              <h2>${evt}</h2>
+              ${rt?`<div>${stars(rt)} (${rt.toFixed(1)}/5.0)</div>`:""}
+              ${sum?`<div style="font-style:italic">${sum}</div>`:""}
+            </div>${wrapper.innerHTML}</body></html>`;
+
+          const win=window.open("","_blank");
+          win.document.write(html);win.document.close();win.focus();win.print();
+        };
+      });
+    }
+
+    /* --- listeners --- */
+    document.getElementById("closeBtn").onclick=()=>{
+      const m=document.getElementById("modal");
+      m.classList.remove("show");setTimeout(()=>m.style.display="none",300);
+    };
+    document.getElementById("search").oninput=e=>{
+      render(e.target.value,document.getElementById("sortMode").value);
+    };
+    document.getElementById("sortMode").onchange=e=>{
+      render(document.getElementById("search").value,e.target.value);
+    };
   </script>
 </body>
 </html>
