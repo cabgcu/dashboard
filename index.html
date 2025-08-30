@@ -26,17 +26,13 @@
     }
     @keyframes fadeIn{to{opacity:1}}
 
-    /* Better high-contrast for users who prefer it */
     @media (prefers-contrast: more){
       :root{ --glass-bg: rgba(0,0,0,.75); --glass-brd: rgba(255,255,255,.25) }
     }
-
-    /* Reduced motion accessibility */
     @media (prefers-reduced-motion: reduce){
       *{ animation: none !important; transition: none !important }
     }
 
-    /* ---------- Top bar ---------- */
     .topbar{
       position:sticky;top:0;display:flex;justify-content:space-between;align-items:center;
       padding:1rem 2rem;background:rgba(0,0,0,.6);backdrop-filter:blur(10px);z-index:10;
@@ -58,13 +54,11 @@
       background-repeat:no-repeat;background-position:right .6rem center;background-size:1rem;
     }
 
-    /* Focus states */
     input,select,button{ outline: none }
     input:focus,select:focus,button:focus{
       box-shadow:0 0 0 3px color-mix(in oklab, var(--focus) 50%, transparent);
     }
 
-    /* ---------- Grid ---------- */
     #dashboard{
       display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));
       gap:1.5rem;padding:2rem;
@@ -85,12 +79,10 @@
     }
     .btn:hover{transform:scale(1.05)}
 
-    /* ---------- Banners ---------- */
     .banner{margin:1rem 2rem;padding:.8rem 1rem;border-radius:10px}
     .banner.info{background:rgba(255,255,255,.12);border:1px solid var(--glass-brd)}
     .banner.error{background:rgba(255,0,0,.15);border:1px solid rgba(255,0,0,.35)}
 
-    /* ---------- Modal ---------- */
     .modal{ position:fixed;top:0;left:0;width:100%;height:100%;display:none;z-index:100 }
     .modal.show{ display:block }
     .modal-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.85);backdrop-filter:blur(5px)}
@@ -110,19 +102,8 @@
     .qa .label{font-weight:600;font-size:.9rem;margin-bottom:.2rem;color:#ddd}
     .qa .value{font-size:1rem;color:#fff;margin-left:.5rem}
 
-    /* ---------- Popup animations ---------- */
-    @keyframes popIn{
-      from{opacity:0;transform:translateX(-50%) scale(.85)}
-      to  {opacity:1;transform:translateX(-50%) scale(1)}
-    }
-    @keyframes fadeOutUp{ to{opacity:0;transform:translateX(-50%) translateY(-30px)} }
-    .popup-message{animation:popIn .4s ease-out forwards}
-    .popup-message.fade-out{animation:fadeOutUp 1s ease forwards}
-
-    /* ---------- Utility ---------- */
     .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 
-    /* ---------- Mobile tweaks ---------- */
     @media(max-width:640px){
       .topbar{flex-direction:column;align-items:flex-start;gap:.8rem;padding:.8rem 1rem}
       .title{font-size:1.4rem}
@@ -139,10 +120,8 @@
 </head>
 
 <body>
-  <!-- Live banners -->
   <div id="banner" class="banner info" role="status" aria-live="polite" hidden>Loading responses…</div>
 
-  <!-- ---------- Top bar ---------- -->
   <div class="topbar" role="region" aria-label="Toolbar">
     <div class="topbar-left">
       <img src="https://i.imgur.com/oqrmQSC.png" alt="CAB Logo" aria-hidden="true">
@@ -151,7 +130,6 @@
     <div class="topbar-controls">
       <label class="sr-only" for="search">Search event</label>
       <input id="search" type="text" placeholder="Search event…" autocomplete="off" />
-
       <label class="sr-only" for="sortMode">Sort</label>
       <select id="sortMode" aria-label="Sort events">
         <option value="rating">⭐ Rating</option>
@@ -161,10 +139,8 @@
     </div>
   </div>
 
-  <!-- ---------- Event grid ---------- -->
   <div id="dashboard"></div>
 
-  <!-- ---------- Modal ---------- -->
   <div id="modal" class="modal" aria-hidden="true" aria-labelledby="modalTitle">
     <div class="modal-backdrop" data-close="backdrop"></div>
     <div class="modal-content" role="dialog" aria-modal="true">
@@ -174,10 +150,268 @@
     </div>
   </div>
 
-  <!-- ---------- Confetti library ---------- -->
-  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <script>
+    /* --- Config --- */
+    const sheetID  = "1CqmQKvOkcLFV8XyzFrjK4H85skJCwRgSEwiP8j_6pMM";
+    const RAW_SHEET = "Survey Responses";
+    const OVW_SHEET = "Response overview";
+    const stars = n => "★★★★★".slice(0,Math.round(n))+"☆☆☆☆☆".slice(0,5-Math.round(n));
 
-  <!-- ---------- Main logic ---------- -->
-  <!-- (script content unchanged) -->
+    /* --- Data holders --- */
+    let ratingMap={},briefMap={},groups={};
+
+    /* --- DOM helpers --- */
+    function el(tag, attrs={}, children=[]) {
+      const node = document.createElement(tag);
+      for (const [k,v] of Object.entries(attrs)){
+        if (k === 'text') node.textContent = v; else if (k === 'html') node.innerHTML = v; else node.setAttribute(k,v);
+      }
+      for (const c of [].concat(children)) if (c) node.appendChild(c);
+      return node;
+    }
+    function safeText(text){ const s = document.createElement('span'); s.textContent = String(text ?? ''); return s; }
+
+    /* --- Fetch helper with retry + banner --- */
+    async function fetchSheet(name, tries=2){
+      const url=`https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(name)}`;
+      for(let i=0;i<tries;i++){
+        try{
+          const res = await fetch(url, { cache: 'no-store' });
+          const raw = await res.text();
+          return JSON.parse(raw.substring(47,raw.length-2));
+        }catch(err){
+          if(i===tries-1) throw err; await new Promise(r=>setTimeout(r, 400*(i+1)));
+        }
+      }
+    }
+
+    function showBanner(kind, text){
+      const b = document.getElementById('banner');
+      b.className = `banner ${kind}`; b.textContent = text; b.hidden = false;
+    }
+    function hideBanner(){ document.getElementById('banner').hidden = true }
+
+    /* --- Initial load --- */
+    (async()=>{
+      try{
+        showBanner('info','Loading responses…');
+        const [overview,raw] = await Promise.all([fetchSheet(OVW_SHEET),fetchSheet(RAW_SHEET)]);
+
+        /* overall ratings + summary */
+        overview.table.rows.forEach(r=>{
+          const row=overview.table.cols.reduce((o,c,i)=>{o[c.label]=r.c[i]?r.c[i].v:"";return o},{});
+          if(row["Event Name"]){
+            ratingMap[row["Event Name"]]= +row["Overall Rating"] || 0;
+            briefMap[row["Event Name"]] = row["General Thoughts"]||"";
+          }
+        });
+
+        /* individual responses */
+        const hdr=raw.table.cols.map(c=>c.label);
+        raw.table.rows.forEach(r=>{
+          const row=hdr.reduce((o,h,i)=>{o[h]=r.c[i]?r.c[i].v:"";return o},{});
+          const evt=row["Which Student Market Would You Like To Survey?"]||
+                    row["Which Event Would You Like To Survey?"]||
+                    "Unknown Event";
+          (groups[evt]=groups[evt]||[]).push(row);
+        });
+
+        render(); hideBanner();
+      }catch(e){
+        console.error(e); showBanner('error','Could not load data. Make sure the sheet is published to the web and accessible.');
+      }
+    })();
+
+    /* --- Render dashboard --- */
+    function render(filter="",sort="rating"){
+      const dash=document.getElementById("dashboard");
+      dash.innerHTML="";
+      let entries=Object.entries(groups);
+
+      // sort by average rating, A-Z, or most recent (max timestamp per event)
+      if(sort==="rating") entries.sort((a,b)=>(ratingMap[b[0]]||0)-(ratingMap[a[0]]||0));
+      if(sort==="az") entries.sort((a,b)=>a[0].localeCompare(b[0]));
+      if(sort==="recent") entries.sort((a,b)=> (maxDate(b[1]) - maxDate(a[1])) );
+
+      for (const [evt,resps] of entries){
+        if(!evt.toLowerCase().includes(filter.toLowerCase())) continue;
+        const card=document.createElement("div");card.className="card";
+
+        const rt = ratingMap[evt];
+        const sum = briefMap[evt];
+        const cnt = resps.length;
+
+        const h2 = el('h2',{ text: evt });
+        const ratingDiv = el('div',{ class:'rating', html: rt ? `${stars(rt)} (${rt.toFixed(1)}/5.0)` : ''});
+        const respCount = el('div',{ class:'resp-count', text: `${cnt} response${cnt!==1?"s":""}`});
+        const summary = el('div',{ class:'summary', text: sum||"No summary available."});
+
+        const actions = el('div',{ class:'actions' },[
+          el('button',{ class:'btn view-btn', 'aria-label':`View responses for ${evt}` , text:'View Responses' }),
+          el('button',{ class:'btn pdf-btn', 'aria-label':`Download PDF for ${evt}` , text:'Download PDF' }),
+          el('button',{ class:'btn csv-btn', 'aria-label':`Download CSV for ${evt}` , text:'Export CSV' })
+        ]);
+
+        card.append(h2,ratingDiv,respCount,summary,actions);
+        dash.appendChild(card);
+
+        // View button
+        card.querySelector('.view-btn').onclick=()=>openModal(evt,resps);
+
+        // PDF button
+        card.querySelector('.pdf-btn').onclick=()=>downloadHTML(evt,rt,sum,resps);
+
+        // CSV button
+        card.querySelector('.csv-btn').onclick=()=>downloadCSV(evt,resps);
+      }
+    }
+
+    function maxDate(rows){
+      const times = rows.map(r=> new Date(r.Timestamp || r.timestamp || 0).getTime() || 0);
+      return Math.max(...times,0);
+    }
+
+    /* --- Modal controls (focus, ESC, backdrop) --- */
+    const modal = document.getElementById('modal');
+    const modalBody = document.getElementById('modalBody');
+    const closeBtn = document.getElementById('closeBtn');
+
+    function openModal(evt,resps){
+      modalBody.innerHTML = '';
+
+      resps.forEach((row,j)=>{
+        const wrap = el('div',{ class:'response-card' },[
+          el('h4',{ text:`Response #${j+1}` })
+        ]);
+
+        const isMarket = !!row["Which Student Market Would You Like To Survey?"];
+        const order = isMarket?[
+          "Which Student Market Would You Like To Survey?",
+          "How would you rate your overall experience at the Student Market?",
+          "What did you enjoy most about this market?",
+          "How satisfied were you with the variety of vendors?",
+          "Did you make a purchase at the market?",
+          "Was this your first time attending a CAB Student Market?",
+          "Any additional comments or suggestions for the CAB team? (Student Market Specific)"
+        ]:[
+          "Which Event Would You Like To Survey?",
+          "How would you rate your overall experience at this event?",
+          "Was this your first time attending a CAB event?",
+          "How did you hear about this event?",
+          "What was your favorite part of the event?",
+          "What would you change or improve for next time?",
+          "How likely are you to attend a CAB event again?",
+          "Did any CAB Event Staff take the time to connect with you or talk to you during the event? (If so who?)",
+          "Any additional comments or suggestions for the CAB team?"
+        ];
+
+        const present = Object.keys(row).filter(k=> row[k]);
+        const final = order.concat(present.filter(k=>!order.includes(k)));
+
+        for (const label of final){
+          const val = row[label];
+          if(!val || /Timestamp|Student ID/i.test(label)) continue;
+
+          const qa = el('div',{ class:'qa' },[
+            el('div',{ class:'label', text: label }),
+            el('div',{ class:'value' }, [ safeText(val) ])
+          ]);
+          wrap.appendChild(qa);
+        }
+
+        modalBody.appendChild(wrap);
+      });
+
+      openDialog();
+    }
+
+    function openDialog(){
+      modal.classList.add('show');
+      modal.setAttribute('aria-hidden','false');
+      document.body.style.overflow = 'hidden';
+      closeBtn.focus();
+    }
+    function closeDialog(){
+      modal.classList.remove('show');
+      modal.setAttribute('aria-hidden','true');
+      document.body.style.overflow = '';
+    }
+    closeBtn.addEventListener('click', closeDialog);
+    modal.addEventListener('click', (e)=>{ if(e.target.dataset.close==='backdrop') closeDialog(); });
+    window.addEventListener('keydown', (e)=>{ if(e.key==='Escape' && modal.classList.contains('show')) closeDialog(); });
+
+    /* --- Exports --- */
+    function downloadHTML(evt, rt, sum, resps){
+      const parts = [];
+      parts.push(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${escapeHtml(evt)}</title>`);
+      parts.push(`<style>body{font-family:Arial,Helvetica,sans-serif;padding:2rem;color:#000;}h2{margin:.5rem 0}</style></head><body>`);
+      parts.push(`<div style="margin-bottom:2rem">`);
+      parts.push(`<img src="https://i.imgur.com/xFzbl45.png" alt="CAB Logo" style="height:50px;margin-bottom:1rem;">`);
+      parts.push(`<h2>${escapeHtml(evt)}</h2>`);
+      if(rt) parts.push(`<div>${stars(rt)} (${rt.toFixed(1)}/5.0)</div>`);
+      if(sum) parts.push(`<div style="font-style:italic">${escapeHtml(sum)}</div>`);
+      parts.push(`</div>`);
+
+      resps.forEach((row,j)=>{
+        parts.push(`<div style="border:1px solid #ccc;padding:1rem;margin:1rem 0;border-radius:8px">`);
+        parts.push(`<h4>Response #${j+1}</h4>`);
+        Object.entries(row).forEach(([lab,val])=>{
+          if(!val || /Timestamp|Student ID|Which Event/i.test(lab)) return;
+          parts.push(`<div style="margin:.3rem 0"><strong>${escapeHtml(lab)}:</strong> ${escapeHtml(String(val))}</div>`);
+        });
+        parts.push(`</div>`);
+      });
+
+      parts.push(`</body></html>`);
+      const blob = new Blob([parts.join('')], {type:'text/html'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = `${slug(evt)}.html`;
+      document.body.appendChild(a); a.click(); a.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    function downloadCSV(evt, resps){
+      const headers = Array.from(new Set(resps.flatMap(r=>Object.keys(r))))
+        .filter(h=>!/(Timestamp|Student ID)/i.test(h));
+      const rows = [headers.join(',')].concat(
+        resps.map(r=> headers.map(h=>csvEscape(r[h] ?? '')).join(','))
+      );
+      const blob = new Blob(["\ufeff"+rows.join('\n')],{type:'text/csv;charset=utf-8;'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href=url; a.download = `${slug(evt)}.csv`;
+      document.body.appendChild(a); a.click(); a.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    function csvEscape(v){
+      const s = String(v).replaceAll('"','""');
+      return /[",\n]/.test(s) ? `"${s}"` : s;
+    }
+
+    function escapeHtml(s){
+      return String(s)
+        .replaceAll('&','&amp;')
+        .replaceAll('<','&lt;')
+        .replaceAll('>','&gt;')
+        .replaceAll('"','&quot;')
+        .replaceAll("'",'&#39;');
+    }
+
+    function slug(s){
+      return String(s).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');
+    }
+
+    /* --- UI events --- */
+    const searchEl = document.getElementById('search');
+    const sortEl = document.getElementById('sortMode');
+
+    function debounce(fn, wait=200){ let t; return (...args)=>{ clearTimeout(t); t=setTimeout(()=>fn(...args),wait); } }
+    const onSearch = debounce(e=>render(e.target.value, sortEl.value), 200);
+
+    searchEl.addEventListener('input', onSearch);
+    sortEl.addEventListener('change', e=>render(searchEl.value, e.target.value));
+  </script>
 </body>
 </html>
