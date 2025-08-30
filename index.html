@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Event Survey Dashboard</title>
 
-  <!-- ---------- Base & dashboard styles ---------- -->
   <style>
     :root{
       --glass-bg: rgba(0,0,0,.55);
@@ -33,6 +32,7 @@
       *{ animation: none !important; transition: none !important }
     }
 
+    /* Top bar */
     .topbar{
       position:sticky;top:0;display:flex;justify-content:space-between;align-items:center;
       padding:1rem 2rem;background:rgba(0,0,0,.6);backdrop-filter:blur(10px);z-index:10;
@@ -59,6 +59,7 @@
       box-shadow:0 0 0 3px color-mix(in oklab, var(--focus) 50%, transparent);
     }
 
+    /* Grid */
     #dashboard{
       display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));
       gap:1.5rem;padding:2rem;
@@ -79,11 +80,12 @@
     }
     .btn:hover{transform:scale(1.05)}
 
+    /* Banners */
     .banner{margin:1rem 2rem;padding:.8rem 1rem;border-radius:10px}
     .banner.info{background:rgba(255,255,255,.12);border:1px solid var(--glass-brd)}
     .banner.error{background:rgba(255,0,0,.15);border:1px solid rgba(255,0,0,.35)}
 
-    /* Modal shell */
+    /* Modal (scrollable content) */
     .modal{ position:fixed; inset:0; width:100%; height:100%; display:none; z-index:100; justify-content:center; align-items:flex-start; padding:3rem 1rem; }
     .modal.show{ display:flex; }
     .modal-backdrop{ position:fixed; inset:0; background:rgba(0,0,0,.85); backdrop-filter:blur(5px) }
@@ -123,10 +125,10 @@
 </head>
 
 <body>
-  <!-- Live banners -->
+  <!-- Live banner -->
   <div id="banner" class="banner info" role="status" aria-live="polite" hidden>Loading responses…</div>
 
-  <!-- ---------- Top bar ---------- -->
+  <!-- Top bar -->
   <div class="topbar" role="region" aria-label="Toolbar">
     <div class="topbar-left">
       <img src="https://i.imgur.com/oqrmQSC.png" alt="CAB Logo" aria-hidden="true">
@@ -144,10 +146,10 @@
     </div>
   </div>
 
-  <!-- ---------- Event grid ---------- -->
+  <!-- Event grid -->
   <div id="dashboard"></div>
 
-  <!-- ---------- Modal ---------- -->
+  <!-- Modal -->
   <div id="modal" class="modal" aria-hidden="true" aria-labelledby="modalTitle">
     <div class="modal-backdrop" data-close="backdrop"></div>
     <div class="modal-content" role="dialog" aria-modal="true">
@@ -157,29 +159,43 @@
     </div>
   </div>
 
-  <!-- ---------- Main logic ---------- -->
+  <!-- Main logic -->
   <script>
-    /* --- Config --- */
+    /* Config */
     const sheetID  = "1CqmQKvOkcLFV8XyzFrjK4H85skJCwRgSEwiP8j_6pMM";
     const RAW_SHEET = "Survey Responses";
     const OVW_SHEET = "Response overview";
     const stars = n => "★★★★★".slice(0,Math.round(n))+"☆☆☆☆☆".slice(0,5-Math.round(n));
 
-    /* --- Data holders --- */
+    /* Data holders */
     let ratingMap={},briefMap={},groups={};
 
-    /* --- DOM helpers --- */
+    /* DOM helpers */
     function el(tag, attrs={}, children=[]) {
       const node = document.createElement(tag);
       for (const [k,v] of Object.entries(attrs)){
-        if (k === 'text') node.textContent = v; else if (k === 'html') node.innerHTML = v; else node.setAttribute(k,v);
+        if (k === 'text') node.textContent = v;
+        else if (k === 'html') node.innerHTML = v;
+        else node.setAttribute(k,v);
       }
       for (const c of [].concat(children)) if (c) node.appendChild(c);
       return node;
     }
     function safeText(text){ const s = document.createElement('span'); s.textContent = String(text ?? ''); return s; }
 
-    /* --- Fetch helper with retry + banner --- */
+    // Find a field by exact label OR regex (tolerant to wording/spacing)
+    function findField(row, matcher){
+      if(typeof matcher === 'string'){
+        if(row[matcher]) return { key: matcher, val: row[matcher] };
+        const k = Object.keys(row).find(k=>k && k.trim().toLowerCase()===matcher.trim().toLowerCase());
+        return k ? { key:k, val: row[k] } : { key: matcher, val: '' };
+      } else { // regex
+        const k = Object.keys(row).find(k=> matcher.test(k));
+        return k ? { key:k, val: row[k] } : { key: matcher.source, val: '' };
+      }
+    }
+
+    /* Fetch helper with banner + basic retry */
     async function fetchSheet(name, tries=2){
       const url=`https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(name)}`;
       for(let i=0;i<tries;i++){
@@ -188,7 +204,8 @@
           const raw = await res.text();
           return JSON.parse(raw.substring(47,raw.length-2));
         }catch(err){
-          if(i===tries-1) throw err; await new Promise(r=>setTimeout(r, 400*(i+1)));
+          if(i===tries-1) throw err;
+          await new Promise(r=>setTimeout(r, 400*(i+1)));
         }
       }
     }
@@ -199,13 +216,13 @@
     }
     function hideBanner(){ document.getElementById('banner').hidden = true }
 
-    /* --- Initial load --- */
+    /* Initial load */
     (async()=>{
       try{
         showBanner('info','Loading responses…');
         const [overview,raw] = await Promise.all([fetchSheet(OVW_SHEET),fetchSheet(RAW_SHEET)]);
 
-        /* overall ratings + summary */
+        // Overall ratings + summary
         overview.table.rows.forEach(r=>{
           const row=overview.table.cols.reduce((o,c,i)=>{o[c.label]=r.c[i]?r.c[i].v:"";return o},{});
           if(row["Event Name"]){
@@ -214,7 +231,7 @@
           }
         });
 
-        /* individual responses */
+        // Individual responses
         const hdr=raw.table.cols.map(c=>c.label);
         raw.table.rows.forEach(r=>{
           const row=hdr.reduce((o,h,i)=>{o[h]=r.c[i]?r.c[i].v:"";return o},{});
@@ -226,17 +243,17 @@
 
         render(); hideBanner();
       }catch(e){
-        console.error(e); showBanner('error','Could not load data. Make sure the sheet is published to the web and accessible.');
+        console.error(e);
+        showBanner('error','Could not load data. Make sure both tabs are published to the web and accessible: "Response overview" and "Survey Responses".');
       }
     })();
 
-    /* --- Render dashboard --- */
+    /* Render dashboard */
     function render(filter="",sort="rating"){
       const dash=document.getElementById("dashboard");
       dash.innerHTML="";
       let entries=Object.entries(groups);
 
-      // sort by average rating, A-Z, or most recent (max timestamp per event)
       if(sort==="rating") entries.sort((a,b)=>(ratingMap[b[0]]||0)-(ratingMap[a[0]]||0));
       if(sort==="az") entries.sort((a,b)=>a[0].localeCompare(b[0]));
       if(sort==="recent") entries.sort((a,b)=> (maxDate(b[1]) - maxDate(a[1])) );
@@ -255,21 +272,16 @@
         const summary = el('div',{ class:'summary', text: sum||"No summary available."});
 
         const actions = el('div',{ class:'actions' },[
-          el('button',{ class:'btn view-btn', 'aria-label':`View responses for ${evt}` , text:'View Responses' }),
-          el('button',{ class:'btn pdf-btn', 'aria-label':`Download PDF for ${evt}` , text:'Download PDF' }),
-          el('button',{ class:'btn csv-btn', 'aria-label':`Download CSV for ${evt}` , text:'Export CSV' })
+          el('button',{ class:'btn view-btn', 'aria-label':`View responses for ${evt}`, text:'View Responses' }),
+          el('button',{ class:'btn pdf-btn', 'aria-label':`Download HTML for ${evt}`, text:'Download HTML' }),
+          el('button',{ class:'btn csv-btn', 'aria-label':`Download CSV for ${evt}`, text:'Export CSV' })
         ]);
 
         card.append(h2,ratingDiv,respCount,summary,actions);
         dash.appendChild(card);
 
-        // View button
         card.querySelector('.view-btn').onclick=()=>openModal(evt,resps);
-
-        // HTML "PDF" download
         card.querySelector('.pdf-btn').onclick=()=>downloadHTML(evt,rt,sum,resps);
-
-        // CSV button
         card.querySelector('.csv-btn').onclick=()=>downloadCSV(evt,resps);
       }
     }
@@ -279,7 +291,7 @@
       return Math.max(...times,0);
     }
 
-    /* --- Modal controls (focus, ESC, backdrop) --- */
+    /* Modal controls */
     const modal = document.getElementById('modal');
     const modalBody = document.getElementById('modalBody');
     const closeBtn = document.getElementById('closeBtn');
@@ -293,15 +305,17 @@
         ]);
 
         const isMarket = !!row["Which Student Market Would You Like To Survey?"];
-        const order = isMarket?[
+
+        // Order we want first, with tolerant matching for comments fields (K and R)
+        const orderSpecs = isMarket ? [
           "Which Student Market Would You Like To Survey?",
           "How would you rate your overall experience at the Student Market?",
           "What did you enjoy most about this market?",
           "How satisfied were you with the variety of vendors?",
           "Did you make a purchase at the market?",
           "Was this your first time attending a CAB Student Market?",
-          "Any additional comments or suggestions for the CAB team? (Student Market Specific)"
-        ]:[
+          /Any additional comments or suggestions.*Student Markets team\?/i
+        ] : [
           "Which Event Would You Like To Survey?",
           "How would you rate your overall experience at this event?",
           "Was this your first time attending a CAB event?",
@@ -310,22 +324,31 @@
           "What would you change or improve for next time?",
           "How likely are you to attend a CAB event again?",
           "Did any CAB Event Staff take the time to connect with you or talk to you during the event? (If so who?)",
-          "Any additional comments or suggestions for the CAB team?"
+          /Any additional comments or suggestions.*CAB team\?/i
         ];
 
-        const present = Object.keys(row).filter(k=> row[k]);
-        const final = order.concat(present.filter(k=>!order.includes(k)));
-
-        for (const label of final){
-          const val = row[label];
-          if(!val || /Timestamp|Student ID/i.test(label)) continue;
-
+        // Render ordered fields first
+        const renderedKeys = new Set();
+        for (const spec of orderSpecs){
+          const { key, val } = findField(row, spec);
+          if(!val || /Timestamp|Student ID/i.test(key)) continue;
           const qa = el('div',{ class:'qa' },[
-            el('div',{ class:'label', text: label }),
+            el('div',{ class:'label', text: key }),
             el('div',{ class:'value' }, [ safeText(val) ])
           ]);
           wrap.appendChild(qa);
+          renderedKeys.add(key);
         }
+
+        // Render any remaining fields
+        Object.entries(row).forEach(([lab,val])=>{
+          if(!val || renderedKeys.has(lab) || /Timestamp|Student ID/i.test(lab)) return;
+          const qa = el('div',{ class:'qa' },[
+            el('div',{ class:'label', text: lab }),
+            el('div',{ class:'value' }, [ safeText(val) ])
+          ]);
+          wrap.appendChild(qa);
+        });
 
         modalBody.appendChild(wrap);
       });
@@ -348,7 +371,7 @@
     modal.addEventListener('click', (e)=>{ if(e.target.dataset.close==='backdrop') closeDialog(); });
     window.addEventListener('keydown', (e)=>{ if(e.key==='Escape' && modal.classList.contains('show')) closeDialog(); });
 
-    /* --- Exports --- */
+    /* Exports */
     function downloadHTML(evt, rt, sum, resps){
       const parts = [];
       parts.push(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${escapeHtml(evt)}</title>`);
@@ -411,7 +434,7 @@
       return String(s).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');
     }
 
-    /* --- UI events --- */
+    /* UI events */
     const searchEl = document.getElementById('search');
     const sortEl = document.getElementById('sortMode');
 
