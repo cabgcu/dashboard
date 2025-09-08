@@ -90,8 +90,8 @@
     .modal.show{ display:flex; }
     .modal-backdrop{ position:fixed; inset:0; background:rgba(0,0,0,.85); backdrop-filter:blur(5px) }
     .modal-content{
-      position:relative; width:min(92vw, 800px); background:rgba(255,255,255,.05); color:#fff;
-      padding:2rem; border-radius:12px; border:1px solid var(--glass-brd);
+      position:relative; width:min(92vw, 900px); background:rgba(255,255,255,.05); color:#fff;
+      padding:1.2rem; border-radius:12px; border:1px solid var(--glass-brd);
       max-height:calc(100vh - 6rem); overflow:auto; -webkit-overflow-scrolling:touch;
     }
     .close-btn{
@@ -99,10 +99,10 @@
       background:rgba(255,255,255,.2);color:#fff;cursor:pointer;
     }
     .response-card{
-      background:rgba(255,255,255,.05);padding:1.5rem 1.8rem;border-radius:10px;
-      margin-bottom:2rem;border:1px solid rgba(255,255,255,.15);line-height:1.6;
+      background:rgba(255,255,255,.05);padding:1rem 1.2rem;border-radius:10px;
+      margin-bottom:1rem;border:1px solid rgba(255,255,255,.15);line-height:1.5;
     }
-    .qa{margin-bottom:1rem}
+    .qa{margin-bottom:.6rem}
     .qa .label{font-weight:600;font-size:.9rem;margin-bottom:.2rem;color:#ddd}
     .qa .value{font-size:1rem;color:#fff;margin-left:.5rem}
 
@@ -118,7 +118,7 @@
       .card{padding:1rem}.card h2{font-size:1.05rem}.rating{font-size:1.2rem}
       .modal{padding:1.5rem .75rem}
       .modal-content{width:100%;max-height:calc(100vh - 3rem);padding:1.2rem}
-      .response-card{padding:1rem 1.2rem;font-size:.95rem}
+      .response-card{padding:.9rem 1.1rem;font-size:.95rem}
       .qa .label{font-size:.85rem}.qa .value{font-size:.95rem}
     }
   </style>
@@ -149,13 +149,41 @@
   <!-- Event grid -->
   <div id="dashboard"></div>
 
-  <!-- Modal -->
+  <!-- Modal (REPLACED) -->
   <div id="modal" class="modal" aria-hidden="true" aria-labelledby="modalTitle">
     <div class="modal-backdrop" data-close="backdrop"></div>
     <div class="modal-content" role="dialog" aria-modal="true">
       <button id="closeBtn" class="close-btn" aria-label="Close dialog">Close</button>
-      <h3 id="modalTitle" class="sr-only">Responses</h3>
-      <div id="modalBody"></div>
+
+      <div style="display:flex;gap:12px;align-items:center;margin-bottom:10px;flex-wrap:wrap">
+        <h3 id="modalTitle" style="margin:0">Responses</h3>
+
+        <!-- Sort control -->
+        <label for="modalSort" class="sr-only">Sort responses</label>
+        <select id="modalSort" style="margin-left:8px;padding:.4rem;border-radius:6px">
+          <option value="worst">Worst → Best</option>
+          <option value="best">Best → Worst</option>
+          <option value="recent">Most recent</option>
+          <option value="oldest">Oldest</option>
+        </select>
+
+        <!-- Quick filters -->
+        <div id="modalFilters" style="margin-left:auto;display:flex;gap:.4rem;align-items:center">
+          <button class="btn filter-btn" data-filter="all" aria-pressed="true">All</button>
+          <button class="btn filter-btn" data-filter="neg">Negative ≤2</button>
+          <button class="btn filter-btn" data-filter="neu">Neutral 3</button>
+          <button class="btn filter-btn" data-filter="pos">Positive ≥4</button>
+        </div>
+      </div>
+
+      <!-- Search inside modal -->
+      <div style="margin-bottom:12px;display:flex;gap:.5rem">
+        <label class="sr-only" for="modalSearch">Search responses</label>
+        <input id="modalSearch" placeholder="Search responses…" style="flex:1;padding:.5rem;border-radius:8px;border:none" />
+        <button id="modalClearSearch" class="btn" style="padding:.45rem .6rem">Clear</button>
+      </div>
+
+      <div id="modalBody" style="max-height:calc(100vh - 12rem); overflow:auto"></div>
     </div>
   </div>
 
@@ -273,16 +301,14 @@
 
         const actions = el('div',{ class:'actions' },[
           el('button',{ class:'btn view-btn', 'aria-label':`View responses for ${evt}`, text:'View Responses' }),
-          el('button',{ class:'btn pdf-btn', 'aria-label':`Download HTML for ${evt}`, text:'Download HTML' }),
-          el('button',{ class:'btn csv-btn', 'aria-label':`Download CSV for ${evt}`, text:'Export CSV' })
+          el('button',{ class:'btn pdf-btn', 'aria-label':`Download PDF for ${evt}`, text:'Download PDF' })
         ]);
 
         card.append(h2,ratingDiv,respCount,summary,actions);
         dash.appendChild(card);
 
         card.querySelector('.view-btn').onclick=()=>openModal(evt,resps);
-        card.querySelector('.pdf-btn').onclick=()=>downloadHTML(evt,rt,sum,resps);
-        card.querySelector('.csv-btn').onclick=()=>downloadCSV(evt,resps);
+        card.querySelector('.pdf-btn').onclick=()=>downloadPDF(evt,rt,sum,resps);
       }
     }
 
@@ -291,22 +317,97 @@
       return Math.max(...times,0);
     }
 
-    /* Modal controls */
-    const modal = document.getElementById('modal');
-    const modalBody = document.getElementById('modalBody');
-    const closeBtn = document.getElementById('closeBtn');
+    /* ---------------- Modal enhanced logic ---------------- */
+    let currentEvent = '';
+    let currentResponses = []; // raw rows for current event
+    let currentRendered = []; // after sort/filter/search
 
-    function openModal(evt,resps){
-      modalBody.innerHTML = '';
+    function extractRatingFromRow(row){
+      const ratingKey = Object.keys(row).find(k=>{
+        if(!k) return false;
+        const t = k.trim().toLowerCase();
+        return /(^|[^a-z])(rate|rating|score|how would you rate|overall experience|overall rating|satisfaction)([^a-z]|$)/i.test(t);
+      });
+      if(!ratingKey) return NaN;
+      const raw = String(row[ratingKey] ?? '').trim();
+      const numMatch = raw.match(/(\d+(\.\d+)?)(?=\s*\/?\s*5|\b|$)/);
+      if(numMatch) return Number(numMatch[1]);
+      const starCount = (raw.match(/★/g) || []).length;
+      if(starCount) return starCount;
+      const digit = raw.match(/\b([0-5])\b/);
+      if(digit) return Number(digit[1]);
+      return NaN;
+    }
 
-      resps.forEach((row,j)=>{
-        const wrap = el('div',{ class:'response-card' },[
-          el('h4',{ text:`Response #${j+1}` })
-        ]);
+    function renderModalResponses(){
+      const body = document.getElementById('modalBody');
+      body.innerHTML = '';
+
+      const sortMode = document.getElementById('modalSort').value;
+      const filterMode = Array.from(document.querySelectorAll('.filter-btn'))
+                        .find(b=>b.getAttribute('aria-pressed')==='true')?.dataset?.filter || 'all';
+      const q = (document.getElementById('modalSearch').value || '').trim().toLowerCase();
+
+      currentRendered = currentResponses.map((row, idx)=>{
+        const rating = extractRatingFromRow(row);
+        const ts = new Date(row.Timestamp || row.timestamp || 0).getTime() || 0;
+        return { idx, row, rating: (isNaN(rating)?null:rating), ts };
+      });
+
+      if(filterMode === 'neg'){
+        currentRendered = currentRendered.filter(r => r.rating !== null && r.rating <= 2);
+      } else if(filterMode === 'neu'){
+        currentRendered = currentRendered.filter(r => r.rating !== null && Math.round(r.rating) === 3);
+      } else if(filterMode === 'pos'){
+        currentRendered = currentRendered.filter(r => r.rating !== null && r.rating >= 4);
+      }
+
+      if(q){
+        currentRendered = currentRendered.filter(item => {
+          const row = item.row;
+          return Object.entries(row).some(([k,v])=>{
+            return String(k + ' ' + (v ?? '')).toLowerCase().includes(q);
+          });
+        });
+      }
+
+      currentRendered.sort((a,b)=>{
+        if(sortMode === 'worst'){
+          if(a.rating === null && b.rating === null) return b.ts - a.ts;
+          if(a.rating === null) return 1;
+          if(b.rating === null) return -1;
+          if(a.rating !== b.rating) return a.rating - b.rating;
+          return a.ts - b.ts;
+        } else if(sortMode === 'best'){
+          if(a.rating === null && b.rating === null) return b.ts - a.ts;
+          if(a.rating === null) return 1;
+          if(b.rating === null) return -1;
+          if(a.rating !== b.rating) return b.rating - a.rating;
+          return b.ts - a.ts;
+        } else if(sortMode === 'recent'){
+          return b.ts - a.ts;
+        } else if(sortMode === 'oldest'){
+          return a.ts - b.ts;
+        }
+        return 0;
+      });
+
+      if(currentRendered.length === 0){
+        const no = document.createElement('div');
+        no.textContent = 'No responses match that filter/search.';
+        body.appendChild(no);
+        return;
+      }
+
+      currentRendered.forEach((item, j) => {
+        const row = item.row;
+        const wrap = document.createElement('div');
+        wrap.className = 'response-card';
+        const h = document.createElement('h4');
+        h.textContent = `Response #${j+1}` + (item.rating !== null ? ` — ${item.rating}/5` : '');
+        wrap.appendChild(h);
 
         const isMarket = !!row["Which Student Market Would You Like To Survey?"];
-
-        // Order we want first, with tolerant matching for comments fields (K and R)
         const orderSpecs = isMarket ? [
           "Which Student Market Would You Like To Survey?",
           "How would you rate your overall experience at the Student Market?",
@@ -327,100 +428,163 @@
           /Any additional comments or suggestions.*CAB team\?/i
         ];
 
-        // Render ordered fields first
         const renderedKeys = new Set();
         for (const spec of orderSpecs){
           const { key, val } = findField(row, spec);
           if(!val || /Timestamp|Student ID/i.test(key)) continue;
-          const qa = el('div',{ class:'qa' },[
-            el('div',{ class:'label', text: key }),
-            el('div',{ class:'value' }, [ safeText(val) ])
-          ]);
+          const qa = document.createElement('div');
+          qa.className = 'qa';
+          const lab = document.createElement('div'); lab.className = 'label'; lab.textContent = key;
+          const valDiv = document.createElement('div'); valDiv.className = 'value'; valDiv.appendChild(safeText(val));
+          qa.appendChild(lab); qa.appendChild(valDiv);
           wrap.appendChild(qa);
           renderedKeys.add(key);
         }
 
-        // Render any remaining fields
         Object.entries(row).forEach(([lab,val])=>{
           if(!val || renderedKeys.has(lab) || /Timestamp|Student ID/i.test(lab)) return;
-          const qa = el('div',{ class:'qa' },[
-            el('div',{ class:'label', text: lab }),
-            el('div',{ class:'value' }, [ safeText(val) ])
-          ]);
+          const qa = document.createElement('div');
+          qa.className = 'qa';
+          const labEl = document.createElement('div'); labEl.className = 'label'; labEl.textContent = lab;
+          const valEl = document.createElement('div'); valEl.className = 'value'; valEl.appendChild(safeText(val));
+          qa.appendChild(labEl); qa.appendChild(valEl);
           wrap.appendChild(qa);
         });
 
-        modalBody.appendChild(wrap);
+        body.appendChild(wrap);
       });
+    }
 
+    function openModal(evt,resps){
+      currentEvent = evt;
+      currentResponses = (resps || []).map(r => Object.assign({}, r));
+      document.getElementById('modalSort').value = 'worst';
+      document.getElementById('modalSearch').value = '';
+      document.getElementById('modalClearSearch').disabled = true;
+      document.querySelectorAll('.filter-btn').forEach(b=>{
+        b.setAttribute('aria-pressed', b.dataset.filter === 'all' ? 'true' : 'false');
+      });
+      document.getElementById('modalTitle').textContent = `Responses — ${evt}`;
+      renderModalResponses();
       openDialog();
     }
 
+    const modalEl = document.getElementById('modal');
     function openDialog(){
-      modal.classList.add('show');
-      modal.setAttribute('aria-hidden','false');
+      modalEl.classList.add('show');
+      modalEl.setAttribute('aria-hidden','false');
       document.body.style.overflow = 'hidden';
-      closeBtn.focus();
+      setTimeout(()=>document.getElementById('modalSearch').focus(), 150);
     }
     function closeDialog(){
-      modal.classList.remove('show');
-      modal.setAttribute('aria-hidden','true');
+      modalEl.classList.remove('show');
+      modalEl.setAttribute('aria-hidden','true');
       document.body.style.overflow = '';
     }
-    closeBtn.addEventListener('click', closeDialog);
-    modal.addEventListener('click', (e)=>{ if(e.target.dataset.close==='backdrop') closeDialog(); });
-    window.addEventListener('keydown', (e)=>{ if(e.key==='Escape' && modal.classList.contains('show')) closeDialog(); });
+    document.getElementById('closeBtn').addEventListener('click', closeDialog);
+    modalEl.addEventListener('click', (e)=>{ if(e.target.dataset.close==='backdrop') closeDialog(); });
+    window.addEventListener('keydown', (e)=>{ if(e.key==='Escape' && modalEl.classList.contains('show')) closeDialog(); });
 
-    /* Exports */
-    function downloadHTML(evt, rt, sum, resps){
-      const parts = [];
-      parts.push(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${escapeHtml(evt)}</title>`);
-      parts.push(`<style>body{font-family:Arial,Helvetica,sans-serif;padding:2rem;color:#000;}h2{margin:.5rem 0}</style></head><body>`);
-      parts.push(`<div style="margin-bottom:2rem">`);
-      parts.push(`<img src="https://i.imgur.com/xFzbl45.png" alt="CAB Logo" style="height:50px;margin-bottom:1rem;">`);
-      parts.push(`<h2>${escapeHtml(evt)}</h2>`);
-      if(rt) parts.push(`<div>${stars(rt)} (${rt.toFixed(1)}/5.0)</div>`);
-      if(sum) parts.push(`<div style="font-style:italic">${escapeHtml(sum)}</div>`);
-      parts.push(`</div>`);
+    document.getElementById('modalSort').addEventListener('change', ()=>renderModalResponses());
+    document.getElementById('modalSearch').addEventListener('input', (e)=>{
+      document.getElementById('modalClearSearch').disabled = !e.target.value;
+      clearTimeout(window._modalSearchDeb);
+      window._modalSearchDeb = setTimeout(()=>renderModalResponses(), 180);
+    });
+    document.getElementById('modalClearSearch').addEventListener('click', ()=>{
+      document.getElementById('modalSearch').value = '';
+      document.getElementById('modalClearSearch').disabled = true;
+      renderModalResponses();
+    });
+    document.querySelectorAll('.filter-btn').forEach(btn=>{
+      btn.addEventListener('click', (e)=>{
+        document.querySelectorAll('.filter-btn').forEach(b=>b.setAttribute('aria-pressed','false'));
+        e.currentTarget.setAttribute('aria-pressed','true');
+        renderModalResponses();
+      });
+    });
 
-      resps.forEach((row,j)=>{
-        parts.push(`<div style="border:1px solid #ccc;padding:1rem;margin:1rem 0;border-radius:8px">`);
-        parts.push(`<h4>Response #${j+1}</h4>`);
+    /* ---------------- PDF export (replaces HTML/CSV) ---------------- */
+    function downloadPDF(evt, rt, sum, resps){
+      const docParts = [];
+      docParts.push(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${escapeHtml(evt)}</title>`);
+      docParts.push(`<style>
+        @page { size: letter; margin: 18mm; }
+        * { box-sizing: border-box; }
+        body { font-family: Arial, Helvetica, sans-serif; color:#000; padding:0; margin:0; }
+        .header { display:flex; align-items:center; gap:12px; margin-bottom:16px; }
+        .header img { height:48px; }
+        h1 { font-size:22px; margin:0 0 6px; }
+        .meta { font-size:12px; color:#333; margin-bottom:10px; }
+        .rating { font-size:16px; margin:6px 0 12px; }
+        .summary { font-style:italic; margin:4px 0 18px; color:#333; }
+        .response { border:1px solid #ccc; border-radius:8px; padding:12px 14px; margin:10px 0; page-break-inside: avoid; }
+        .response h3 { margin:0 0 8px; font-size:15px; }
+        .item { margin:4px 0; line-height:1.4; }
+        .label { font-weight:700; }
+        .footer { margin-top:18px; font-size:11px; color:#444; }
+        @media print {
+          a[href]:after { content: ""; } /* hide link URLs */
+        }
+      </style></head><body>`);
+
+      docParts.push(`<div class="header">
+        <img src="https://i.imgur.com/xFzbl45.png" alt="CAB Logo">
+        <div>
+          <h1>${escapeHtml(evt)}</h1>
+          <div class="meta">Generated ${new Date().toLocaleString()}</div>
+        </div>
+      </div>`);
+
+      if(rt) docParts.push(`<div class="rating">${stars(rt)} (${rt.toFixed(1)}/5.0)</div>`);
+      if(sum) docParts.push(`<div class="summary">${escapeHtml(sum)}</div>`);
+
+      resps.forEach((row, j)=>{
+        const lines = [];
         Object.entries(row).forEach(([lab,val])=>{
           if(!val || /Timestamp|Student ID|Which Event/i.test(lab)) return;
-          parts.push(`<div style="margin:.3rem 0"><strong>${escapeHtml(lab)}:</strong> ${escapeHtml(String(val))}</div>`);
+          lines.push(`<div class="item"><span class="label">${escapeHtml(lab)}:</span> ${escapeHtml(String(val))}</div>`);
         });
-        parts.push(`</div>`);
+        if(!lines.length) return;
+        docParts.push(`<section class="response"><h3>Response #${j+1}</h3>${lines.join("")}</section>`);
       });
 
-      parts.push(`</body></html>`);
-      const blob = new Blob([parts.join('')], {type:'text/html'});
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url; a.download = `${slug(evt)}.html`;
-      document.body.appendChild(a); a.click(); a.remove();
-      URL.revokeObjectURL(url);
+      docParts.push(`<div class="footer">End of report</div>`);
+      docParts.push(`</body></html>`);
+
+      const html = docParts.join("");
+
+      const iframe = document.createElement('iframe');
+      iframe.style.position='fixed';
+      iframe.style.right='0'; iframe.style.bottom='0';
+      iframe.style.width='0'; iframe.style.height='0'; iframe.style.border='0';
+      document.body.appendChild(iframe);
+
+      const doc = iframe.contentDocument;
+      doc.open(); doc.write(html); doc.close();
+
+      whenReadyToPrint(doc, () => {
+        iframe.contentWindow.focus();
+        iframe.contentWindow.print();
+        setTimeout(()=>{ document.body.removeChild(iframe); }, 800);
+      });
     }
 
-    function downloadCSV(evt, resps){
-      const headers = Array.from(new Set(resps.flatMap(r=>Object.keys(r))))
-        .filter(h=>!/(Timestamp|Student ID)/i.test(h));
-      const rows = [headers.join(',')].concat(
-        resps.map(r=> headers.map(h=>csvEscape(r[h] ?? '')).join(','))
-      );
-      const blob = new Blob(["\ufeff"+rows.join('\n')],{type:'text/csv;charset=utf-8;'});
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href=url; a.download = `${slug(evt)}.csv`;
-      document.body.appendChild(a); a.click(); a.remove();
-      URL.revokeObjectURL(url);
+    function whenReadyToPrint(doc, cb){
+      const imgs = Array.from(doc.images || []);
+      let pending = imgs.length;
+      if (pending === 0) { cb(); return; }
+      const done = () => { if(--pending <= 0) cb(); };
+      imgs.forEach(img => {
+        if (img.complete) { done(); }
+        else {
+          img.addEventListener('load', done, { once:true });
+          img.addEventListener('error', done, { once:true });
+        }
+      });
     }
 
-    function csvEscape(v){
-      const s = String(v).replaceAll('"','""');
-      return /[",\n]/.test(s) ? `"${s}"` : s;
-    }
-
+    /* Utilities */
     function escapeHtml(s){
       return String(s)
         .replaceAll('&','&amp;')
@@ -428,10 +592,6 @@
         .replaceAll('>','&gt;')
         .replaceAll('"','&quot;')
         .replaceAll("'",'&#39;');
-    }
-
-    function slug(s){
-      return String(s).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');
     }
 
     /* UI events */
