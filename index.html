@@ -131,11 +131,24 @@ input:focus, select:focus, button:focus {
   border-radius: calc(var(--radius-lg) + 4px); padding: 18px; margin-top: 20px;
   color:#ffffff;
 }
-.close-btn{ margin-left:auto;margin-bottom:12px;padding:.5rem .9rem;border:none;border-radius:10px; background:rgba(0,0,0,0.45); color:#ffffff; cursor:pointer; border:1px solid rgba(255,255,255,0.15); }
+.close-btn{
+  position:absolute;
+  top:12px;
+  right:12px;
+  margin:0;
+  padding:.5rem .9rem;
+  border:none;
+  border-radius:10px;
+  background:rgba(0,0,0,0.45);
+  color:#ffffff;
+  cursor:pointer;
+  border:1px solid rgba(255,255,255,0.15);
+}
 .response-card{ background: rgba(0,0,0,0.55); padding:12px 14px;border-radius:12px;margin-bottom:12px; border: 1px solid rgba(255,255,255,0.12); box-shadow: 0 8px 24px rgba(0,0,0,0.55); line-height:1.45; color:#ffffff; }
 .qa{ margin-bottom:.6rem }
 .qa .label{ font-weight:700; font-size:.9rem; color:#ffffff }
 .qa .value{ font-size:1rem; color:#ffffff; margin-left:.25rem }
+.star-badge{margin-left:8px;color:#ffcb45;font-weight:700;}
 
 /* responsive */
 @media (max-width: 640px){
@@ -175,6 +188,15 @@ input:focus, select:focus, button:focus {
   <div class="modal-backdrop" data-close="backdrop"></div>
   <div class="modal-content">
     <button id="closeBtn" class="close-btn">Close</button>
+    <div style="display:flex;align-items:center;gap:8px;margin:40px 0 12px;">
+      <select id="modalSort">
+        <option value="worst">Worst → Best</option>
+        <option value="best">Best → Worst</option>
+        <option value="newest">Newest</option>
+        <option value="oldest">Oldest</option>
+        <option value="az">A–Z</option>
+      </select>
+    </div>
     <h3 id="modalTitle">Responses</h3>
     <div id="modalBody"></div>
   </div>
@@ -185,7 +207,8 @@ const sheetID="1CqmQKvOkcLFV8XyzFrjK4H85skJCwRgSEwiP8j_6pMM";
 const RAW_SHEET="Survey Responses",OVW_SHEET="Response overview";
 const stars=n=>"★★★★★".slice(0,Math.round(n))+"☆☆☆☆☆".slice(0,5-Math.round(n));
 
-let ratingMap={},briefMap={},surveysMap={},imageMap={},attendanceMap={},groups={};
+let ratingMap={},briefMap={},surveysMap={},imageMap={},attendanceMap={},groups={},bgImages=[];
+let ratingColumnName=null;
 const keyEvent=n=>String(n||"").trim();
 
 function el(tag,attrs={},children=[]){
@@ -199,22 +222,17 @@ function el(tag,attrs={},children=[]){
   return node;
 }
 
-async function fetchSheet(name,tries=2){
+async function fetchSheet(name){
   const url=`https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(name)}`;
-  for(let i=0;i<tries;i++){
-    try{
-      const res=await fetch(url,{cache:'no-store'});
-      const raw=await res.text();
-      return JSON.parse(raw.substring(47,raw.length-2));
-    }catch(err){
-      if(i===tries-1) throw err;
-      await new Promise(r=>setTimeout(r, 400*(i+1)));
-    }
-  }
+  const res=await fetch(url); const raw=await res.text();
+  return JSON.parse(raw.substring(47,raw.length-2));
 }
 
+/* INIT */
 (async()=>{
   const [overview,raw]=await Promise.all([fetchSheet(OVW_SHEET),fetchSheet(RAW_SHEET)]);
+
+  // Overview (cards + background pool)
   overview.table.rows.forEach(r=>{
     const row=overview.table.cols.reduce((o,c,i)=>{o[c.label]=r.c[i]?r.c[i].v:"";return o},{});
     if(row["Event Name"]){
@@ -223,21 +241,31 @@ async function fetchSheet(name,tries=2){
       imageMap[row["Event Name"]]=row["Header Image"]||"";
       surveysMap[row["Event Name"]]=+row["Total Surveys"]||0;
       attendanceMap[row["Event Name"]]=+row["Attendance"]||0;
+      if(row["Header Image"]) bgImages.push(row["Header Image"]);
     }
   });
+
+  // Raw responses (for modal)
   const hdr=raw.table.cols.map(c=>c.label);
+  detectRatingColumn(hdr); // find the rating column dynamically
   raw.table.rows.forEach(r=>{
     const row=hdr.reduce((o,h,i)=>{o[h]=r.c[i]?r.c[i].v:"";return o},{});
     const ev=keyEvent(row["Which Student Market Would You Like To Survey?"]||row["Which Event Would You Like To Survey?"]||"Unknown Event");
     (groups[ev]=groups[ev]||[]).push(row);
   });
+
+  // Background: pick one random image per refresh
+  pickBackgroundOnce(bgImages);
+
   render();
 })();
 
+/* Dashboard */
 function maxDate(rows){return Math.max(...rows.map(r=>new Date(r.Timestamp||0).getTime()||0),0);}
 function render(filter="",sort="rating"){
   const dash=document.getElementById("dashboard");dash.innerHTML="";
   let entries=Object.entries(groups);
+
   if(sort==="rating")entries.sort((a,b)=>(ratingMap[b[0]]||0)-(ratingMap[a[0]]||0));
   if(sort==="az")entries.sort((a,b)=>a[0].localeCompare(b[0]));
   if(sort==="recent")entries.sort((a,b)=>(maxDate(b[1])-maxDate(a[1])));
@@ -245,44 +273,147 @@ function render(filter="",sort="rating"){
 
   for(const[evt,resps]of entries){
     if(filter&&!evt.toLowerCase().includes(filter.toLowerCase()))continue;
+
     const card=el("div",{class:"card glass"});
-    const img=imageMap[evt];if(img)card.appendChild(el('img',{src:img,alt:evt+" header",class:"header"}));
-    const rt=ratingMap[evt]||0,sum=briefMap[evt]||"",cnt=surveysMap[evt]||(resps?.length||0),att=attendanceMap[evt]||0;
+    const img=imageMap[evt]; if(img) card.appendChild(el('img',{src:img,alt:evt+" header",class:"header"}));
+
+    const rt=ratingMap[evt]||0, sum=briefMap[evt]||"", cnt=surveysMap[evt]||(resps?.length||0), att=attendanceMap[evt]||0;
+
     const h2=el('h2',{text:evt});
     const ratingDiv=el('div',{class:'rating',html:rt?`${stars(rt)} (${rt.toFixed(1)}/5.0)`:""});
     const attendanceDiv=el('div',{class:'attendance',html:`<b>Attendance:</b> ${att||"N/A"}`});
     const respCount=el('div',{class:'resp-count',text:`${cnt} survey${cnt!==1?"s":""}`});
     const summary=el('div',{class:'summary',text:sum||"No summary available."});
+
     const actions=el('div',{class:'actions'},[
       el('button',{class:'btn view-btn',text:'View Responses'}),
       el('button',{class:'btn pdf-btn',text:'Download PDF'})
     ]);
-    card.append(h2,ratingDiv,attendanceDiv,respCount,summary,actions);dash.appendChild(card);
+
+    card.append(h2,ratingDiv,attendanceDiv,respCount,summary,actions);
+    dash.appendChild(card);
+
     card.querySelector('.view-btn').onclick=()=>openModal(evt,resps);
     card.querySelector('.pdf-btn').onclick=()=>downloadPDF(evt,rt,sum,att,resps);
   }
 }
 
+/* Helpers for response rating/sorting */
+function detectRatingColumn(headers){
+  // Prefer headers with whole-word 'rating' or 'rate'
+  const pref = headers.find(h=>/\b(overall\s*)?rating\b/i.test(h) || /\brate\b/i.test(h));
+  ratingColumnName = pref || null;
+}
+
+function getResponseScore(row){
+  if(!ratingColumnName) return NaN;
+  const val = row[ratingColumnName];
+  if(val==null || val==="") return NaN;
+  const n = Number(val);
+  if(!isNaN(n) && n>=1 && n<=5) return n;
+  return NaN;
+}
+
+function getTimestamp(row){
+  const t = row.Timestamp || row["timestamp"] || "";
+  const ms = Date.parse(t);
+  return Number.isFinite(ms) ? ms : 0;
+}
+
+function getAnswerText(row){
+  for (const [k,v] of Object.entries(row)){
+    if(!v) continue;
+    if(/Timestamp|Student ID/i.test(k)) continue;
+    return String(v);
+  }
+  return "";
+}
+
+function sortResponses(list, mode){
+  const arr = list.map((r,i)=>({
+    row: r,
+    idx: i,
+    score: getResponseScore(r),
+    ts: getTimestamp(r),
+    text: getAnswerText(r)
+  }));
+
+  if(mode==="worst"){
+    const any = arr.some(x=>!isNaN(x.score));
+    if(any){
+      arr.sort((a,b)=>{
+        const as=isNaN(a.score)?Infinity:a.score;
+        const bs=isNaN(b.score)?Infinity:b.score;
+        return as-bs || a.idx-b.idx;
+      });
+    }else{
+      arr.sort((a,b)=>b.ts-a.ts || a.idx-b.idx);
+    }
+  }else if(mode==="best"){
+    arr.sort((a,b)=>{
+      const as=isNaN(a.score)?-Infinity:a.score;
+      const bs=isNaN(b.score)?-Infinity:b.score;
+      return bs-as || a.idx-b.idx;
+    });
+  }else if(mode==="newest"){
+    arr.sort((a,b)=>b.ts-a.ts || a.idx-b.idx);
+  }else if(mode==="oldest"){
+    arr.sort((a,b)=>a.ts-b.ts || a.idx-b.idx);
+  }else if(mode==="az"){
+    arr.sort((a,b)=>a.text.localeCompare(b.text));
+  }
+
+  return arr.map(x=>x.row);
+}
+
+/* Modal */
+let currentModal={event:"",raw:[],mode:"worst"};
+
 function openModal(evt,resps){
-  document.getElementById('modalTitle').textContent=`Responses — ${evt}`;
-  const body=document.getElementById('modalBody');body.innerHTML="";
-  resps.forEach((row,j)=>{
-    const wrap=document.createElement('div');wrap.className="response-card";
-    const h=document.createElement('h4');h.textContent=`Response #${j+1}`;wrap.appendChild(h);
+  currentModal={event:evt,raw:resps.slice(),mode:"worst"};
+  document.getElementById("modalSort").value="worst";
+  document.getElementById("modalTitle").textContent=`Responses — ${evt}`;
+  renderModalBody();
+  document.getElementById("modal").classList.add("show");
+}
+
+function renderModalBody(){
+  const body=document.getElementById("modalBody"); body.innerHTML="";
+  const sorted=sortResponses(currentModal.raw,currentModal.mode);
+
+  sorted.forEach((row,j)=>{
+    const wrap=document.createElement("div"); wrap.className="response-card";
+
+    const score=getResponseScore(row);
+    const badge = !isNaN(score)
+      ? `<span class="star-badge">${"★".repeat(score)}${"☆".repeat(5-score)} (${score}/5)</span>`
+      : `<span class="star-badge">No rating</span>`;
+
+    const h=document.createElement("h4");
+    h.textContent=`Response #${j+1}`;
+    h.insertAdjacentHTML("beforeend"," "+badge);
+    wrap.appendChild(h);
+
     Object.entries(row).forEach(([lab,val])=>{
       if(!val||/Timestamp|Student ID/i.test(lab))return;
-      const qa=document.createElement('div');qa.className="qa";
-      const labEl=document.createElement('div');labEl.className="label";labEl.textContent=lab;
-      const valEl=document.createElement('div');valEl.className="value";valEl.textContent=val;
-      qa.append(labEl,valEl);wrap.appendChild(qa);
+      const qa=document.createElement("div"); qa.className="qa";
+      qa.innerHTML=`<div class="label">${lab}</div><div class="value">${val}</div>`;
+      wrap.appendChild(qa);
     });
+
     body.appendChild(wrap);
   });
-  document.getElementById('modal').classList.add('show');
 }
-document.getElementById('closeBtn').onclick=()=>document.getElementById('modal').classList.remove('show');
-document.querySelector('.modal-backdrop').onclick=()=>document.getElementById('modal').classList.remove('show');
 
+document.getElementById("modalSort").addEventListener("change",e=>{
+  currentModal.mode=e.target.value;
+  renderModalBody();
+});
+
+document.getElementById("closeBtn").onclick=()=>document.getElementById("modal").classList.remove("show");
+document.querySelector(".modal-backdrop").onclick=()=>document.getElementById("modal").classList.remove("show");
+
+/* PDF */
 function downloadPDF(evt,rt,sum,att,resps){
   let html=`<html><head><meta charset="UTF-8"><title>${evt}</title><style>
   body{font-family:Arial,sans-serif;color:#000;}
@@ -294,7 +425,6 @@ function downloadPDF(evt,rt,sum,att,resps){
   .response{border:1px solid #ccc;border-radius:8px;padding:12px;margin:10px 0;}
   </style></head><body>`;
 
-  // Always use black CAB logo
   html+=`<div class="header">
             <img src="https://i.imgur.com/xFzbl45.png" alt="CAB Logo">
             <div><h1>${evt}</h1></div>
@@ -303,11 +433,33 @@ function downloadPDF(evt,rt,sum,att,resps){
   if(rt)html+=`<div class="rating">${stars(rt)} (${rt.toFixed(1)}/5.0)</div>`;
   html+=`<div style="font-weight:700;"><b>Attendance:</b> ${att||"N/A"}</div>`;
   if(sum)html+=`<div class="summary">${sum}</div>`;
-  resps.forEach((row,j)=>{const lines=[];Object.entries(row).forEach(([lab,val])=>{if(!val||/Timestamp|Student ID/i.test(lab))return;lines.push(`<div><b>${lab}:</b> ${val}</div>`);});if(lines.length)html+=`<div class="response"><h3>Response #${j+1}</h3>${lines.join("")}</div>`;});
+
+  const sorted = sortResponses(resps, currentModal.event===evt ? currentModal.mode : "worst");
+  sorted.forEach((row,j)=>{
+    const lines=[];
+    Object.entries(row).forEach(([lab,val])=>{
+      if(!val||/Timestamp|Student ID/i.test(lab))return;
+      lines.push(`<div><b>${lab}:</b> ${val}</div>`);
+    });
+    if(lines.length)html+=`<div class="response"><h3>Response #${j+1}</h3>${lines.join("")}</div>`;
+  });
+
   html+=`</body></html>`;
-  const win=window.open("");win.document.write(html);win.document.close();win.print();
+  const win=window.open("");
+  win.document.write(html);
+  win.document.close();
+  win.print();
 }
 
+/* Background pick once per refresh */
+function pickBackgroundOnce(urls){
+  const valid=[...new Set((urls||[]).filter(u=>/^https?:\/\//i.test(u)))];
+  if(!valid.length) return;
+  const chosen=valid[Math.floor(Math.random()*valid.length)];
+  document.documentElement.style.setProperty('--bg-img', `url('${chosen}')`);
+}
+
+/* Topbar controls */
 document.getElementById('search').addEventListener('input',e=>render(e.target.value,document.getElementById('sortMode').value));
 document.getElementById('sortMode').addEventListener('change',e=>render(document.getElementById('search').value,e.target.value));
 </script>
