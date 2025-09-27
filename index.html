@@ -3,54 +3,61 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Event Survey Dashboard — Frosted White Text</title>
+<title>Event Survey Dashboard — Dark Frost + White Text</title>
 
 <style>
 :root{
   --bg-img: url('https://i.imgur.com/hwef1LY.jpeg');
-  --glass-surface: rgba(0,0,0,0.65);
-  --glass-border: rgba(255,255,255,0.12);
-  --glass-strong-border: rgba(255,255,255,0.2);
   --text: #ffffff;
   --focus: #9c7bd9;
   --radius-lg: 18px;
   --radius-md: 12px;
-  --glass-blur: 28px;
-  --glass-blur-strong: 36px;
 }
 
+/* Reset */
 * { box-sizing: border-box; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; }
 html,body{ height:100%; }
 body{
   margin:0;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   color:var(--text);
-  background: linear-gradient(180deg, rgba(0,0,0,0.18), rgba(0,0,0,0.36)), var(--bg-img) center/cover no-repeat fixed;
+  background: linear-gradient(180deg, rgba(0,0,0,0.2), rgba(0,0,0,0.4)), var(--bg-img) center/cover no-repeat fixed;
   padding-bottom:64px;
   opacity:0;
   animation:fadeIn 600ms ease forwards;
 }
 @keyframes fadeIn{ to { opacity: 1 } }
 
-/* frosted glass */
-.glass {
+/* dark frosted glass (cards, modal, topbar) */
+.glass,
+.modal-content,
+.topbar {
   background: rgba(0,0,0,0.55);
   border-radius: var(--radius-md);
-  border: 1px solid var(--glass-border);
-  backdrop-filter: blur(var(--glass-blur)) saturate(200%);
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(200%);
-  box-shadow: 0 6px 18px rgba(0,0,0,0.6),
+  border: 1px solid rgba(255,255,255,0.12);
+  backdrop-filter: blur(28px) saturate(220%);
+  -webkit-backdrop-filter: blur(28px) saturate(220%);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.65),
               inset 0 1px 0 rgba(255,255,255,0.05);
   position: relative;
   overflow: hidden;
 }
-.glass::before {
+.glass::before,
+.modal-content::before,
+.topbar::before {
   content: "";
   position: absolute;
   inset: 0;
-  background: rgba(0,0,0,0.25);
+  background: rgba(0,0,0,0.2);
   mix-blend-mode: multiply;
   pointer-events: none;
+  border-radius: inherit;
+}
+.glass > *,
+.modal-content > *,
+.topbar > * {
+  position: relative;
+  z-index: 1;
 }
 
 /* header */
@@ -58,11 +65,6 @@ body{
 .topbar{
   display:flex; justify-content:space-between; align-items:center;
   padding: 10px 14px; border-radius: 20px;
-  background: rgba(0,0,0,0.45);
-  backdrop-filter: blur(var(--glass-blur-strong)) saturate(180%);
-  -webkit-backdrop-filter: blur(var(--glass-blur-strong)) saturate(180%);
-  border: 1px solid rgba(255,255,255,0.15);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
   max-width: 1200px; margin: 0 auto;
 }
 .topbar-left{ display:flex; align-items:center; gap:12px; }
@@ -70,21 +72,21 @@ body{
   height:44px; width:auto;
   filter: drop-shadow(0 3px 8px rgba(0,0,0,0.56));
   border-radius:8px;
-  background: rgba(255,255,255,0.02);
+  background: rgba(255,255,255,0.05);
   padding:4px;
 }
 .title{
-  font-size:1.22rem; font-weight:600; letter-spacing:-0.01em; color:#fff;
+  font-size:1.22rem; font-weight:600; letter-spacing:-0.01em; color:#ffffff;
   line-height:1; text-shadow: 0 1px 0 rgba(0,0,0,0.45);
 }
 .topbar-controls{ display:flex; gap:12px; align-items:center }
 input[type="text"], select {
   border: none; padding:.52rem .9rem; font-size:.96rem; border-radius:12px;
-  background: rgba(0,0,0,0.3); min-height:38px; color:#fff; outline:none;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.1);
-  backdrop-filter: blur(16px) saturate(180%); -webkit-backdrop-filter: blur(16px) saturate(180%);
+  background: rgba(0,0,0,0.45); min-height:38px; color:#ffffff; outline:none;
+  border: 1px solid rgba(255,255,255,0.15);
+  backdrop-filter: blur(18px) saturate(200%); -webkit-backdrop-filter: blur(18px) saturate(200%);
 }
-input::placeholder{ color:#fff; opacity:0.85; }
+input::placeholder{ color:#ffffff; opacity:1; }
 select {
   -webkit-appearance: none; -moz-appearance: none; appearance: none;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='18' height='18' fill='%23ffffff'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
@@ -104,21 +106,21 @@ input:focus, select:focus, button:focus {
   transition: transform .18s ease, box-shadow .18s ease; cursor: default;
   min-height: 110px; display:flex; flex-direction:column; gap:8px;
 }
-.card:hover{ transform: translateY(-6px); box-shadow: 0 12px 24px rgba(0,0,0,0.65); }
+.card:hover{ transform: translateY(-6px); box-shadow: 0 12px 24px rgba(0,0,0,0.7); }
 .card img.header { width:100%; max-height:160px; object-fit:cover; border-radius:12px; margin-bottom:10px; }
-.card h2{ font-size:1.05rem; margin:0; font-weight:600; color:#fff }
+.card h2{ font-size:1.05rem; margin:0; font-weight:600; color:#ffffff }
 .rating{ font-size:1.2rem; font-weight:700; color:#ffcb45; letter-spacing:0.02em }
-.attendance{ font-size:1.05rem; font-weight:700; color:#fff }
-.resp-count{ font-size:.82rem; color:#fff }
-.summary{ font-style:italic; font-size:.9rem; color:#fff; margin-top:4px }
+.attendance{ font-size:1.05rem; font-weight:700; color:#ffffff }
+.resp-count{ font-size:.82rem; color:#ffffff }
+.summary{ font-style:italic; font-size:.9rem; color:#ffffff; margin-top:4px }
 .actions{ display:flex; gap:8px; margin-top:auto; flex-wrap:wrap }
 .btn{
   padding:.5rem .85rem; font-size:.86rem; border-radius: 10px;
-  border: 1px solid rgba(255,255,255,0.12); background: rgba(0,0,0,0.35);
-  cursor:pointer; color:#fff;
+  border: 1px solid rgba(255,255,255,0.15); background: rgba(0,0,0,0.45);
+  cursor:pointer; color:#ffffff;
   box-shadow: 0 2px 8px rgba(0,0,0,0.45);
 }
-.btn:hover{ transform: translateY(-4px); box-shadow: 0 8px 16px rgba(0,0,0,0.6); }
+.btn:hover{ transform: translateY(-4px); box-shadow: 0 8px 16px rgba(0,0,0,0.65); }
 
 /* modal */
 .modal{ position:fixed; inset:0; width:100%; height:100%; display:none; z-index:100; justify-content:center; align-items:flex-start; padding:48px 20px; }
@@ -127,17 +129,13 @@ input:focus, select:focus, button:focus {
 .modal-content{
   position:relative; width:min(92vw, 980px); max-height:calc(100vh - 8rem); overflow:auto;
   border-radius: calc(var(--radius-lg) + 4px); padding: 18px; margin-top: 20px;
-  border: 1px solid rgba(255,255,255,0.3); background: rgba(0,0,0,0.45);
-  backdrop-filter: blur(var(--glass-blur-strong)) saturate(180%);
-  -webkit-backdrop-filter: blur(var(--glass-blur-strong)) saturate(180%);
-  box-shadow: 0 20px 60px rgba(0,0,0,0.7);
-  color:#fff;
+  color:#ffffff;
 }
-.close-btn{ margin-left:auto;margin-bottom:12px;padding:.5rem .9rem;border:none;border-radius:10px; background:rgba(0,0,0,0.35); color:#fff; cursor:pointer; border:1px solid rgba(255,255,255,0.15); }
-.response-card{ background: rgba(0,0,0,0.4); padding:12px 14px;border-radius:12px;margin-bottom:12px; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 8px 24px rgba(0,0,0,0.55); line-height:1.45; color:#fff; }
+.close-btn{ margin-left:auto;margin-bottom:12px;padding:.5rem .9rem;border:none;border-radius:10px; background:rgba(0,0,0,0.45); color:#ffffff; cursor:pointer; border:1px solid rgba(255,255,255,0.15); }
+.response-card{ background: rgba(0,0,0,0.55); padding:12px 14px;border-radius:12px;margin-bottom:12px; border: 1px solid rgba(255,255,255,0.12); box-shadow: 0 8px 24px rgba(0,0,0,0.55); line-height:1.45; color:#ffffff; }
 .qa{ margin-bottom:.6rem }
-.qa .label{ font-weight:700; font-size:.9rem; color:#fff }
-.qa .value{ font-size:1rem; color:#fff; margin-left:.25rem }
+.qa .label{ font-weight:700; font-size:.9rem; color:#ffffff }
+.qa .value{ font-size:1rem; color:#ffffff; margin-left:.25rem }
 
 /* responsive */
 @media (max-width: 640px){
@@ -261,7 +259,7 @@ function render(filter="",sort="rating"){
     ]);
     card.append(h2,ratingDiv,attendanceDiv,respCount,summary,actions);dash.appendChild(card);
     card.querySelector('.view-btn').onclick=()=>openModal(evt,resps);
-    card.querySelector('.pdf-btn').onclick=()=>downloadPDF(evt,rt,sum,img,att,resps);
+    card.querySelector('.pdf-btn').onclick=()=>downloadPDF(evt,rt,sum,att,resps);
   }
 }
 
@@ -285,17 +283,23 @@ function openModal(evt,resps){
 document.getElementById('closeBtn').onclick=()=>document.getElementById('modal').classList.remove('show');
 document.querySelector('.modal-backdrop').onclick=()=>document.getElementById('modal').classList.remove('show');
 
-function downloadPDF(evt,rt,sum,img,att,resps){
+function downloadPDF(evt,rt,sum,att,resps){
   let html=`<html><head><meta charset="UTF-8"><title>${evt}</title><style>
   body{font-family:Arial,sans-serif;color:#000;}
   .header{display:flex;align-items:center;gap:12px;margin-bottom:16px;}
-  .header img{max-height:100px;}
+  .header img{max-height:80px;}
   h1{font-size:22px;margin:0 0 6px;}
   .rating{margin:6px 0 12px;}
   .summary{font-style:italic;margin:4px 0 18px;}
   .response{border:1px solid #ccc;border-radius:8px;padding:12px;margin:10px 0;}
   </style></head><body>`;
-  html+=`<div class="header">`;if(img)html+=`<img src="${img}">`;html+=`<div><h1>${evt}</h1></div></div>`;
+
+  // Always use black CAB logo
+  html+=`<div class="header">
+            <img src="https://i.imgur.com/xFzbl45.png" alt="CAB Logo">
+            <div><h1>${evt}</h1></div>
+          </div>`;
+
   if(rt)html+=`<div class="rating">${stars(rt)} (${rt.toFixed(1)}/5.0)</div>`;
   html+=`<div style="font-weight:700;"><b>Attendance:</b> ${att||"N/A"}</div>`;
   if(sum)html+=`<div class="summary">${sum}</div>`;
