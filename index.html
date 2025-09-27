@@ -3,271 +3,169 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Event Survey Dashboard — Header Refine</title>
+<title>Event Survey Dashboard — Frosted</title>
 
 <style>
 :root{
-/* palette */
---bg-img: url('https://i.imgur.com/hwef1LY.jpeg');
---glass-surface: rgba(0,0,0,0.55);
---glass-surface-2: rgba(0,0,0,0.45);
---glass-border: rgba(255,255,255,0.1);
---glass-strong-border: rgba(255,255,255,0.18);
---text: #ffffff;
---text-muted: #d6d6d6;
---text-dim: #bfbfbf;
---focus: #9c7bd9;
---radius-lg: 18px;
---radius-md: 12px;
---glass-blur: 24px;
---glass-blur-strong: 32px;
+  --bg-img: url('https://i.imgur.com/hwef1LY.jpeg');
+  --glass-surface: rgba(0,0,0,0.65);   /* darker for stronger frost */
+  --glass-border: rgba(255,255,255,0.12);
+  --glass-strong-border: rgba(255,255,255,0.2);
+  --text: #ffffff;
+  --text-muted: #d6d6d6;
+  --text-dim: #bfbfbf;
+  --focus: #9c7bd9;
+  --radius-lg: 18px;
+  --radius-md: 12px;
+  --glass-blur: 28px;                  /* stronger blur */
+  --glass-blur-strong: 36px;
 }
 
 * { box-sizing: border-box; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; }
 html,body{ height:100%; }
 body{
-margin:0;
-font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-color:var(--text);
-background: linear-gradient(180deg, rgba(0,0,0,0.18), rgba(0,0,0,0.36)), var(--bg-img) center/cover no-repeat fixed;
-padding-bottom:64px;
-opacity:0;
-animation:fadeIn 600ms ease forwards;
+  margin:0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  color:var(--text);
+  background: linear-gradient(180deg, rgba(0,0,0,0.18), rgba(0,0,0,0.36)), var(--bg-img) center/cover no-repeat fixed;
+  padding-bottom:64px;
+  opacity:0;
+  animation:fadeIn 600ms ease forwards;
 }
 @keyframes fadeIn{ to { opacity: 1 } }
-@media (prefers-reduced-motion: reduce){ *{ animation:none !important; transition:none !important; } }
-@media (prefers-contrast: more){ :root{ --glass-surface: rgba(0,0,0,0.5); --glass-border: rgba(255,255,255,0.10); } }
 
-/* base glass */
+/* frosted glass */
 .glass {
-background: var(--glass-surface);
-border-radius: var(--radius-md);
-border: 1px solid var(--glass-border);
-backdrop-filter: blur(var(--glass-blur)) saturate(180%);
--webkit-backdrop-filter: blur(var(--glass-blur)) saturate(180%);
-box-shadow:
-  0 6px 16px rgba(0,0,0,0.4),
-  inset 0 1px 0 rgba(255,255,255,0.02);
-position: relative;
-overflow: hidden;
+  background: rgba(0,0,0,0.55); /* base density */
+  border-radius: var(--radius-md);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(var(--glass-blur)) saturate(200%);
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(200%);
+  box-shadow: 0 6px 18px rgba(0,0,0,0.6),
+              inset 0 1px 0 rgba(255,255,255,0.05);
+  position: relative;
+  overflow: hidden;
 }
 .glass::before {
-content: "";
-position: absolute;
-inset: 0;
-pointer-events: none;
-background: linear-gradient(180deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.01) 30%, rgba(255,255,255,0.00) 60%);
-mix-blend-mode: overlay;
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.25); /* tint overlay */
+  mix-blend-mode: multiply;
+  pointer-events: none;
 }
 
-/* === MODERN HEADER: flatter, cleaner, stronger blur, no gradient sheen === */
-.topbar-container {
-position: fixed;
-top: 0;
-left: 0;
-width: 100%;
-z-index: 30;
-padding: 14px 18px 8px;
-}
-
+/* header */
+.topbar-container { position: fixed; top: 0; left: 0; width: 100%; z-index: 30; padding: 14px 18px 8px; }
 .topbar{
-display:flex;
-justify-content:space-between;
-align-items:center;
-padding: 10px 14px;
-border-radius: 20px;
-background: rgba(0,0,0,0.45);
-backdrop-filter: blur(var(--glass-blur-strong)) saturate(180%);
--webkit-backdrop-filter: blur(var(--glass-blur-strong)) saturate(180%);
-border: 1px solid rgba(255,255,255,0.15);
-box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-max-width: 1200px;
-margin: 0 auto;
+  display:flex; justify-content:space-between; align-items:center;
+  padding: 10px 14px; border-radius: 20px;
+  background: rgba(0,0,0,0.45);
+  backdrop-filter: blur(var(--glass-blur-strong)) saturate(180%);
+  -webkit-backdrop-filter: blur(var(--glass-blur-strong)) saturate(180%);
+  border: 1px solid rgba(255,255,255,0.15);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  max-width: 1200px; margin: 0 auto;
 }
-
 .topbar-left{ display:flex; align-items:center; gap:12px; }
 .topbar-left img{
-height:44px; width:auto;
-filter: drop-shadow(0 3px 8px rgba(0,0,0,0.56));
-border-radius:8px;
-background: rgba(255,255,255,0.02);
-padding:4px;
+  height:44px; width:auto;
+  filter: drop-shadow(0 3px 8px rgba(0,0,0,0.56));
+  border-radius:8px;
+  background: rgba(255,255,255,0.02);
+  padding:4px;
 }
-
-/* header text treatment */
 .title{
-font-size:1.22rem;
-font-weight:600;
-letter-spacing: -0.01em;
-color: var(--text);
-line-height:1;
-text-shadow: 0 1px 0 rgba(0,0,0,0.45);
+  font-size:1.22rem; font-weight:600; letter-spacing:-0.01em; color:var(--text);
+  line-height:1; text-shadow: 0 1px 0 rgba(0,0,0,0.45);
 }
-
 .topbar-controls{ display:flex; gap:12px; align-items:center }
 input[type="text"], select {
-border: none;
-padding: .52rem .9rem;
-font-size: .96rem;
-border-radius: 12px;
-background: rgba(0,0,0,0.3);
-min-height:38px;
-color:var(--text);
-outline: none;
-box-shadow: inset 0 1px 0 rgba(255,255,255,0.01);
-border: 1px solid rgba(255,255,255,0.1);
-backdrop-filter: blur(16px) saturate(180%);
--webkit-backdrop-filter: blur(16px) saturate(180%);
-transition: box-shadow 0.2s ease-in-out;
+  border: none; padding:.52rem .9rem; font-size:.96rem; border-radius:12px;
+  background: rgba(0,0,0,0.3); min-height:38px; color:var(--text); outline:none;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.1);
+  backdrop-filter: blur(16px) saturate(180%); -webkit-backdrop-filter: blur(16px) saturate(180%);
 }
 input::placeholder{ color: var(--text-dim); opacity:0.95; }
 select {
--webkit-appearance: none;
--moz-appearance: none;
-appearance: none;
-background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='18' height='18' fill='%23c9c9c9'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
-background-repeat: no-repeat;
-background-position: right 10px center;
-background-size: 1rem;
-padding-right: 2.2rem;
+  -webkit-appearance: none; -moz-appearance: none; appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='18' height='18' fill='%23c9c9c9'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 10px center; background-size: 1rem; padding-right: 2.2rem;
 }
-
 input:focus, select:focus, button:focus {
-box-shadow: 0 0 0 6px color-mix(in oklab, var(--focus) 14%, transparent), inset 0 0 0 1px var(--focus);
+  box-shadow: 0 0 0 6px color-mix(in oklab, var(--focus) 14%, transparent), inset 0 0 0 1px var(--focus);
 }
 
-/* Grid and cards (unchanged) */
+/* grid */
 #dashboard{
-display:grid;
-grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-gap: 1.25rem;
-padding: 20px;
-max-width: 1200px;
-margin: 100px auto 80px; /* Adjusted margin to account for fixed header */
+  display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.25rem; padding: 20px; max-width: 1200px; margin: 100px auto 80px;
 }
-
 .card{
-padding: 16px;
-border-radius: var(--radius-lg);
-transition: transform .18s ease, box-shadow .18s ease;
-cursor: default;
-min-height: 110px;
-display:flex;
-flex-direction:column;
-gap:8px;
+  padding: 16px; border-radius: var(--radius-lg);
+  transition: transform .18s ease, box-shadow .18s ease; cursor: default;
+  min-height: 110px; display:flex; flex-direction:column; gap:8px;
 }
-.card:hover{
-transform: translateY(-6px);
-box-shadow: 0 12px 24px rgba(0,0,0,0.65); /* Adjusted shadow */
-}
-
+.card:hover{ transform: translateY(-6px); box-shadow: 0 12px 24px rgba(0,0,0,0.65); }
+.card img.header { width:100%; max-height:160px; object-fit:cover; border-radius:12px; margin-bottom:10px; }
 .card h2{ font-size:1.05rem; margin:0; font-weight:600; color:var(--text) }
 .rating{ font-size:1.2rem; font-weight:700; color:#ffcb45; letter-spacing:0.02em }
+.attendance{ font-size:1.05rem; font-weight:700; color:#fff }
 .resp-count{ font-size:.82rem; color:var(--text-dim) }
 .summary{ font-style:italic; font-size:.9rem; color:var(--text-muted); margin-top:4px }
-
 .actions{ display:flex; gap:8px; margin-top:auto; flex-wrap:wrap }
 .btn{
-padding:.5rem .85rem; font-size:.86rem;
-border-radius: 10px;
-border: 1px solid rgba(255,255,255,0.12);
-background: rgba(0,0,0,0.35);
-cursor:pointer;
-color:var(--text);
-box-shadow: 0 2px 8px rgba(0,0,0,0.45);
-transition: transform .16s ease, box-shadow .16s ease;
+  padding:.5rem .85rem; font-size:.86rem; border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.12); background: rgba(0,0,0,0.35);
+  cursor:pointer; color:var(--text);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.45);
 }
-.btn:hover{
-transform: translateY(-4px);
-box-shadow: 0 8px 16px rgba(0,0,0,0.6); /* Adjusted shadow */
-}
+.btn:hover{ transform: translateY(-4px); box-shadow: 0 8px 16px rgba(0,0,0,0.6); }
 
-.banner{ margin: 12px auto; max-width: 1200px; padding: 10px 14px; border-radius: 12px; font-size: .95rem; display:block; text-align:left; }
-.banner.info{
-background: linear-gradient(180deg, rgba(0,0,0,0.34), rgba(255,255,255,0.01));
-border: 1px solid rgba(255,255,255,0.04);
-color: var(--text);
-backdrop-filter: blur(calc(var(--glass-blur) * 0.6));
-}
-.banner.error{
-background: linear-gradient(180deg, rgba(120,0,0,0.36), rgba(255,0,0,0.04));
-border: 1px solid rgba(255,255,255,0.18);
-color: #fff;
-}
-
-.modal{ position:fixed; inset:0; width:100%; height:100%; display:none; z-index:100; justify-content:center; align-items:flex-start; padding:48px 20px; -webkit-tap-highlight-color: transparent; }
+/* modal */
+.modal{ position:fixed; inset:0; width:100%; height:100%; display:none; z-index:100; justify-content:center; align-items:flex-start; padding:48px 20px; }
 .modal.show{ display:flex }
 .modal-backdrop{ position:fixed; inset:0; background:rgba(6,8,12,0.6); backdrop-filter: blur(12px); }
 .modal-content{
-position:relative; width:min(92vw, 980px); max-height:calc(100vh - 8rem); overflow:auto;
-border-radius: calc(var(--radius-lg) + 4px);
-padding: 18px;
-margin-top: 20px;
-border: 1px solid rgba(255,255,255,0.3);
-background: rgba(0,0,0,0.45);
-backdrop-filter: blur(var(--glass-blur-strong)) saturate(180%);
--webkit-backdrop-filter: blur(var(--glass-blur-strong)) saturate(180%);
-box-shadow: 0 20px 60px rgba(0,0,0,0.7);
+  position:relative; width:min(92vw, 980px); max-height:calc(100vh - 8rem); overflow:auto;
+  border-radius: calc(var(--radius-lg) + 4px); padding: 18px; margin-top: 20px;
+  border: 1px solid rgba(255,255,255,0.3); background: rgba(0,0,0,0.45);
+  backdrop-filter: blur(var(--glass-blur-strong)) saturate(180%);
+  -webkit-backdrop-filter: blur(var(--glass-blur-strong)) saturate(180%);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.7);
 }
-
 .close-btn{ margin-left:auto;margin-bottom:12px;padding:.5rem .9rem;border:none;border-radius:10px; background:rgba(0,0,0,0.35); color:var(--text); cursor:pointer; border:1px solid rgba(255,255,255,0.15); }
-
 .response-card{ background: rgba(0,0,0,0.4); padding:12px 14px;border-radius:12px;margin-bottom:12px; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 8px 24px rgba(0,0,0,0.55); line-height:1.45; }
 .qa{ margin-bottom:.6rem }
 .qa .label{ font-weight:700; font-size:.9rem; color:#ececec }
 .qa .value{ font-size:1rem; color:#ffffff; margin-left:.25rem }
 
-/* keep SR-only so those labels stay hidden */
-.sr-only{ position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0 }
-
+/* responsive */
 @media (max-width: 640px){
-.topbar-container { padding: 12px 10px; }
-.topbar{ padding:10px; gap:10px; }
-.title{ font-size:1.05rem }
-#dashboard{ grid-template-columns: 1fr; padding:12px; gap:12px; margin: 90px auto 80px; }
-.modal{ padding: 18px 10px; align-items:flex-end }
-.modal-content{ width:100%; max-height: calc(100vh - 3.5rem); margin-top: 0; padding: 12px }
-.card{ padding:12px }
-}
-
-@media print {
-body { background: #fff; color:#000; }
-.topbar, .card, .modal-content { box-shadow: none; background: #fff; border: none; -webkit-print-color-adjust: exact; }
-.response-card {
-background: #fff;
-border: 1px solid #ccc;
-box-shadow: none;
-}
-.qa .label { color: #000; }
-.qa .value { color: #000; }
-}
-
-/* NEW: header image inside card */
-.card img.header {
-  width: 100%;
-  max-height: 160px;
-  object-fit: cover;
-  border-radius: 12px;
-  margin-bottom: 10px;
+  .topbar-container { padding: 12px 10px; }
+  .topbar{ padding:10px; gap:10px; }
+  .title{ font-size:1.05rem }
+  #dashboard{ grid-template-columns: 1fr; padding:12px; gap:12px; margin: 90px auto 80px; }
+  .modal{ padding: 18px 10px; align-items:flex-end }
+  .modal-content{ width:100%; max-height: calc(100vh - 3.5rem); margin-top: 0; padding: 12px }
+  .card{ padding:12px }
 }
 </style>
 </head>
-
 <body>
 <div class="topbar-container">
-  <div class="topbar" role="region" aria-label="Toolbar">
+  <div class="topbar">
     <div class="topbar-left">
-      <img src="https://i.imgur.com/oqrmQSC.png" alt="CAB Logo" aria-hidden="true">
+      <img src="https://i.imgur.com/oqrmQSC.png" alt="CAB Logo">
       <div class="title">Event Survey Dashboard</div>
     </div>
     <div class="topbar-controls">
-      <label class="sr-only" for="search">Search event</label>
       <input id="search" type="text" placeholder="Search event…" autocomplete="off" />
-      <label class="sr-only" for="sortMode">Sort</label>
-      <select id="sortMode" aria-label="Sort events">
+      <select id="sortMode">
         <option value="rating">⭐ Rating</option>
         <option value="az">🔤 A–Z</option>
         <option value="recent">🕒 Recent</option>
+        <option value="attendance">👥 Attendance</option>
       </select>
     </div>
   </div>
@@ -275,82 +173,45 @@ box-shadow: none;
 
 <div id="dashboard"></div>
 
-<div id="modal" class="modal" aria-hidden="true" aria-labelledby="modalTitle">
+<!-- modal for responses -->
+<div id="modal" class="modal" aria-hidden="true">
   <div class="modal-backdrop" data-close="backdrop"></div>
-  <div class="modal-content" role="dialog" aria-modal="true">
-    <button id="closeBtn" class="close-btn" aria-label="Close dialog">Close</button>
-
-    <div style="display:flex;gap:12px;align-items:center;margin-bottom:10px;flex-wrap:wrap">
-      <h3 id="modalTitle" style="margin:0">Responses</h3>
-
-      <label for="modalSort" class="sr-only">Sort responses</label>
-      <select id="modalSort" style="margin-left:8px;padding:.4rem;border-radius:8px;border:1px solid rgba(255,255,255,0.1);background:rgba(0,0,0,0.35);">
-        <option value="worst">Worst → Best</option>
-        <option value="best">Best → Worst</option>
-        <option value="recent">Most recent</option>
-        <option value="oldest">Oldest</option>
-      </select>
-
-      <div id="modalFilters" style="margin-left:auto;display:flex;gap:.4rem;align-items:center">
-        <button class="btn filter-btn" data-filter="all" aria-pressed="true">All</button>
-        <button class="btn filter-btn" data-filter="neg">Negative ≤2</button>
-        <button class="btn filter-btn" data-filter="neu">Neutral 3</button>
-        <button class="btn filter-btn" data-filter="pos">Positive ≥4</button>
-      </div>
-    </div>
-
-    <div style="margin-bottom:12px;display:flex;gap:.5rem">
-      <label class="sr-only" for="modalSearch">Search responses</label>
-      <input id="modalSearch" placeholder="Search responses…" style="flex:1;padding:.5rem;border-radius:8px;border:none;background:rgba(0,0,0,0.35); color: #ffffff;" />
-      <button id="modalClearSearch" class="btn" style="padding:.45rem .6rem">Clear</button>
-    </div>
-
-    <div id="modalBody" style="max-height:calc(100vh - 12rem); overflow:auto"></div>
+  <div class="modal-content">
+    <button id="closeBtn" class="close-btn">Close</button>
+    <h3 id="modalTitle">Responses</h3>
+    <div id="modalBody"></div>
   </div>
 </div>
 
 <script>
 /* Config */
-const sheetID = "1CqmQKvOkcLFV8XyzFrjK4H85skJCwRgSEwiP8j_6pMM";
-const RAW_SHEET = "Survey Responses";
-const OVW_SHEET = "Response overview";
-const stars = n => "★★★★★".slice(0,Math.round(n))+"☆☆☆☆☆".slice(0,5-Math.round(n));
+const sheetID="1CqmQKvOkcLFV8XyzFrjK4H85skJCwRgSEwiP8j_6pMM";
+const RAW_SHEET="Survey Responses",OVW_SHEET="Response overview";
+const stars=n=>"★★★★★".slice(0,Math.round(n))+"☆☆☆☆☆".slice(0,5-Math.round(n));
 
 /* Data holders */
-let ratingMap={},briefMap={},groups={},imageMap={};
+let ratingMap={},briefMap={},surveysMap={},imageMap={},attendanceMap={},groups={};
+const keyEvent=n=>String(n||"").trim();
 
-/* DOM helpers */
-function el(tag, attrs={}, children=[]) {
-  const node = document.createElement(tag);
-  for (const [k,v] of Object.entries(attrs)){
-    if (k === 'text') node.textContent = v;
-    else if (k === 'html') node.innerHTML = v;
+/* DOM helper */
+function el(tag,attrs={},children=[]){
+  const node=document.createElement(tag);
+  for(const[k,v]of Object.entries(attrs)){
+    if(k==='text')node.textContent=v;
+    else if(k==='html')node.innerHTML=v;
     else node.setAttribute(k,v);
   }
-  for (const c of [].concat(children)) if (c) node.appendChild(c);
+  [].concat(children).forEach(c=>c&&node.appendChild(c));
   return node;
 }
-function safeText(text){ const s = document.createElement('span'); s.textContent = String(text ?? ''); return s; }
 
-// Find a field by exact label OR regex (tolerant to wording/spacing)
-function findField(row, matcher){
-  if(typeof matcher === 'string'){
-    if(row[matcher]) return { key: matcher, val: row[matcher] };
-    const k = Object.keys(row).find(k=>k && k.trim().toLowerCase()===matcher.trim().toLowerCase());
-    return k ? { key:k, val: row[k] } : { key: matcher, val: '' };
-  } else { // regex
-    const k = Object.keys(row).find(k=> matcher.test(k));
-    return k ? { key:k, val: row[k] } : { key: matcher.source, val: '' };
-  }
-}
-
-/* Fetch helper with basic retry */
-async function fetchSheet(name, tries=2){
+/* fetch with retry */
+async function fetchSheet(name,tries=2){
   const url=`https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(name)}`;
   for(let i=0;i<tries;i++){
     try{
-      const res = await fetch(url, { cache: 'no-store' });
-      const raw = await res.text();
+      const res=await fetch(url,{cache:'no-store'});
+      const raw=await res.text();
       return JSON.parse(raw.substring(47,raw.length-2));
     }catch(err){
       if(i===tries-1) throw err;
@@ -359,367 +220,102 @@ async function fetchSheet(name, tries=2){
   }
 }
 
-/* Initial load */
+/* load data */
 (async()=>{
-  try{
-    const [overview,raw] = await Promise.all([fetchSheet(OVW_SHEET),fetchSheet(RAW_SHEET)]);
-
-    // Overall ratings + summary + header image
-    overview.table.rows.forEach(r=>{
-      const row=overview.table.cols.reduce((o,c,i)=>{o[c.label]=r.c[i]?r.c[i].v:"";return o},{});
-      if(row["Event Name"]){
-        ratingMap[row["Event Name"]]= +row["Overall Rating"] || 0;
-        briefMap[row["Event Name"]] = row["General Thoughts"]||"";
-        imageMap[row["Event Name"]] = row["Header Image"] || ""; // NEW
-      }
-    });
-
-    // Individual responses
-    const hdr=raw.table.cols.map(c=>c.label);
-    raw.table.rows.forEach(r=>{
-      const row=hdr.reduce((o,h,i)=>{o[h]=r.c[i]?r.c[i].v:"";return o},{});
-      const evt=row["Which Student Market Would You Like To Survey?"]||
-                row["Which Event Would You Like To Survey?"]||
-                "Unknown Event";
-      (groups[evt]=groups[evt]||[]).push(row);
-    });
-
-    render();
-  }catch(e){
-    console.error(e);
-  }
+  const [overview,raw]=await Promise.all([fetchSheet(OVW_SHEET),fetchSheet(RAW_SHEET)]);
+  overview.table.rows.forEach(r=>{
+    const row=overview.table.cols.reduce((o,c,i)=>{o[c.label]=r.c[i]?r.c[i].v:"";return o},{});
+    if(row["Event Name"]){
+      ratingMap[row["Event Name"]]=+row["Overall Rating"]||0;
+      briefMap[row["Event Name"]]=row["General Thoughts"]||"";
+      imageMap[row["Event Name"]]=row["Header Image"]||"";
+      surveysMap[row["Event Name"]]=+row["Total Surveys"]||0;
+      attendanceMap[row["Event Name"]]=+row["Attendance"]||0;
+    }
+  });
+  const hdr=raw.table.cols.map(c=>c.label);
+  raw.table.rows.forEach(r=>{
+    const row=hdr.reduce((o,h,i)=>{o[h]=r.c[i]?r.c[i].v:"";return o},{});
+    const ev=keyEvent(row["Which Student Market Would You Like To Survey?"]||row["Which Event Would You Like To Survey?"]||"Unknown Event");
+    (groups[ev]=groups[ev]||[]).push(row);
+  });
+  render();
 })();
 
-/* Render dashboard */
+/* render cards */
+function maxDate(rows){return Math.max(...rows.map(r=>new Date(r.Timestamp||0).getTime()||0),0);}
 function render(filter="",sort="rating"){
-  const dash=document.getElementById("dashboard");
-  dash.innerHTML="";
+  const dash=document.getElementById("dashboard");dash.innerHTML="";
   let entries=Object.entries(groups);
+  if(sort==="rating")entries.sort((a,b)=>(ratingMap[b[0]]||0)-(ratingMap[a[0]]||0));
+  if(sort==="az")entries.sort((a,b)=>a[0].localeCompare(b[0]));
+  if(sort==="recent")entries.sort((a,b)=>(maxDate(b[1])-maxDate(a[1])));
+  if(sort==="attendance")entries.sort((a,b)=>(attendanceMap[b[0]]||0)-(attendanceMap[a[0]]||0));
 
-  if(sort==="rating") entries.sort((a,b)=>(ratingMap[b[0]]||0)-(ratingMap[a[0]]||0));
-  if(sort==="az") entries.sort((a,b)=>a[0].localeCompare(b[0]));
-  if(sort==="recent") entries.sort((a,b)=> (maxDate(b[1]) - maxDate(a[1])) );
-
-  for (const [evt,resps] of entries){
-    if(!evt.toLowerCase().includes(filter.toLowerCase())) continue;
-    const card=document.createElement("div");card.className="card glass";
-
-    // NEW: header image (if provided in Response overview → Header Image)
-    const imgUrl = imageMap[evt];
-    if (imgUrl) {
-      const headerImg = el('img',{ src: imgUrl, alt:`${evt} header`, class:"header" });
-      card.appendChild(headerImg);
-    }
-
-    const rt = ratingMap[evt];
-    const sum = briefMap[evt];
-    const cnt = resps.length;
-
-    const h2 = el('h2',{ text: evt });
-    const ratingDiv = el('div',{ class:'rating', html: rt ? `${stars(rt)} (${rt.toFixed(1)}/5.0)` : ''});
-    const respCount = el('div',{ class:'resp-count', text: `${cnt} response${cnt!==1?"s":""}`});
-    const summary = el('div',{ class:'summary', text: sum||"No summary available."});
-
-    const actions = el('div',{ class:'actions' },[
-      el('button',{ class:'btn view-btn', 'aria-label':`View responses for ${evt}`, text:'View Responses' }),
-      el('button',{ class:'btn pdf-btn', 'aria-label':`Download PDF for ${evt}`, text:'Download PDF' })
+  for(const[evt,resps]of entries){
+    if(filter&&!evt.toLowerCase().includes(filter.toLowerCase()))continue;
+    const card=el("div",{class:"card glass"});
+    const img=imageMap[evt];if(img)card.appendChild(el('img',{src:img,alt:evt+" header",class:"header"}));
+    const rt=ratingMap[evt]||0,sum=briefMap[evt]||"",cnt=surveysMap[evt]||(resps?.length||0),att=attendanceMap[evt]||0;
+    const h2=el('h2',{text:evt});
+    const ratingDiv=el('div',{class:'rating',html:rt?`${stars(rt)} (${rt.toFixed(1)}/5.0)`:""});
+    const attendanceDiv=el('div',{class:'attendance',html:`<b>Attendance:</b> ${att||"N/A"}`});
+    const respCount=el('div',{class:'resp-count',text:`${cnt} survey${cnt!==1?"s":""}`});
+    const summary=el('div',{class:'summary',text:sum||"No summary available."});
+    const actions=el('div',{class:'actions'},[
+      el('button',{class:'btn view-btn',text:'View Responses'}),
+      el('button',{class:'btn pdf-btn',text:'Download PDF'})
     ]);
-
-    card.append(h2,ratingDiv,respCount,summary,actions);
-    dash.appendChild(card);
-
+    card.append(h2,ratingDiv,attendanceDiv,respCount,summary,actions);dash.appendChild(card);
     card.querySelector('.view-btn').onclick=()=>openModal(evt,resps);
-    card.querySelector('.pdf-btn').onclick=()=>downloadPDF(evt,rt,sum,resps);
+    card.querySelector('.pdf-btn').onclick=()=>downloadPDF(evt,rt,sum,img,att,resps);
   }
 }
 
-function maxDate(rows){
-  const times = rows.map(r=> new Date(r.Timestamp || r.timestamp || 0).getTime() || 0);
-  return Math.max(...times,0);
-}
-
-/* ---------------- Modal enhanced logic ---------------- */
-let currentEvent = '';
-let currentResponses = []; // raw rows for current event
-let currentRendered = []; // after sort/filter/search
-
-function extractRatingFromRow(row){
-  const ratingKey = Object.keys(row).find(k=>{
-    if(!k) return false;
-    const t = k.trim().toLowerCase();
-    return /(^|[^a-z])(rate|rating|score|how would you rate|overall experience|overall rating|satisfaction)([^a-z]|$)/i.test(t);
-  });
-  if(!ratingKey) return NaN;
-  const raw = String(row[ratingKey] ?? '').trim();
-  const numMatch = raw.match(/(\d+(\.\d+)?)(?=\s*\/?\s*5|\b|$)/);
-  if(numMatch) return Number(numMatch[1]);
-  const starCount = (raw.match(/★/g) || []).length;
-  if(starCount) return starCount;
-  const digit = raw.match(/\b([0-5])\b/);
-  if(digit) return Number(digit[1]);
-  return NaN;
-}
-
-function renderModalResponses(){
-  const body = document.getElementById('modalBody');
-  body.innerHTML = '';
-
-  const sortMode = document.getElementById('modalSort').value;
-  const filterMode = Array.from(document.querySelectorAll('.filter-btn'))
-    .find(b=>b.getAttribute('aria-pressed')==='true')?.dataset?.filter || 'all';
-  const q = (document.getElementById('modalSearch').value || '').trim().toLowerCase();
-
-  currentRendered = currentResponses.map((row, idx)=>{
-    const rating = extractRatingFromRow(row);
-    const ts = new Date(row.Timestamp || row.timestamp || 0).getTime() || 0;
-    return { idx, row, rating: (isNaN(rating)?null:rating), ts };
-  });
-
-  if(filterMode === 'neg'){
-    currentRendered = currentRendered.filter(r => r.rating !== null && r.rating <= 2);
-  } else if(filterMode === 'neu'){
-    currentRendered = currentRendered.filter(r => r.rating !== null && Math.round(r.rating) === 3);
-  } else if(filterMode === 'pos'){
-    currentRendered = currentRendered.filter(r => r.rating !== null && r.rating >= 4);
-  }
-
-  if(q){
-    currentRendered = currentRendered.filter(item => {
-      const row = item.row;
-      return Object.entries(row).some(([k,v])=>{
-        return String(k + ' ' + (v ?? '')).toLowerCase().includes(q);
-      });
-    });
-  }
-
-  currentRendered.sort((a,b)=>{
-    if(sortMode === 'worst'){
-      if(a.rating === null && b.rating === null) return b.ts - a.ts;
-      if(a.rating === null) return 1;
-      if(b.rating === null) return -1;
-      if(a.rating !== b.rating) return a.rating - b.rating;
-      return a.ts - b.ts;
-    } else if(sortMode === 'best'){
-      if(a.rating === null && b.rating === null) return b.ts - a.ts;
-      if(a.rating === null) return 1;
-      if(b.rating === null) return -1;
-      if(a.rating !== b.rating) return b.rating - a.rating;
-      return b.ts - a.ts;
-    } else if(sortMode === 'recent'){
-      return b.ts - a.ts;
-    } else if(sortMode === 'oldest'){
-      return a.ts - b.ts;
-    }
-    return 0;
-  });
-
-  if(currentRendered.length === 0){
-    const no = document.createElement('div');
-    no.textContent = 'No responses match that filter/search.';
-    body.appendChild(no);
-    return;
-  }
-
-  currentRendered.forEach((item, j) => {
-    const row = item.row;
-    const wrap = document.createElement('div');
-    wrap.className = 'response-card';
-    const h = document.createElement('h4');
-    h.textContent = `Response #${j+1}` + (item.rating !== null ? ` — ${item.rating}/5` : '');
-    wrap.appendChild(h);
-
-    const isMarket = !!row["Which Student Market Would You Like To Survey?"];
-    const orderSpecs = isMarket ? [
-      "Which Student Market Would You Like To Survey?",
-      "How would you rate your overall experience at the Student Market?",
-      "What did you enjoy most about this market?",
-      "How satisfied were you with the variety of vendors?",
-      "Did you make a purchase at the market?",
-      "Was this your first time attending a CAB Student Market?",
-      /Any additional comments or suggestions.*Student Markets team\?/i
-    ] : [
-      "Which Event Would You Like To Survey?",
-      "How would you rate your overall experience at this event?",
-      "Was this your first time attending a CAB event?",
-      "How did you hear about this event?",
-      "What was your favorite part of the event?",
-      "What would you change or improve for next time?",
-      "How likely are you to attend a CAB event again?",
-      "Did any CAB Event Staff take the time to connect with you or talk to you during the event? (If so who?)",
-      /Any additional comments or suggestions.*CAB team\?/i
-    ];
-
-    const renderedKeys = new Set();
-    for (const spec of orderSpecs){
-      const { key, val } = findField(row, spec);
-      if(!val || /Timestamp|Student ID/i.test(key)) continue;
-      const qa = document.createElement('div');
-      qa.className = 'qa';
-      const lab = document.createElement('div'); lab.className = 'label'; lab.textContent = key;
-      const valDiv = document.createElement('div'); valDiv.className = 'value'; valDiv.appendChild(safeText(val));
-      qa.appendChild(lab); qa.appendChild(valDiv);
-      wrap.appendChild(qa);
-      renderedKeys.add(key);
-    }
-
+/* modal */
+function openModal(evt,resps){
+  document.getElementById('modalTitle').textContent=`Responses — ${evt}`;
+  const body=document.getElementById('modalBody');body.innerHTML="";
+  resps.forEach((row,j)=>{
+    const wrap=document.createElement('div');wrap.className="response-card";
+    const h=document.createElement('h4');h.textContent=`Response #${j+1}`;wrap.appendChild(h);
     Object.entries(row).forEach(([lab,val])=>{
-      if(!val || renderedKeys.has(lab) || /Timestamp|Student ID/i.test(lab)) return;
-      const qa = document.createElement('div');
-      qa.className = 'qa';
-      const labEl = document.createElement('div'); labEl.className = 'label'; labEl.textContent = lab;
-      const valEl = document.createElement('div'); valEl.className = 'value'; valEl.appendChild(safeText(val));
-      qa.appendChild(labEl); qa.appendChild(valEl);
-      wrap.appendChild(qa);
+      if(!val||/Timestamp|Student ID/i.test(lab))return;
+      const qa=document.createElement('div');qa.className="qa";
+      const labEl=document.createElement('div');labEl.className="label";labEl.textContent=lab;
+      const valEl=document.createElement('div');valEl.className="value";valEl.textContent=val;
+      qa.append(labEl,valEl);wrap.appendChild(qa);
     });
-
     body.appendChild(wrap);
   });
+  document.getElementById('modal').classList.add('show');
+}
+document.getElementById('closeBtn').onclick=()=>document.getElementById('modal').classList.remove('show');
+document.querySelector('.modal-backdrop').onclick=()=>document.getElementById('modal').classList.remove('show');
+
+/* PDF export */
+function downloadPDF(evt,rt,sum,img,att,resps){
+  let html=`<html><head><meta charset="UTF-8"><title>${evt}</title><style>
+  body{font-family:Arial,sans-serif;color:#000;}
+  .header{display:flex;align-items:center;gap:12px;margin-bottom:16px;}
+  .header img{max-height:100px;}
+  h1{font-size:22px;margin:0 0 6px;}
+  .rating{margin:6px 0 12px;}
+  .summary{font-style:italic;margin:4px 0 18px;}
+  .response{border:1px solid #ccc;border-radius:8px;padding:12px;margin:10px 0;}
+  </style></head><body>`;
+  html+=`<div class="header">`;if(img)html+=`<img src="${img}">`;html+=`<div><h1>${evt}</h1></div></div>`;
+  if(rt)html+=`<div class="rating">${stars(rt)} (${rt.toFixed(1)}/5.0)</div>`;
+  html+=`<div style="font-weight:700;"><b>Attendance:</b> ${att||"N/A"}</div>`;
+  if(sum)html+=`<div class="summary">${sum}</div>`;
+  resps.forEach((row,j)=>{const lines=[];Object.entries(row).forEach(([lab,val])=>{if(!val||/Timestamp|Student ID/i.test(lab))return;lines.push(`<div><b>${lab}:</b> ${val}</div>`);});if(lines.length)html+=`<div class="response"><h3>Response #${j+1}</h3>${lines.join("")}</div>`;});
+  html+=`</body></html>`;
+  const win=window.open("");win.document.write(html);win.document.close();win.print();
 }
 
-function openModal(evt,resps){
-  currentEvent = evt;
-  currentResponses = (resps || []).map(r => Object.assign({}, r));
-  document.getElementById('modalSort').value = 'worst';
-  document.getElementById('modalSearch').value = '';
-  document.getElementById('modalClearSearch').disabled = true;
-  document.querySelectorAll('.filter-btn').forEach(b=>{
-    b.setAttribute('aria-pressed', b.dataset.filter === 'all' ? 'true' : 'false');
-  });
-  document.getElementById('modalTitle').textContent = `Responses — ${evt}`;
-  renderModalResponses();
-  openDialog();
-}
-
-const modalEl = document.getElementById('modal');
-function openDialog(){
-  modalEl.classList.add('show');
-  modalEl.setAttribute('aria-hidden','false');
-  document.body.style.overflow = 'hidden';
-  setTimeout(()=>document.getElementById('modalSearch').focus(), 150);
-}
-function closeDialog(){
-  modalEl.classList.remove('show');
-  modalEl.setAttribute('aria-hidden','true');
-  document.body.style.overflow = '';
-}
-document.getElementById('closeBtn').addEventListener('click', closeDialog);
-modalEl.addEventListener('click', (e)=>{ if(e.target.dataset.close==='backdrop') closeDialog(); });
-window.addEventListener('keydown', (e)=>{ if(e.key==='Escape' && modalEl.classList.contains('show')) closeDialog(); });
-
-document.getElementById('modalSort').addEventListener('change', ()=>renderModalResponses());
-document.getElementById('modalSearch').addEventListener('input', (e)=>{
-  document.getElementById('modalClearSearch').disabled = !e.target.value;
-  clearTimeout(window._modalSearchDeb);
-  window._modalSearchDeb = setTimeout(()=>renderModalResponses(), 180);
-});
-document.getElementById('modalClearSearch').addEventListener('click', ()=>{
-  document.getElementById('modalSearch').value = '';
-  document.getElementById('modalClearSearch').disabled = true;
-  renderModalResponses();
-});
-document.querySelectorAll('.filter-btn').forEach(btn=>{
-  btn.addEventListener('click', (e)=>{
-    document.querySelectorAll('.filter-btn').forEach(b=>b.setAttribute('aria-pressed','false'));
-    e.currentTarget.setAttribute('aria-pressed','true');
-    renderModalResponses();
-  });
-});
-
-/* ---------------- PDF export ---------------- */
-function downloadPDF(evt, rt, sum, resps){
-  const docParts = [];
-  docParts.push(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${escapeHtml(evt)}</title>`);
-  docParts.push(`<style>
-@page { size: letter; margin: 18mm; }
-* { box-sizing: border-box; }
-body { font-family: Arial, Helvetica, sans-serif; color:#000; padding:0; margin:0; }
-.header { display:flex; align-items:center; gap:12px; margin-bottom:16px; }
-.header img { height:48px; }
-h1 { font-size:22px; margin:0 0 6px; }
-.meta { font-size:12px; color:#333; margin-bottom:10px; }
-.rating { font-size:16px; margin:6px 0 12px; }
-.summary { font-style:italic; margin:4px 0 18px; color:#333; }
-.response { border:1px solid #ccc; border-radius:8px; padding:12px 14px; margin:10px 0; page-break-inside: avoid; }
-.response h3 { margin:0 0 8px; font-size:15px; }
-.item { margin:4px 0; line-height:1.4; }
-.label { font-weight:700; }
-.footer { margin-top:18px; font-size:11px; color:#444; }
-@media print { a[href]:after { content: ""; } }
-</style></head><body>`);
-
-  docParts.push(`<div class="header">
-<img src="https://i.imgur.com/xFzbl45.png" alt="CAB Logo">
-<div>
-<h1>${escapeHtml(evt)}</h1>
-<div class="meta">Generated ${new Date().toLocaleString()}</div>
-</div>
-</div>`);
-
-  if(rt) docParts.push(`<div class="rating">${stars(rt)} (${rt.toFixed(1)}/5.0)</div>`);
-  if(sum) docParts.push(`<div class="summary">${escapeHtml(sum)}</div>`);
-
-  resps.forEach((row, j)=>{
-    const lines = [];
-    Object.entries(row).forEach(([lab,val])=>{
-      if(!val || /Timestamp|Student ID|Which Event/i.test(lab)) return;
-      lines.push(`<div class="item"><span class="label">${escapeHtml(lab)}:</span> ${escapeHtml(String(val))}</div>`);
-    });
-    if(!lines.length) return;
-    docParts.push(`<section class="response"><h3>Response #${j+1}</h3>${lines.join("")}</section>`);
-  });
-
-  docParts.push(`<div class="footer">End of report</div>`);
-  docParts.push(`</body></html>`);
-
-  const html = docParts.join("");
-
-  const iframe = document.createElement('iframe');
-  iframe.style.position='fixed';
-  iframe.style.right='0'; iframe.style.bottom='0';
-  iframe.style.width='0'; iframe.style.height='0'; iframe.style.border='0';
-  document.body.appendChild(iframe);
-
-  const doc = iframe.contentDocument;
-  doc.open(); doc.write(html); doc.close();
-
-  whenReadyToPrint(doc, () => {
-    iframe.contentWindow.focus();
-    iframe.contentWindow.print();
-    setTimeout(()=>{ document.body.removeChild(iframe); }, 800);
-  });
-}
-
-function whenReadyToPrint(doc, cb){
-  const imgs = Array.from(doc.images || []);
-  let pending = imgs.length;
-  if (pending === 0) { cb(); return; }
-  const done = () => { if(--pending <= 0) cb(); };
-  imgs.forEach(img => {
-    if (img.complete) { done(); }
-    else {
-      img.addEventListener('load', done, { once:true });
-      img.addEventListener('error', done, { once:true });
-    }
-  });
-}
-
-/* Utilities */
-function escapeHtml(s){
-  return String(s)
-    .replaceAll('&','&amp;')
-    .replaceAll('<','&lt;')
-    .replaceAll('>','&gt;')
-    .replaceAll('"','&quot;')
-    .replaceAll("'",'&#39;');
-}
-
-/* UI events */
-const searchEl = document.getElementById('search');
-const sortEl = document.getElementById('sortMode');
-function debounce(fn, wait=200){ let t; return (...args)=>{ clearTimeout(t); t=setTimeout(()=>fn(...args),wait); } }
-const onSearch = debounce(e=>render(e.target.value, sortEl.value), 200);
-searchEl.addEventListener('input', onSearch);
-sortEl.addEventListener('change', e=>render(searchEl.value, e.target.value));
+/* search/sort */
+document.getElementById('search').addEventListener('input',e=>render(e.target.value,document.getElementById('sortMode').value));
+document.getElementById('sortMode').addEventListener('change',e=>render(document.getElementById('search').value,e.target.value));
 </script>
 </body>
 </html>
