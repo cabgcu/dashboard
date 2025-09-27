@@ -3,21 +3,19 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Event Survey Dashboard — Frosted</title>
+<title>Event Survey Dashboard — Frosted White Text</title>
 
 <style>
 :root{
   --bg-img: url('https://i.imgur.com/hwef1LY.jpeg');
-  --glass-surface: rgba(0,0,0,0.65);   /* darker for stronger frost */
+  --glass-surface: rgba(0,0,0,0.65);
   --glass-border: rgba(255,255,255,0.12);
   --glass-strong-border: rgba(255,255,255,0.2);
   --text: #ffffff;
-  --text-muted: #d6d6d6;
-  --text-dim: #bfbfbf;
   --focus: #9c7bd9;
   --radius-lg: 18px;
   --radius-md: 12px;
-  --glass-blur: 28px;                  /* stronger blur */
+  --glass-blur: 28px;
   --glass-blur-strong: 36px;
 }
 
@@ -36,7 +34,7 @@ body{
 
 /* frosted glass */
 .glass {
-  background: rgba(0,0,0,0.55); /* base density */
+  background: rgba(0,0,0,0.55);
   border-radius: var(--radius-md);
   border: 1px solid var(--glass-border);
   backdrop-filter: blur(var(--glass-blur)) saturate(200%);
@@ -50,7 +48,7 @@ body{
   content: "";
   position: absolute;
   inset: 0;
-  background: rgba(0,0,0,0.25); /* tint overlay */
+  background: rgba(0,0,0,0.25);
   mix-blend-mode: multiply;
   pointer-events: none;
 }
@@ -76,20 +74,20 @@ body{
   padding:4px;
 }
 .title{
-  font-size:1.22rem; font-weight:600; letter-spacing:-0.01em; color:var(--text);
+  font-size:1.22rem; font-weight:600; letter-spacing:-0.01em; color:#fff;
   line-height:1; text-shadow: 0 1px 0 rgba(0,0,0,0.45);
 }
 .topbar-controls{ display:flex; gap:12px; align-items:center }
 input[type="text"], select {
   border: none; padding:.52rem .9rem; font-size:.96rem; border-radius:12px;
-  background: rgba(0,0,0,0.3); min-height:38px; color:var(--text); outline:none;
+  background: rgba(0,0,0,0.3); min-height:38px; color:#fff; outline:none;
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.01); border: 1px solid rgba(255,255,255,0.1);
   backdrop-filter: blur(16px) saturate(180%); -webkit-backdrop-filter: blur(16px) saturate(180%);
 }
-input::placeholder{ color: var(--text-dim); opacity:0.95; }
+input::placeholder{ color:#fff; opacity:0.85; }
 select {
   -webkit-appearance: none; -moz-appearance: none; appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='18' height='18' fill='%23c9c9c9'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='18' height='18' fill='%23ffffff'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
   background-repeat: no-repeat; background-position: right 10px center; background-size: 1rem; padding-right: 2.2rem;
 }
 input:focus, select:focus, button:focus {
@@ -108,16 +106,16 @@ input:focus, select:focus, button:focus {
 }
 .card:hover{ transform: translateY(-6px); box-shadow: 0 12px 24px rgba(0,0,0,0.65); }
 .card img.header { width:100%; max-height:160px; object-fit:cover; border-radius:12px; margin-bottom:10px; }
-.card h2{ font-size:1.05rem; margin:0; font-weight:600; color:var(--text) }
+.card h2{ font-size:1.05rem; margin:0; font-weight:600; color:#fff }
 .rating{ font-size:1.2rem; font-weight:700; color:#ffcb45; letter-spacing:0.02em }
 .attendance{ font-size:1.05rem; font-weight:700; color:#fff }
-.resp-count{ font-size:.82rem; color:var(--text-dim) }
-.summary{ font-style:italic; font-size:.9rem; color:var(--text-muted); margin-top:4px }
+.resp-count{ font-size:.82rem; color:#fff }
+.summary{ font-style:italic; font-size:.9rem; color:#fff; margin-top:4px }
 .actions{ display:flex; gap:8px; margin-top:auto; flex-wrap:wrap }
 .btn{
   padding:.5rem .85rem; font-size:.86rem; border-radius: 10px;
   border: 1px solid rgba(255,255,255,0.12); background: rgba(0,0,0,0.35);
-  cursor:pointer; color:var(--text);
+  cursor:pointer; color:#fff;
   box-shadow: 0 2px 8px rgba(0,0,0,0.45);
 }
 .btn:hover{ transform: translateY(-4px); box-shadow: 0 8px 16px rgba(0,0,0,0.6); }
@@ -133,12 +131,13 @@ input:focus, select:focus, button:focus {
   backdrop-filter: blur(var(--glass-blur-strong)) saturate(180%);
   -webkit-backdrop-filter: blur(var(--glass-blur-strong)) saturate(180%);
   box-shadow: 0 20px 60px rgba(0,0,0,0.7);
+  color:#fff;
 }
-.close-btn{ margin-left:auto;margin-bottom:12px;padding:.5rem .9rem;border:none;border-radius:10px; background:rgba(0,0,0,0.35); color:var(--text); cursor:pointer; border:1px solid rgba(255,255,255,0.15); }
-.response-card{ background: rgba(0,0,0,0.4); padding:12px 14px;border-radius:12px;margin-bottom:12px; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 8px 24px rgba(0,0,0,0.55); line-height:1.45; }
+.close-btn{ margin-left:auto;margin-bottom:12px;padding:.5rem .9rem;border:none;border-radius:10px; background:rgba(0,0,0,0.35); color:#fff; cursor:pointer; border:1px solid rgba(255,255,255,0.15); }
+.response-card{ background: rgba(0,0,0,0.4); padding:12px 14px;border-radius:12px;margin-bottom:12px; border: 1px solid rgba(255,255,255,0.1); box-shadow: 0 8px 24px rgba(0,0,0,0.55); line-height:1.45; color:#fff; }
 .qa{ margin-bottom:.6rem }
-.qa .label{ font-weight:700; font-size:.9rem; color:#ececec }
-.qa .value{ font-size:1rem; color:#ffffff; margin-left:.25rem }
+.qa .label{ font-weight:700; font-size:.9rem; color:#fff }
+.qa .value{ font-size:1rem; color:#fff; margin-left:.25rem }
 
 /* responsive */
 @media (max-width: 640px){
@@ -173,7 +172,7 @@ input:focus, select:focus, button:focus {
 
 <div id="dashboard"></div>
 
-<!-- modal for responses -->
+<!-- modal -->
 <div id="modal" class="modal" aria-hidden="true">
   <div class="modal-backdrop" data-close="backdrop"></div>
   <div class="modal-content">
@@ -184,16 +183,13 @@ input:focus, select:focus, button:focus {
 </div>
 
 <script>
-/* Config */
 const sheetID="1CqmQKvOkcLFV8XyzFrjK4H85skJCwRgSEwiP8j_6pMM";
 const RAW_SHEET="Survey Responses",OVW_SHEET="Response overview";
 const stars=n=>"★★★★★".slice(0,Math.round(n))+"☆☆☆☆☆".slice(0,5-Math.round(n));
 
-/* Data holders */
 let ratingMap={},briefMap={},surveysMap={},imageMap={},attendanceMap={},groups={};
 const keyEvent=n=>String(n||"").trim();
 
-/* DOM helper */
 function el(tag,attrs={},children=[]){
   const node=document.createElement(tag);
   for(const[k,v]of Object.entries(attrs)){
@@ -205,7 +201,6 @@ function el(tag,attrs={},children=[]){
   return node;
 }
 
-/* fetch with retry */
 async function fetchSheet(name,tries=2){
   const url=`https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(name)}`;
   for(let i=0;i<tries;i++){
@@ -220,7 +215,6 @@ async function fetchSheet(name,tries=2){
   }
 }
 
-/* load data */
 (async()=>{
   const [overview,raw]=await Promise.all([fetchSheet(OVW_SHEET),fetchSheet(RAW_SHEET)]);
   overview.table.rows.forEach(r=>{
@@ -242,7 +236,6 @@ async function fetchSheet(name,tries=2){
   render();
 })();
 
-/* render cards */
 function maxDate(rows){return Math.max(...rows.map(r=>new Date(r.Timestamp||0).getTime()||0),0);}
 function render(filter="",sort="rating"){
   const dash=document.getElementById("dashboard");dash.innerHTML="";
@@ -272,7 +265,6 @@ function render(filter="",sort="rating"){
   }
 }
 
-/* modal */
 function openModal(evt,resps){
   document.getElementById('modalTitle').textContent=`Responses — ${evt}`;
   const body=document.getElementById('modalBody');body.innerHTML="";
@@ -293,7 +285,6 @@ function openModal(evt,resps){
 document.getElementById('closeBtn').onclick=()=>document.getElementById('modal').classList.remove('show');
 document.querySelector('.modal-backdrop').onclick=()=>document.getElementById('modal').classList.remove('show');
 
-/* PDF export */
 function downloadPDF(evt,rt,sum,img,att,resps){
   let html=`<html><head><meta charset="UTF-8"><title>${evt}</title><style>
   body{font-family:Arial,sans-serif;color:#000;}
@@ -313,7 +304,6 @@ function downloadPDF(evt,rt,sum,img,att,resps){
   const win=window.open("");win.document.write(html);win.document.close();win.print();
 }
 
-/* search/sort */
 document.getElementById('search').addEventListener('input',e=>render(e.target.value,document.getElementById('sortMode').value));
 document.getElementById('sortMode').addEventListener('change',e=>render(document.getElementById('search').value,e.target.value));
 </script>
