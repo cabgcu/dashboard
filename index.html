@@ -7,7 +7,7 @@
 
 <style>
 :root{
-  --bg-img: url('https://i.imgur.com/hwef1LY.jpeg');
+  --bg-img: none; /* no static default */
   --text: #ffffff;
   --focus: #9c7bd9;
   --radius-lg: 18px;
@@ -21,7 +21,7 @@ body{
   margin:0;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   color:var(--text);
-  background: linear-gradient(180deg, rgba(0,0,0,0.2), rgba(0,0,0,0.4)), var(--bg-img) center/cover no-repeat fixed;
+  background: linear-gradient(180deg, rgba(0,0,0,0.4), rgba(0,0,0,0.6));
   padding-bottom:64px;
   opacity:0;
   animation:fadeIn 600ms ease forwards;
@@ -159,6 +159,7 @@ input:focus, select:focus, button:focus {
   .modal{ padding: 18px 10px; align-items:flex-end }
   .modal-content{ width:100%; max-height: calc(100vh - 3.5rem); margin-top: 0; padding: 12px }
   .card{ padding:12px }
+  .topbar-controls input { display:none; } /* hide search bar on mobile */
 }
 </style>
 </head>
@@ -207,8 +208,7 @@ const sheetID="1CqmQKvOkcLFV8XyzFrjK4H85skJCwRgSEwiP8j_6pMM";
 const RAW_SHEET="Survey Responses",OVW_SHEET="Response overview";
 const stars=n=>"★★★★★".slice(0,Math.round(n))+"☆☆☆☆☆".slice(0,5-Math.round(n));
 
-let ratingMap={},briefMap={},surveysMap={},imageMap={},attendanceMap={},groups={},bgImages=[];
-let ratingColumnName=null;
+let briefMap={},imageMap={},attendanceMap={},surveysMap={},groups={},bgImages=[];
 const keyEvent=n=>String(n||"").trim();
 
 function el(tag,attrs={},children=[]){
@@ -232,11 +232,10 @@ async function fetchSheet(name){
 (async()=>{
   const [overview,raw]=await Promise.all([fetchSheet(OVW_SHEET),fetchSheet(RAW_SHEET)]);
 
-  // Overview (cards + background pool)
+  // Overview (for images, summaries, attendance)
   overview.table.rows.forEach(r=>{
     const row=overview.table.cols.reduce((o,c,i)=>{o[c.label]=r.c[i]?r.c[i].v:"";return o},{});
     if(row["Event Name"]){
-      ratingMap[row["Event Name"]]=+row["Overall Rating"]||0;
       briefMap[row["Event Name"]]=row["General Thoughts"]||"";
       imageMap[row["Event Name"]]=row["Header Image"]||"";
       surveysMap[row["Event Name"]]=+row["Total Surveys"]||0;
@@ -245,130 +244,102 @@ async function fetchSheet(name){
     }
   });
 
-  // Raw responses (for modal)
+  // Raw responses
   const hdr=raw.table.cols.map(c=>c.label);
-  detectRatingColumn(hdr); // find the rating column dynamically
   raw.table.rows.forEach(r=>{
     const row=hdr.reduce((o,h,i)=>{o[h]=r.c[i]?r.c[i].v:"";return o},{});
     const ev=keyEvent(row["Which Student Market Would You Like To Survey?"]||row["Which Event Would You Like To Survey?"]||"Unknown Event");
     (groups[ev]=groups[ev]||[]).push(row);
   });
 
-  // Background: pick one random image per refresh
   pickBackgroundOnce(bgImages);
-
   render();
 })();
 
 /* Dashboard */
 function maxDate(rows){return Math.max(...rows.map(r=>new Date(r.Timestamp||0).getTime()||0),0);}
+function calcAvgRating(resps){
+  const scores=resps.map(getResponseScore).filter(x=>!isNaN(x));
+  return scores.length?scores.reduce((a,b)=>a+b,0)/scores.length:0;
+}
 function render(filter="",sort="rating"){
   const dash=document.getElementById("dashboard");dash.innerHTML="";
   let entries=Object.entries(groups);
-
-  if(sort==="rating")entries.sort((a,b)=>(ratingMap[b[0]]||0)-(ratingMap[a[0]]||0));
+  if(sort==="rating")entries.sort((a,b)=>calcAvgRating(b[1])-calcAvgRating(a[1]));
   if(sort==="az")entries.sort((a,b)=>a[0].localeCompare(b[0]));
   if(sort==="recent")entries.sort((a,b)=>(maxDate(b[1])-maxDate(a[1])));
   if(sort==="attendance")entries.sort((a,b)=>(attendanceMap[b[0]]||0)-(attendanceMap[a[0]]||0));
-
-  for(const[evt,resps]of entries){
-    if(filter&&!evt.toLowerCase().includes(filter.toLowerCase()))continue;
-
+  for(const[evt,resps] of entries){
+    if(filter&&!evt.toLowerCase().includes(filter.toLowerCase())) continue;
     const card=el("div",{class:"card glass"});
     const img=imageMap[evt]; if(img) card.appendChild(el('img',{src:img,alt:evt+" header",class:"header"}));
-
-    const rt=ratingMap[evt]||0, sum=briefMap[evt]||"", cnt=surveysMap[evt]||(resps?.length||0), att=attendanceMap[evt]||0;
-
+    const rt=calcAvgRating(resps);
+    const sum=briefMap[evt]||"", cnt=surveysMap[evt]||(resps?.length||0), att=attendanceMap[evt]||0;
     const h2=el('h2',{text:evt});
-    const ratingDiv=el('div',{class:'rating',html:rt?`${stars(rt)} (${rt.toFixed(1)}/5.0)`:""});
+    const ratingDiv=el('div',{class:'rating',html:rt?`${stars(rt)} (${rt.toFixed(1)}/5.0)`:"No ratings yet"});
     const attendanceDiv=el('div',{class:'attendance',html:`<b>Attendance:</b> ${att||"N/A"}`});
     const respCount=el('div',{class:'resp-count',text:`${cnt} survey${cnt!==1?"s":""}`});
     const summary=el('div',{class:'summary',text:sum||"No summary available."});
-
     const actions=el('div',{class:'actions'},[
       el('button',{class:'btn view-btn',text:'View Responses'}),
       el('button',{class:'btn pdf-btn',text:'Download PDF'})
     ]);
-
     card.append(h2,ratingDiv,attendanceDiv,respCount,summary,actions);
     dash.appendChild(card);
-
     card.querySelector('.view-btn').onclick=()=>openModal(evt,resps);
     card.querySelector('.pdf-btn').onclick=()=>downloadPDF(evt,rt,sum,att,resps);
   }
 }
 
-/* Helpers for response rating/sorting */
-function detectRatingColumn(headers){
-  // Prefer headers with whole-word 'rating' or 'rate'
-  const pref = headers.find(h=>/\b(overall\s*)?rating\b/i.test(h) || /\brate\b/i.test(h));
-  ratingColumnName = pref || null;
-}
-
+/* Rating Detection */
 function getResponseScore(row){
-  if(!ratingColumnName) return NaN;
-  const val = row[ratingColumnName];
-  if(val==null || val==="") return NaN;
-  const n = Number(val);
-  if(!isNaN(n) && n>=1 && n<=5) return n;
+  const keys=[
+    "How would you rate your overall experience at the Student Market?",
+    "How would you rate your overall experience at this event?"
+  ];
+  for(const k of keys){
+    if(row[k]!=null&&row[k]!==""){
+      const n=Number(row[k]);
+      if(!isNaN(n)&&n>=1&&n<=5) return n;
+    }
+  }
+  for(const [lab,val] of Object.entries(row)){
+    if(/\brate\b/i.test(lab)&&val){
+      const n=Number(val);
+      if(!isNaN(n)&&n>=1&&n<=5) return n;
+    }
+  }
   return NaN;
 }
 
+/* Helpers */
 function getTimestamp(row){
-  const t = row.Timestamp || row["timestamp"] || "";
-  const ms = Date.parse(t);
-  return Number.isFinite(ms) ? ms : 0;
+  const t=row.Timestamp||row["timestamp"]||"";
+  const ms=Date.parse(t);
+  return Number.isFinite(ms)?ms:0;
 }
-
 function getAnswerText(row){
-  for (const [k,v] of Object.entries(row)){
+  for(const [k,v] of Object.entries(row)){
     if(!v) continue;
     if(/Timestamp|Student ID/i.test(k)) continue;
     return String(v);
   }
   return "";
 }
-
-function sortResponses(list, mode){
-  const arr = list.map((r,i)=>({
-    row: r,
-    idx: i,
-    score: getResponseScore(r),
-    ts: getTimestamp(r),
-    text: getAnswerText(r)
-  }));
-
-  if(mode==="worst"){
-    const any = arr.some(x=>!isNaN(x.score));
-    if(any){
-      arr.sort((a,b)=>{
-        const as=isNaN(a.score)?Infinity:a.score;
-        const bs=isNaN(b.score)?Infinity:b.score;
-        return as-bs || a.idx-b.idx;
-      });
-    }else{
-      arr.sort((a,b)=>b.ts-a.ts || a.idx-b.idx);
-    }
-  }else if(mode==="best"){
-    arr.sort((a,b)=>{
-      const as=isNaN(a.score)?-Infinity:a.score;
-      const bs=isNaN(b.score)?-Infinity:b.score;
-      return bs-as || a.idx-b.idx;
-    });
-  }else if(mode==="newest"){
-    arr.sort((a,b)=>b.ts-a.ts || a.idx-b.idx);
-  }else if(mode==="oldest"){
-    arr.sort((a,b)=>a.ts-b.ts || a.idx-b.idx);
-  }else if(mode==="az"){
-    arr.sort((a,b)=>a.text.localeCompare(b.text));
-  }
-
+function sortResponses(list,mode){
+  const arr=list.map((r,i)=>({row:r,idx:i,score:getResponseScore(r),ts:getTimestamp(r),text:getAnswerText(r)}));
+  if(mode==="worst"){const any=arr.some(x=>!isNaN(x.score));
+    if(any){arr.sort((a,b)=>(isNaN(a.score)?Infinity:a.score)-(isNaN(b.score)?Infinity:b.score)||a.idx-b.idx);}
+    else{arr.sort((a,b)=>b.ts-a.ts||a.idx-b.idx);}
+  }else if(mode==="best"){arr.sort((a,b)=>(isNaN(b.score)?-Infinity:b.score)-(isNaN(a.score)?-Infinity:a.score)||a.idx-b.idx);}
+  else if(mode==="newest"){arr.sort((a,b)=>b.ts-a.ts||a.idx-b.idx);}
+  else if(mode==="oldest"){arr.sort((a,b)=>a.ts-b.ts||a.idx-b.idx);}
+  else if(mode==="az"){arr.sort((a,b)=>a.text.localeCompare(b.text));}
   return arr.map(x=>x.row);
 }
 
 /* Modal */
 let currentModal={event:"",raw:[],mode:"worst"};
-
 function openModal(evt,resps){
   currentModal={event:evt,raw:resps.slice(),mode:"worst"};
   document.getElementById("modalSort").value="worst";
@@ -376,40 +347,26 @@ function openModal(evt,resps){
   renderModalBody();
   document.getElementById("modal").classList.add("show");
 }
-
 function renderModalBody(){
   const body=document.getElementById("modalBody"); body.innerHTML="";
   const sorted=sortResponses(currentModal.raw,currentModal.mode);
-
   sorted.forEach((row,j)=>{
     const wrap=document.createElement("div"); wrap.className="response-card";
-
     const score=getResponseScore(row);
-    const badge = !isNaN(score)
-      ? `<span class="star-badge">${"★".repeat(score)}${"☆".repeat(5-score)} (${score}/5)</span>`
-      : `<span class="star-badge">No rating</span>`;
-
+    const badge=!isNaN(score)?`<span class="star-badge">${"★".repeat(score)}${"☆".repeat(5-score)} (${score}/5)</span>`:`<span class="star-badge">No rating</span>`;
     const h=document.createElement("h4");
-    h.textContent=`Response #${j+1}`;
-    h.insertAdjacentHTML("beforeend"," "+badge);
+    h.textContent=`Response #${j+1}`; h.insertAdjacentHTML("beforeend"," "+badge);
     wrap.appendChild(h);
-
     Object.entries(row).forEach(([lab,val])=>{
       if(!val||/Timestamp|Student ID/i.test(lab))return;
       const qa=document.createElement("div"); qa.className="qa";
       qa.innerHTML=`<div class="label">${lab}</div><div class="value">${val}</div>`;
       wrap.appendChild(qa);
     });
-
     body.appendChild(wrap);
   });
 }
-
-document.getElementById("modalSort").addEventListener("change",e=>{
-  currentModal.mode=e.target.value;
-  renderModalBody();
-});
-
+document.getElementById("modalSort").addEventListener("change",e=>{currentModal.mode=e.target.value;renderModalBody();});
 document.getElementById("closeBtn").onclick=()=>document.getElementById("modal").classList.remove("show");
 document.querySelector(".modal-backdrop").onclick=()=>document.getElementById("modal").classList.remove("show");
 
@@ -424,42 +381,31 @@ function downloadPDF(evt,rt,sum,att,resps){
   .summary{font-style:italic;margin:4px 0 18px;}
   .response{border:1px solid #ccc;border-radius:8px;padding:12px;margin:10px 0;}
   </style></head><body>`;
-
-  html+=`<div class="header">
-            <img src="https://i.imgur.com/xFzbl45.png" alt="CAB Logo">
-            <div><h1>${evt}</h1></div>
-          </div>`;
-
+  html+=`<div class="header"><img src="https://i.imgur.com/xFzbl45.png" alt="CAB Logo"><div><h1>${evt}</h1></div></div>`;
   if(rt)html+=`<div class="rating">${stars(rt)} (${rt.toFixed(1)}/5.0)</div>`;
   html+=`<div style="font-weight:700;"><b>Attendance:</b> ${att||"N/A"}</div>`;
   if(sum)html+=`<div class="summary">${sum}</div>`;
-
-  const sorted = sortResponses(resps, currentModal.event===evt ? currentModal.mode : "worst");
+  const sorted=sortResponses(resps,currentModal.event===evt?currentModal.mode:"worst");
   sorted.forEach((row,j)=>{
-    const lines=[];
-    Object.entries(row).forEach(([lab,val])=>{
+    const lines=[];Object.entries(row).forEach(([lab,val])=>{
       if(!val||/Timestamp|Student ID/i.test(lab))return;
       lines.push(`<div><b>${lab}:</b> ${val}</div>`);
     });
     if(lines.length)html+=`<div class="response"><h3>Response #${j+1}</h3>${lines.join("")}</div>`;
   });
-
   html+=`</body></html>`;
-  const win=window.open("");
-  win.document.write(html);
-  win.document.close();
-  win.print();
+  const win=window.open(""); win.document.write(html); win.document.close(); win.print();
 }
 
-/* Background pick once per refresh */
+/* Background */
 function pickBackgroundOnce(urls){
   const valid=[...new Set((urls||[]).filter(u=>/^https?:\/\//i.test(u)))];
   if(!valid.length) return;
   const chosen=valid[Math.floor(Math.random()*valid.length)];
-  document.documentElement.style.setProperty('--bg-img', `url('${chosen}')`);
+  document.body.style.background=`linear-gradient(180deg, rgba(0,0,0,0.4), rgba(0,0,0,0.6)), url('${chosen}') center/cover no-repeat fixed`;
 }
 
-/* Topbar controls */
+/* Topbar */
 document.getElementById('search').addEventListener('input',e=>render(e.target.value,document.getElementById('sortMode').value));
 document.getElementById('sortMode').addEventListener('change',e=>render(document.getElementById('search').value,e.target.value));
 </script>
