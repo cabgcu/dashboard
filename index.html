@@ -1,694 +1,413 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>Duck Hunt 2025</title>
-    <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
-    <style>
-        :root {
-            --green: #60A34D;
-            --pink: #ff69b4;
-            --card-bg: rgba(25, 25, 25, 0.4);
-            --border-color: rgba(255, 255, 255, 0.15);
-            --glow-color: rgba(96, 163, 77, 0.7); /* Green glow */
-        }
-        body { margin: 0; background-color: #000; overflow: hidden; font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif; color: white; text-align: center; }
-        .hidden { display: none !important; }
-        .glass-card { background: var(--card-bg); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid var(--border-color); border-radius: 20px; box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3); padding: 1.5rem; }
-        
-        /* SCROLL & LAYOUT FIXES */
-        #app-wrapper { 
-            position: fixed; 
-            top: 0; 
-            left: 0; 
-            width: 100%; 
-            height: 100%; 
-            display: flex; 
-            flex-direction: column; 
-        }
-        #app-container {
-            flex: 1; 
-            overflow: hidden; 
-        }
-        .app-page { 
-            width: 100%; 
-            height: 100%; 
-            box-sizing: border-box; 
-            padding: 1rem; 
-            display: none; 
-            flex-direction: column; 
-            gap: 1.5rem; 
-        }
-        .app-page.active { display: flex; }
-        .app-page h2 { margin: 0; flex-shrink: 0; }
-        
-        #hunt-page { justify-content: center; align-items: center; }
-        #hunt-content-wrapper { position: absolute; top: 45%; left: 50%; transform: translate(-50%, -50%); width: 85%; max-width: 350px; display: flex; flex-direction: column; gap: 1rem; }
-        #hunt-content-wrapper .header-image { width: 80%; margin: -2rem auto 0.2rem auto; display: block; }
-        #qr-reader-container { padding: 0; display: flex; position: relative; width: 100%; aspect-ratio: 1 / 1; }
-        #qr-reader { width: 100%; height: 100%; border-radius: 20px; overflow: hidden; }
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Event Survey Dashboard — Dark Frost + White Text</title>
 
-        #log-page, #leaderboard-page, #info-page { justify-content: flex-start; }
-        #log-container, #leaderboard-container, #info-container { 
-            flex: 1; 
-            overflow-y: auto; 
-            min-height: 0; 
-            /* Let the container maintain the standard glass-card look */
-            background: var(--card-bg);
-            border: 1px solid var(--border-color); 
-            border-radius: 20px;
-            padding: 1.5rem;
-        }
+<style>
+:root{
+  --bg-img: none; /* no static default */
+  --text: #ffffff;
+  --focus: #9c7bd9;
+  --radius-lg: 18px;
+  --radius-md: 12px;
+}
 
-        .point-pop { position: absolute; top: 85%; left: 50%; transform: translate(-50%), -50%); font-size: 1.5rem; font-weight: bold; color: white; background: rgba(0, 0, 0, 0.5); padding: 0.5rem 1.5rem; border-radius: 20px; min-width: 250px; box-sizing: border-box; text-shadow: none; animation: float-up-short 1.5s ease-out forwards; pointer-events: none; }
-        @keyframes float-up-short { to { top: 70%; opacity: 0; } }
-        
-        /* 🚀 NEW: CARD LIST STYLES FOR ACTIVE LOCATIONS (MAP PAGE) */
-        #map-page {
-            gap: 1.5rem; 
-        }
-        #map-container { 
-            flex: 1;
-            overflow-y: auto;
-            /* Remove standard card styling from this inner container */
-            background: none !important; 
-            border: none !important; 
-            box-shadow: none !important;
-            padding: 0; 
-            
-            /* Inner card layout */
-            display: flex;
-            flex-direction: column;
-            gap: 0.75rem; /* Spacing between distinct location cards */
-        }
-        
-        .location-card {
-            /* 🚀 APPLY GLASS-CARD LOOK TO EACH LOCATION-CARD DIV */
-            background: var(--card-bg);
-            backdrop-filter: blur(10px); 
-            -webkit-backdrop-filter: blur(10px); 
-            border: 1px solid var(--border-color); 
-            border-radius: 15px; 
-            padding: 1.2rem 1.5rem; 
-            box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2);
-            
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
+/* Reset */
+* { box-sizing: border-box; -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; }
+html,body{ height:100%; }
+body{
+  margin:0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  color:var(--text);
+  background: linear-gradient(180deg, rgba(0,0,0,0.4), rgba(0,0,0,0.6));
+  padding-bottom:64px;
+  opacity:0;
+  animation:fadeIn 600ms ease forwards;
+}
+@keyframes fadeIn{ to { opacity: 1 } }
 
-        .location-card h4 {
-            margin: 0;
-            font-size: 1.1rem;
-            font-weight: bold;
-        }
+/* dark frosted glass (cards, modal, topbar) */
+.glass,
+.modal-content,
+.topbar {
+  background: rgba(0,0,0,0.55);
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(255,255,255,0.12);
+  backdrop-filter: blur(28px) saturate(220%);
+  -webkit-backdrop-filter: blur(28px) saturate(220%);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.65),
+              inset 0 1px 0 rgba(255,255,255,0.05);
+  position: relative;
+  overflow: hidden;
+}
+.glass::before,
+.modal-content::before,
+.topbar::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.2);
+  mix-blend-mode: multiply;
+  pointer-events: none;
+  border-radius: inherit;
+}
+.glass > *,
+.modal-content > *,
+.topbar > * {
+  position: relative;
+  z-index: 1;
+}
 
-        .location-card span {
-            font-size: 1.4rem;
-            color: var(--green);
-            font-weight: bold;
-        }
-        /* --- END NEW MAP STYLES --- */
-        
-        .button-group { display: flex; gap: 0.5rem; }
-        .button-group button, .full-width-btn { 
-            flex: 1; 
-            border-radius: 10px; 
-            padding: 12px 15px; 
-            font-size: 1.1rem; 
-            font-weight: bold; 
-            cursor: pointer; 
-            border: 2px solid var(--green); 
-            transition: all 0.3s ease; 
-            /* 💡 Button Glow Effect */
-            box-shadow: 0 0 0 rgba(96, 163, 77, 0); 
-        }
-        .primary-btn { background-color: var(--green); color: white; }
-        .secondary-btn { background-color: transparent; color: var(--green); }
-        
-        /* 💡 Button Hover Glow */
-        .primary-btn:hover, .secondary-btn:hover, .full-width-btn:hover {
-            box-shadow: 0 0 10px var(--glow-color);
-        }
+/* header */
+.topbar-container { position: fixed; top: 0; left: 0; width: 100%; z-index: 30; padding: 14px 18px 8px; }
+.topbar{
+  display:flex; justify-content:space-between; align-items:center;
+  padding: 10px 14px; border-radius: 20px;
+  max-width: 1200px; margin: 0 auto;
+}
+.topbar-left{ display:flex; align-items:center; gap:12px; }
+.topbar-left img{
+  height:44px; width:auto;
+  filter: drop-shadow(0 3px 8px rgba(0,0,0,0.56));
+  border-radius:8px;
+  background: rgba(255,255,255,0.05);
+  padding:4px;
+}
+.title{
+  font-size:1.22rem; font-weight:600; letter-spacing:-0.01em; color:#ffffff;
+  line-height:1; text-shadow: 0 1px 0 rgba(0,0,0,0.45);
+}
+.topbar-controls{ display:flex; gap:12px; align-items:center }
+input[type="text"], select {
+  border: none; padding:.52rem .9rem; font-size:.96rem; border-radius:12px;
+  background: rgba(0,0,0,0.45); min-height:38px; color:#ffffff; outline:none;
+  border: 1px solid rgba(255,255,255,0.15);
+  backdrop-filter: blur(18px) saturate(200%); -webkit-backdrop-filter: blur(18px) saturate(200%);
+}
+input::placeholder{ color:#ffffff; opacity:1; }
+select {
+  -webkit-appearance: none; -moz-appearance: none; appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' width='18' height='18' fill='%23ffffff'%3E%3Cpath d='M7 10l5 5 5-5z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat; background-position: right 10px center; background-size: 1rem; padding-right: 2.2rem;
+}
+input:focus, select:focus, button:focus {
+  box-shadow: 0 0 0 6px color-mix(in oklab, var(--focus) 14%, transparent), inset 0 0 0 1px var(--focus);
+}
 
-        #lava-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1; }
-        #lava-container::before, #lava-container::after { content: ''; position: absolute; width: 50vmax; height: 50vmax; border-radius: 50%; opacity: 0.6; mix-blend-mode: lighten; filter: blur(100px); }
-        #lava-container::before { background-color: var(--pink); top: -25vmax; left: -25vmax; animation: move-pink 25s infinite linear; }
-        #lava-container::after { background-color: var(--green); bottom: -25vmax; right: -25vmax; animation: move-green 20s infinite linear; animation-delay: -10s; }
-        .screen { opacity: 0; transition: opacity 0.5s ease-in-out; pointer-events: none; }
-        .screen.visible { opacity: 1; pointer-events: auto; }
-        #login-screen { position: absolute; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; }
-        
-        /* Instruction Card Layout for 'X' alignment */
-        #instructions-card { position: absolute; top: 20px; left: 50%; transform: translateX(-50%); padding: 0.8rem 1.2rem; border-radius: 12px; width: 90%; max-width: 450px; box-sizing: border-box; display: flex; justify-content: space-between; align-items: center; z-index: 101; }
-        #header-card { position: relative; width: 85%; max-width: 350px; }
-        #login-view, #registration-view { display: flex; flex-direction: column; gap: 1.5rem; }
-        .input-group { display: flex; flex-direction: column; gap: 1rem; }
-        .reg-input, #login-studentid { 
-            background: rgba(255, 255, 255, 0.1); 
-            border: 1px solid rgba(255, 255, 255, 0.2); 
-            border-radius: 10px; 
-            padding: 12px 15px; 
-            font-size: 1rem; 
-            color: white; 
-            text-align: center;
-            transition: box-shadow 0.3s ease, border-color 0.3s ease;
-        }
-        .reg-input:hover, #login-studentid:hover {
-            border-color: var(--green);
-            box-shadow: 0 0 10px var(--glow-color);
-        }
+/* grid */
+#dashboard{
+  display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.25rem; padding: 20px; max-width: 1200px; margin: 100px auto 80px;
+}
+.card{
+  padding: 16px; border-radius: var(--radius-lg);
+  transition: transform .18s ease, box-shadow .18s ease; cursor: default;
+  min-height: 110px; display:flex; flex-direction:column; gap:8px;
+}
+.card:hover{ transform: translateY(-6px); box-shadow: 0 12px 24px rgba(0,0,0,0.7); }
+.card img.header { width:100%; max-height:160px; object-fit:cover; border-radius:12px; margin-bottom:10px; }
+.card h2{ font-size:1.05rem; margin:0; font-weight:600; color:#ffffff }
+.rating{ font-size:1.2rem; font-weight:700; color:#ffcb45; letter-spacing:0.02em }
+.attendance{ font-size:1.05rem; font-weight:700; color:#ffffff }
+.resp-count{ font-size:.82rem; color:#ffffff }
+.summary{ font-style:italic; font-size:.9rem; color:#ffffff; margin-top:4px }
+.actions{ display:flex; gap:8px; margin-top:auto; flex-wrap:wrap }
+.btn{
+  padding:.5rem .85rem; font-size:.86rem; border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.15); background: rgba(0,0,0,0.45);
+  cursor:pointer; color:#ffffff;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.45);
+}
+.btn:hover{ transform: translateY(-4px); box-shadow: 0 8px 16px rgba(0,0,0,0.65); }
 
-        footer { position: absolute; bottom: 0; left: 0; right: 0; padding: 10px 10px 20px 10px; color: rgba(255, 255, 255, 0.7); font-size: 0.8rem; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 10px; }
-        .footer-logo { height: 40px; }
-        #scanner-overlay-stats { position: absolute; top: 0; left: 0; right: 0; z-index: 10; background: rgba(0, 0, 0, 0.3); backdrop-filter: blur(5px); border-radius: 20px 20px 0 0; padding: 0.8rem; display: flex; justify-content: space-around; }
-        .stat { text-align: center; }
-        .stat h4 { margin: 0; color: rgba(255,255,255,0.7); font-weight: bold; font-size: 0.9rem; }
-        .stat p { margin: 0; font-size: 1.2rem; font-weight: bold; }
-        
-        #leaderboard-list, #log-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.5rem; padding: 1rem 0;}
-        .list-item { display: flex; align-items: center; justify-content: space-between; padding: 1rem; border-bottom: 1px solid var(--border-color); }
-        .list-item div { text-align: left; }
-        .list-item .primary-text { font-weight: bold; }
-        .list-item .secondary-text { font-size: 0.8rem; color: rgba(255,255,255,0.7); }
-        #tab-bar { position: fixed; bottom: 0; left: 0; right: 0; height: 65px; z-index: 150; background: rgba(10, 10, 10, 0.5); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); border-top: 1px solid var(--border-color); display: flex; justify-content: space-around; }
-        .tab-button { background: none; border: none; color: rgba(255,255,255,0.6); font-size: 0.9rem; cursor: pointer; flex-grow: 1; font-weight: 600; }
-        .tab-button.active { color: var(--green); font-weight: bold; }
-        .duck-animation { position: absolute; top: 50%; left: -50px; font-size: 50px; animation: fly-across 2s linear forwards; pointer-events: none; z-index: 1000; }
-        @keyframes fly-across { 0% { transform: translateX(0) translateY(0) rotate(0deg); } 25% { transform: translateX(25vw) translateY(-40px) rotate(15deg); } 50% { transform: translateX(50vw) translateY(0) rotate(0deg); } 75% { transform: translateX(75vw) translateY(-40px) rotate(-15deg); } 100% { transform: translateX(110vw) translateY(0) rotate(0deg); } }
-        @keyframes fall-and-fade { to { transform: translateY(100vh) rotate(360deg); opacity: 0; } }
-        @keyframes move-pink { 0%, 100% { transform: translate(0, 0); } 25% { transform: translate(100vw, 0); } 50% { transform: translate(100vw, 100vh); } 75% { transform: translate(0, 100vh); } }
-        @keyframes move-green { 0%, 100% { transform: translate(0, 0); } 25% { transform: translate(-100vw, 0); } 50% { transform: translate(-100vw, -100vh); } 75% { transform: translate(0, -100vh); } }
-    </style>
+/* modal */
+.modal{ position:fixed; inset:0; width:100%; height:100%; display:none; z-index:100; justify-content:center; align-items:flex-start; padding:48px 20px; }
+.modal.show{ display:flex }
+.modal-backdrop{ position:fixed; inset:0; background:rgba(6,8,12,0.6); backdrop-filter: blur(12px); }
+.modal-content{
+  position:relative; width:min(92vw, 980px); max-height:calc(100vh - 8rem); overflow:auto;
+  border-radius: calc(var(--radius-lg) + 4px); padding: 18px; margin-top: 20px;
+  color:#ffffff;
+}
+.close-btn{
+  position:absolute;
+  top:12px;
+  right:12px;
+  margin:0;
+  padding:.5rem .9rem;
+  border:none;
+  border-radius:10px;
+  background:rgba(0,0,0,0.45);
+  color:#ffffff;
+  cursor:pointer;
+  border:1px solid rgba(255,255,255,0.15);
+}
+.response-card{ background: rgba(0,0,0,0.55); padding:12px 14px;border-radius:12px;margin-bottom:12px; border: 1px solid rgba(255,255,255,0.12); box-shadow: 0 8px 24px rgba(0,0,0,0.55); line-height:1.45; color:#ffffff; }
+.qa{ margin-bottom:.6rem }
+.qa .label{ font-weight:700; font-size:.9rem; color:#ffffff }
+.qa .value{ font-size:1rem; color:#ffffff; margin-left:.25rem }
+.star-badge{margin-left:8px;color:#ffcb45;font-weight:700;}
+
+/* responsive */
+@media (max-width: 640px){
+  .topbar-container { padding: 12px 10px; }
+  .topbar{ padding:10px; gap:10px; }
+  .title{ font-size:1.05rem }
+  #dashboard{ grid-template-columns: 1fr; padding:12px; gap:12px; margin: 90px auto 80px; }
+  .modal{ padding: 18px 10px; align-items:flex-end }
+  .modal-content{ width:100%; max-height: calc(100vh - 3.5rem); margin-top: 0; padding: 12px }
+  .card{ padding:12px }
+  .topbar-controls input { display:none; } /* hide search bar on mobile */
+}
+</style>
 </head>
 <body>
-    <div id="lava-container"></div>
-    
-    <div id="login-screen" class="screen visible">
-        <div class="glass-card" id="instructions-card">
-            <p>Tap <strong>Share</strong> (⇧) to Add to Home Screen!</p>
-            <button id="close-instructions" style="background:none; border:none; color:white; font-size:1.5rem; cursor:pointer;">&times;</button>
-        </div>
-        <div class="glass-card" id="header-card">
-            <div id="login-view">
-                <img class="header-image" style="width:100%;" src="https://i.imgur.com/piKjXSd.png" alt="Wicked Movie Header">
-                <input type="text" id="login-studentid" class="reg-input" placeholder="Student ID">
-                <div class="button-group">
-                    <button id="signin-btn" class="secondary-btn">Sign In</button>
-                    <button id="register-btn" class="primary-btn">Register</button>
-                </div>
-            </div>
-            <div id="registration-view" class="hidden">
-                <h3>Welcome To The Hunt!</h3>
-                <div class="input-group">
-                    <input type="text" id="reg-firstname" class="reg-input" placeholder="First Name"><input type="text" id="reg-lastname" class="reg-input" placeholder="Last Name">
-                    <input type="text" id="reg-studentid" class="reg-input" placeholder="Student ID"><input type="email" id="reg-email" class="reg-input" placeholder="Email">
-                </div>
-                <div class="button-group">
-                    <button id="back-btn" class="secondary-btn">Back</button><button id="submit-btn" class="primary-btn">Submit</button>
-                </div>
-            </div>
-        </div>
-        <footer>
-            <img src="https://i.imgur.com/p2qZOL5.png" alt="Canyon Activities Board Logo" class="footer-logo">
-            <p>Hosted By the Canyon Activities Board at Grand Canyon University</p>
-        </footer>
+<div class="topbar-container">
+  <div class="topbar">
+    <div class="topbar-left">
+      <img src="https://i.imgur.com/oqrmQSC.png" alt="CAB Logo">
+      <div class="title">Event Survey Dashboard</div>
     </div>
-
-    <div id="app-wrapper" class="screen">
-        <main id="app-container">
-            <section id="hunt-page" class="app-page">
-                <div id="hunt-content-wrapper">
-                    <img class="header-image" src="https://i.imgur.com/piKjXSd.png" alt="Wicked Movie Header">
-                    <h2 id="welcome-message"></h2>
-                    <div id="qr-reader-container" class="glass-card">
-                        <div id="scanner-overlay-stats">
-                            <div class="stat"><h4>POINTS</h4><p id="player-points">0</p></div>
-                            <div class="stat"><h4>DUCKS</h4><p id="player-ducks">0</p></div>
-                        </div>
-                        <div id="qr-reader"></div>
-                    </div>
-                </div>
-            </section>
-            
-            <section id="map-page" class="app-page">
-                <h2>Active Locations</h2>
-                <div id="map-container" class="glass-card">
-                    <h4>Loading locations...</h4>
-                </div>
-            </section>
-
-            <section id="leaderboard-page" class="app-page">
-                <h2>Leaderboard</h2>
-                <div id="leaderboard-container" class="glass-card"><ul id="leaderboard-list"></ul></div>
-            </section>
-            
-            <section id="log-page" class="app-page">
-                <h2>Scan History</h2>
-                <div id="log-container" class="glass-card"><ul id="log-list"></ul></div>
-            </section>
-
-            <section id="info-page" class="app-page">
-                <h2>Information</h2>
-                <div id="info-container" class="glass-card" style="text-align:left;">
-                   <p>Welcome to the Duck Hunt! Find ducks hidden around campus and scan their QR codes to earn points.</p>
-                   <p>The player with the most points at the end of the event wins a prize!</p>
-                </div>
-                <button id="info-to-hunt-btn" class="primary-btn full-width-btn">Start Hunting!</button>
-            </section>
-        </main>
-        <nav id="tab-bar">
-             <button class="tab-button" data-page="hunt-page">Scanner</button>
-             <button class="tab-button" data-page="map-page">Map</button>
-             <button class="tab-button" data-page="leaderboard-page">Leaderboard</button>
-             <button class="tab-button" data-page="log-page">Log</button>
-             <button class="tab-button" data-page="info-page">Info</button>
-        </nav>
+    <div class="topbar-controls">
+      <input id="search" type="text" placeholder="Search event…" autocomplete="off" />
+      <select id="sortMode">
+        <option value="rating">⭐ Rating</option>
+        <option value="az">🔤 A–Z</option>
+        <option value="recent">🕒 Recent</option>
+        <option value="attendance">👥 Attendance</option>
+      </select>
     </div>
+  </div>
+</div>
 
-    <script>
-        // --- CONFIGURATION ---
-        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzhU_jpWVzhhnFHkHfiD-vtwctv6tF_gGYyoXTNRJ9W8RZxY0xH8dFCFk2yVfTxox6e/exec';
+<div id="dashboard"></div>
 
-        // --- GLOBAL STATE & DOM REFERENCES ---
-        let html5QrCode = null;
-        let currentUser = null;
-        let initialDuckId = null;
-        let ducksScannedCount = 0;
-        const loginScreen = document.getElementById('login-screen');
-        const appWrapper = document.getElementById('app-wrapper');
-        const loginView = document.getElementById('login-view');
-        const registrationView = document.getElementById('registration-view');
+<!-- modal -->
+<div id="modal" class="modal" aria-hidden="true">
+  <div class="modal-backdrop" data-close="backdrop"></div>
+  <div class="modal-content">
+    <button id="closeBtn" class="close-btn">Close</button>
+    <div style="display:flex;align-items:center;gap:8px;margin:40px 0 12px;">
+      <select id="modalSort">
+        <option value="worst">Worst → Best</option>
+        <option value="best">Best → Worst</option>
+        <option value="newest">Newest</option>
+        <option value="oldest">Oldest</option>
+        <option value="az">A–Z</option>
+      </select>
+    </div>
+    <h3 id="modalTitle">Responses</h3>
+    <div id="modalBody"></div>
+  </div>
+</div>
 
-        // --- ANIMATION FUNCTIONS ---
-        function triggerDuckAnimation() {
-            const duckCount = Math.floor(Math.random() * 3) + 3;
-            for (let i = 0; i < duckCount; i++) {
-                setTimeout(() => {
-                    const duck = document.createElement('div');
-                    duck.textContent = '🦆';
-                    duck.className = 'duck-animation';
-                    duck.style.top = `${30 + Math.random() * 40}%`;
-                    duck.style.animationDuration = `${1.5 + Math.random()}s`;
-                    document.body.appendChild(duck);
-                    setTimeout(() => duck.remove(), 2500);
-                }, i * 200);
-            }
-        }
-        function triggerGoldenDuckAnimation() {
-            const elementCount = 10;
-            for (let i = 0; i < elementCount; i++) {
-                setTimeout(() => {
-                    const el = document.createElement('div');
-                    el.textContent = i % 2 === 0 ? '🦆' : '💰';
-                    el.className = 'duck-animation';
-                    el.style.top = `${20 + Math.random() * 60}%`;
-                    el.style.fontSize = `${30 + Math.random() * 20}px`;
-                    el.style.animationDuration = `${1.5 + Math.random() * 1.5}s`;
-                    document.body.appendChild(el);
-                    setTimeout(() => el.remove(), 3000);
-                }, i * 150);
-            }
-        }
-        function triggerFrostAnimation() {
-            const flakeCount = 15;
-            for (let i = 0; i < flakeCount; i++) {
-                const flake = document.createElement('div');
-                flake.textContent = '❄️';
-                flake.className = 'frost-animation';
-                flake.style.left = `${Math.random() * 100}vw`;
-                flake.style.animationDuration = `${2 + Math.random() * 3}s`;
-                flake.style.animationDelay = `${Math.random()}s`;
-                document.body.appendChild(flake);
-                setTimeout(() => flake.remove(), 5000);
-            }
-        }
-        
-        // --- CORE LOGIC ---
-        function checkForInitialDuck() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const duckId = urlParams.get('duckId');
-            if (duckId) {
-                initialDuckId = duckId;
-                showNotification("Duck found! Sign in or register to claim it.");
-            }
-        }
+<script>
+const sheetID="1CqmQKvOkcLFV8XyzFrjK4H85skJCwRgSEwiP8j_6pMM";
+const RAW_SHEET="Survey Responses",OVW_SHEET="Response overview";
+const stars=n=>"★★★★★".slice(0,Math.round(n))+"☆☆☆☆☆".slice(0,5-Math.round(n));
 
-        async function onScanSuccess(decodedText) {
-            if (!currentUser || (html5QrCode && html5QrCode.getState() !== Html5QrcodeScannerState.SCANNING)) return;
+let briefMap={},imageMap={},attendanceMap={},surveysMap={},groups={},bgImages=[];
+const keyEvent=n=>String(n||"").trim();
 
-            html5QrCode.pause();
+function el(tag,attrs={},children=[]){
+  const node=document.createElement(tag);
+  for(const[k,v]of Object.entries(attrs)){
+    if(k==='text')node.textContent=v;
+    else if(k==='html')node.innerHTML=v;
+    else node.setAttribute(k,v);
+  }
+  [].concat(children).forEach(c=>c&&node.appendChild(c));
+  return node;
+}
 
-            let finalDuckId = decodedText;
-            try {
-                const url = new URL(decodedText);
-                if (url.searchParams.has('duckId')) { finalDuckId = url.searchParams.get('duckId'); }
-            } catch (e) {}
+async function fetchSheet(name){
+  const url=`https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(name)}`;
+  const res=await fetch(url); const raw=await res.text();
+  return JSON.parse(raw.substring(47,raw.length-2));
+}
 
-            const payload = { action: "scanDuck", duckId: finalDuckId, studentId: currentUser.studentId };
+/* INIT */
+(async()=>{
+  const [overview,raw]=await Promise.all([fetchSheet(OVW_SHEET),fetchSheet(RAW_SHEET)]);
 
-            try {
-                const response = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(payload) });
-                const result = await response.json();
-                
-                if (result.status === "success") {
-                    const pointsPop = document.createElement('div');
-                    pointsPop.className = 'point-pop';
-                    pointsPop.textContent = `+${result.points}`;
-                    document.getElementById('qr-reader-container').appendChild(pointsPop);
-                    setTimeout(() => pointsPop.remove(), 1500);
-                    
-                    if (result.duckType === "Golden Duck") {
-                        triggerGoldenDuckAnimation();
-                    } else {
-                        triggerDuckAnimation();
-                    }
-                    
-                    updateUserDashboard(true);
-                } else {
-                    const errorPop = document.createElement('div');
-                    errorPop.className = 'point-pop';
-                    errorPop.style.color = 'white'; 
-                    errorPop.textContent = result.message;
-                    document.getElementById('qr-reader-container').appendChild(errorPop);
-                    setTimeout(() => errorPop.remove(), 4000);
+  // Overview (for images, summaries, attendance)
+  overview.table.rows.forEach(r=>{
+    const row=overview.table.cols.reduce((o,c,i)=>{o[c.label]=r.c[i]?r.c[i].v:"";return o},{});
+    if(row["Event Name"]){
+      briefMap[row["Event Name"]]=row["General Thoughts"]||"";
+      imageMap[row["Event Name"]]=row["Header Image"]||"";
+      surveysMap[row["Event Name"]]=+row["Total Surveys"]||0;
+      attendanceMap[row["Event Name"]]=+row["Attendance"]||0;
+      if(row["Header Image"]) bgImages.push(row["Header Image"]);
+    }
+  });
 
-                    if (result.message.includes("Daily limit")) {
-                        triggerFrostAnimation();
-                    }
-                }
-            } catch (error) {
-                console.error("Scan error:", error);
-                
-                // Handle friendly timeout/busy message
-                let displayMessage = "Pardon Our Ducks, We Have A Lot Hunters Online At The Moment, Please Try Again Later";
-                
-                const errorPop = document.createElement('div');
-                    errorPop.className = 'point-pop';
-                    errorPop.style.color = 'white'; 
-                    errorPop.textContent = displayMessage;
-                    document.getElementById('qr-reader-container').appendChild(errorPop);
-                    setTimeout(() => errorPop.remove(), 5000);
+  // Raw responses
+  const hdr=raw.table.cols.map(c=>c.label);
+  raw.table.rows.forEach(r=>{
+    const row=hdr.reduce((o,h,i)=>{o[h]=r.c[i]?r.c[i].v:"";return o},{});
+    const ev=keyEvent(row["Which Student Market Would You Like To Survey?"]||row["Which Event Would You Like To Survey?"]||"Unknown Event");
+    (groups[ev]=groups[ev]||[]).push(row);
+  });
 
-            } finally {
-                setTimeout(() => {
-                    if (html5QrCode && html5QrCode.getState() === Html5QrcodeScannerState.PAUSED) {
-                        html5QrCode.resume();
-                    }
-                }, 2000);
-            }
-        }
-        
-        async function signIn(studentId) {
-             try {
-                const response = await fetch(`${SCRIPT_URL}?action=getUser&studentId=${studentId}`);
-                const result = await response.json();
-                if (result.status === "success") {
-                    // Sign in success goes to the Scanner page (hunt-page)
-                    showApp(result.user, 'hunt-page'); 
-                } else {
-                    // Custom "User Not Found" message
-                    alert("Welcome To Duck Hunt! Please Register Before Signing In!");
-                }
-            } catch (error) {
-                alert("Error signing in.");
-                console.error(error);
-            }
-        }
-        
-        async function registerUser() {
-            const payload = {
-                action: "registerUser",
-                firstName: document.getElementById('reg-firstname').value.trim(),
-                lastName: document.getElementById('reg-lastname').value.trim(),
-                studentId: document.getElementById('reg-studentid').value.trim(),
-                email: document.getElementById('reg-email').value.trim()
-            };
+  pickBackgroundOnce(bgImages);
+  render();
+})();
 
-            if (!payload.firstName || !payload.studentId) {
-                return alert("First Name and Student ID are required.");
-            }
-            
-            try {
-                const response = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(payload) });
-                const result = await response.json();
-                
-                if (result.status === "success") {
-                    const userResponse = await fetch(`${SCRIPT_URL}?action=getUser&studentId=${payload.studentId}`);
-                    const userResult = await userResponse.json();
-                    
-                    if (userResult.status === "success") {
-                         showApp(userResult.user, 'info-page'); // Go to info page after successful registration
-                    } else {
-                        alert("Registration succeeded, but automatic sign-in failed.");
-                    }
-                    
-                } else {
-                    alert(result.message); // Alert on registration error
-                }
-            } catch (error) {
-                alert("Error registering.");
-                console.error(error);
-            }
-        }
+/* Dashboard */
+function maxDate(rows){return Math.max(...rows.map(r=>new Date(r.Timestamp||0).getTime()||0),0);}
+function calcAvgRating(resps){
+  const scores=resps.map(getResponseScore).filter(x=>!isNaN(x));
+  return scores.length?scores.reduce((a,b)=>a+b,0)/scores.length:0;
+}
+function render(filter="",sort="rating"){
+  const dash=document.getElementById("dashboard");dash.innerHTML="";
+  let entries=Object.entries(groups);
+  if(sort==="rating")entries.sort((a,b)=>calcAvgRating(b[1])-calcAvgRating(a[1]));
+  if(sort==="az")entries.sort((a,b)=>a[0].localeCompare(b[0]));
+  if(sort==="recent")entries.sort((a,b)=>(maxDate(b[1])-maxDate(a[1])));
+  if(sort==="attendance")entries.sort((a,b)=>(attendanceMap[b[0]]||0)-(attendanceMap[a[0]]||0));
+  for(const[evt,resps] of entries){
+    if(filter&&!evt.toLowerCase().includes(filter.toLowerCase())) continue;
+    const card=el("div",{class:"card glass"});
+    const img=imageMap[evt]; if(img) card.appendChild(el('img',{src:img,alt:evt+" header",class:"header"}));
+    const rt=calcAvgRating(resps);
+    const sum=briefMap[evt]||"", cnt=surveysMap[evt]||(resps?.length||0), att=attendanceMap[evt]||0;
+    const h2=el('h2',{text:evt});
+    const ratingDiv=el('div',{class:'rating',html:rt?`${stars(rt)} (${rt.toFixed(1)}/5.0)`:"No ratings yet"});
+    const attendanceDiv=el('div',{class:'attendance',html:`<b>Attendance:</b> ${att||"N/A"}`});
+    const respCount=el('div',{class:'resp-count',text:`${cnt} survey${cnt!==1?"s":""}`});
+    const summary=el('div',{class:'summary',text:sum||"No summary available."});
+    const actions=el('div',{class:'actions'},[
+      el('button',{class:'btn view-btn',text:'View Responses'}),
+      el('button',{class:'btn pdf-btn',text:'Download PDF'})
+    ]);
+    card.append(h2,ratingDiv,attendanceDiv,respCount,summary,actions);
+    dash.appendChild(card);
+    card.querySelector('.view-btn').onclick=()=>openModal(evt,resps);
+    card.querySelector('.pdf-btn').onclick=()=>downloadPDF(evt,rt,sum,att,resps);
+  }
+}
 
-        function showApp(user, initialPageId) {
-            currentUser = user;
-            ducksScannedCount = 0;
-            sessionStorage.setItem('currentUserStudentId', user.studentId);
-            loginScreen.classList.remove('visible');
-            appWrapper.classList.add('visible');
-            updateUserDashboard();
-            switchPage(initialPageId);
-            
-            fetch(`${SCRIPT_URL}?action=getScanHistory&studentId=${currentUser.studentId}`)
-                .then(res => res.json())
-                .then(scanData => {
-                    if (scanData && Array.isArray(scanData)) {
-                        ducksScannedCount = scanData.length;
-                        document.getElementById('player-ducks').textContent = ducksScannedCount;
-                    }
-                });
+/* Rating Detection */
+function getResponseScore(row){
+  const keys=[
+    "How would you rate your overall experience at the Student Market?",
+    "How would you rate your overall experience at this event?"
+  ];
+  for(const k of keys){
+    if(row[k]!=null&&row[k]!==""){
+      const n=Number(row[k]);
+      if(!isNaN(n)&&n>=1&&n<=5) return n;
+    }
+  }
+  for(const [lab,val] of Object.entries(row)){
+    if(/\brate\b/i.test(lab)&&val){
+      const n=Number(val);
+      if(!isNaN(n)&&n>=1&&n<=5) return n;
+    }
+  }
+  return NaN;
+}
 
-            if (initialDuckId) {
-                onScanSuccess(initialDuckId);
-                initialDuckId = null; 
-            }
-        }
-        
-        async function updateUserDashboard(newDuckScanned = false) {
-            if (!currentUser) return;
-            if (newDuckScanned) {
-                ducksScannedCount++;
-            }
-            const response = await fetch(`${SCRIPT_URL}?action=getUser&studentId=${currentUser.studentId}`);
-            const result = await response.json();
-             if (result.status === "success") {
-                currentUser = result.user;
-                document.getElementById('welcome-message').textContent = `Welcome, ${currentUser.firstName}!`;
-                document.getElementById('player-points').textContent = currentUser.points;
-                document.getElementById('player-ducks').textContent = ducksScannedCount;
-             }
-        }
-        
-        async function updateLeaderboard() {
-            const listElement = document.getElementById('leaderboard-list');
-            listElement.innerHTML = '<li>Loading...</li>';
-            try {
-                const response = await fetch(`${SCRIPT_URL}?action=getLeaderboard`);
-                const leaderboardData = await response.json();
-                let html = '';
-                leaderboardData.slice(0, 20).forEach((player, index) => {
-                    const lastNameInitial = (player.lastName && player.lastName.length > 0) ? `${player.lastName.charAt(0)}.` : '';
-                    const displayName = `${player.firstName} ${lastNameInitial}`;
-                    html += `<li class="list-item"><div><div class="primary-text">${index + 1}. ${displayName}</div></div><span>${player.points}</span></li>`;
-                });
-                listElement.innerHTML = html;
-            } catch (error) {
-                listElement.innerHTML = '<li>Error loading leaderboard.</li>';
-                console.error(error);
-            }
-        }
-        
-        async function updateScanHistory() {
-            const listElement = document.getElementById('log-list');
-            listElement.innerHTML = '<li>Loading...</li>';
-            try {
-                const response = await fetch(`${SCRIPT_URL}?action=getScanHistory&studentId=${currentUser.studentId}`);
-                const scanData = await response.json();
+/* Helpers */
+function getTimestamp(row){
+  const t=row.Timestamp||row["timestamp"]||"";
+  const ms=Date.parse(t);
+  return Number.isFinite(ms)?ms:0;
+}
+function getAnswerText(row){
+  for(const [k,v] of Object.entries(row)){
+    if(!v) continue;
+    if(/Timestamp|Student ID/i.test(k)) continue;
+    return String(v);
+  }
+  return "";
+}
+function sortResponses(list,mode){
+  const arr=list.map((r,i)=>({row:r,idx:i,score:getResponseScore(r),ts:getTimestamp(r),text:getAnswerText(r)}));
+  if(mode==="worst"){const any=arr.some(x=>!isNaN(x.score));
+    if(any){arr.sort((a,b)=>(isNaN(a.score)?Infinity:a.score)-(isNaN(b.score)?Infinity:b.score)||a.idx-b.idx);}
+    else{arr.sort((a,b)=>b.ts-a.ts||a.idx-b.idx);}
+  }else if(mode==="best"){arr.sort((a,b)=>(isNaN(b.score)?-Infinity:b.score)-(isNaN(a.score)?-Infinity:a.score)||a.idx-b.idx);}
+  else if(mode==="newest"){arr.sort((a,b)=>b.ts-a.ts||a.idx-b.idx);}
+  else if(mode==="oldest"){arr.sort((a,b)=>a.ts-b.ts||a.idx-b.idx);}
+  else if(mode==="az"){arr.sort((a,b)=>a.text.localeCompare(b.text));}
+  return arr.map(x=>x.row);
+}
 
-                if (!scanData || scanData.length === 0) {
-                    listElement.innerHTML = '<li>You haven\'t scanned any ducks yet.</li>';
-                    return;
-                }
-                
-                let html = '';
-                scanData.forEach(scan => {
-                    const scanDate = new Date(scan.timestamp);
-                    const timeString = scanDate.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-                    
-                    const points = scan.points || 0; 
-                    
-                    html += `<li class="list-item">
-                                <div>
-                                    <div class="primary-text">${scan.duckId}</div>
-                                    <div class="secondary-text">${scan.duckType || 'Duck'} - ${timeString}</div>
-                                </div>
-                                <span>+${points}</span>
-                            </li>`;
-                });
-                listElement.innerHTML = html;
-            } catch (error) {
-                listElement.innerHTML = '<li>Error loading scan history.</li>';
-            }
-        }
-        
-        // 🚀 NEW: DYNAMIC LOCATION LIST FUNCTION
-        async function updateDuckMap() {
-            const container = document.getElementById('map-container');
-            container.innerHTML = '<h4>Loading locations...</h4>';
+/* Modal */
+let currentModal={event:"",raw:[],mode:"worst"};
+function openModal(evt,resps){
+  currentModal={event:evt,raw:resps.slice(),mode:"worst"};
+  document.getElementById("modalSort").value="worst";
+  document.getElementById("modalTitle").textContent=`Responses — ${evt}`;
+  renderModalBody();
+  document.getElementById("modal").classList.add("show");
+}
+function renderModalBody(){
+  const body=document.getElementById("modalBody"); body.innerHTML="";
+  const sorted=sortResponses(currentModal.raw,currentModal.mode);
+  sorted.forEach((row,j)=>{
+    const wrap=document.createElement("div"); wrap.className="response-card";
+    const score=getResponseScore(row);
+    const badge=!isNaN(score)?`<span class="star-badge">${"★".repeat(score)}${"☆".repeat(5-score)} (${score}/5)</span>`:`<span class="star-badge">No rating</span>`;
+    const h=document.createElement("h4");
+    h.textContent=`Response #${j+1}`; h.insertAdjacentHTML("beforeend"," "+badge);
+    wrap.appendChild(h);
+    Object.entries(row).forEach(([lab,val])=>{
+      if(!val||/Timestamp|Student ID/i.test(lab))return;
+      const qa=document.createElement("div"); qa.className="qa";
+      qa.innerHTML=`<div class="label">${lab}</div><div class="value">${val}</div>`;
+      wrap.appendChild(qa);
+    });
+    body.appendChild(wrap);
+  });
+}
+document.getElementById("modalSort").addEventListener("change",e=>{currentModal.mode=e.target.value;renderModalBody();});
+document.getElementById("closeBtn").onclick=()=>document.getElementById("modal").classList.remove("show");
+document.querySelector(".modal-backdrop").onclick=()=>document.getElementById("modal").classList.remove("show");
 
-            try {
-                const response = await fetch(`${SCRIPT_URL}?action=getDuckCounts`);
-                const result = await response.json(); // Returns { locations: {}, totalPercentage: 0 }
+/* PDF */
+function downloadPDF(evt,rt,sum,att,resps){
+  let html=`<html><head><meta charset="UTF-8"><title>${evt}</title><style>
+  body{font-family:Arial,sans-serif;color:#000;}
+  .header{display:flex;align-items:center;gap:12px;margin-bottom:16px;}
+  .header img{max-height:80px;}
+  h1{font-size:22px;margin:0 0 6px;}
+  .rating{margin:6px 0 12px;}
+  .summary{font-style:italic;margin:4px 0 18px;}
+  .response{border:1px solid #ccc;border-radius:8px;padding:12px;margin:10px 0;}
+  </style></head><body>`;
+  html+=`<div class="header"><img src="https://i.imgur.com/xFzbl45.png" alt="CAB Logo"><div><h1>${evt}</h1></div></div>`;
+  if(rt)html+=`<div class="rating">${stars(rt)} (${rt.toFixed(1)}/5.0)</div>`;
+  html+=`<div style="font-weight:700;"><b>Attendance:</b> ${att||"N/A"}</div>`;
+  if(sum)html+=`<div class="summary">${sum}</div>`;
+  const sorted=sortResponses(resps,currentModal.event===evt?currentModal.mode:"worst");
+  sorted.forEach((row,j)=>{
+    const lines=[];Object.entries(row).forEach(([lab,val])=>{
+      if(!val||/Timestamp|Student ID/i.test(lab))return;
+      lines.push(`<div><b>${lab}:</b> ${val}</div>`);
+    });
+    if(lines.length)html+=`<div class="response"><h3>Response #${j+1}</h3>${lines.join("")}</div>`;
+  });
+  html+=`</body></html>`;
+  const win=window.open(""); win.document.write(html); win.document.close(); win.print();
+}
 
-                const duckCounts = result.locations;
-                const totalPercentage = result.totalPercentage;
+/* Background */
+function pickBackgroundOnce(urls){
+  const valid=[...new Set((urls||[]).filter(u=>/^https?:\/\//i.test(u)))];
+  if(!valid.length) return;
+  const chosen=valid[Math.floor(Math.random()*valid.length)];
+  document.body.style.background=`linear-gradient(180deg, rgba(0,0,0,0.4), rgba(0,0,0,0.6)), url('${chosen}') center/cover no-repeat fixed`;
+}
 
-                if (Object.keys(duckCounts).length === 0) {
-                    container.innerHTML = `
-                        <h4>No active duck locations found.</h4>
-                        <p style="font-weight: bold; margin-top: 1.5rem; text-align: center;">Completion: ${totalPercentage}%</p>
-                    `;
-                    return;
-                }
-
-                let html = '';
-                
-                const sortedLocations = Object.entries(duckCounts).sort(([, countA], [, countB]) => countB - countA);
-
-                // Use the location-card class for the glass aesthetic on each list item
-                sortedLocations.forEach(([locationName, count]) => {
-                    const statusText = count === 0 ? `<span style="color: grey;">CLEARED</span>` : `<span>${count}</span>`;
-                    
-                    html += `
-                        <div class="location-card">
-                            <h4>${locationName}</h4>
-                            ${statusText}
-                        </div>
-                    `;
-                });
-                
-                // The container now holds the cards and the completion bar
-                container.innerHTML = html;
-
-                // Add the completion bar/text below the card list
-                const percentageBar = document.createElement('p');
-                percentageBar.style.cssText = 'font-weight: bold; margin-top: 1.5rem; text-align: center;';
-                percentageBar.innerHTML = `Overall Hunt Completion: ${totalPercentage}%`;
-                container.appendChild(percentageBar);
-
-            } catch (error) {
-                container.innerHTML = '<h4>Error loading location data.</h4>';
-                console.error("Error updating location list:", error);
-            }
-        }
-
-
-        function showNotification(message) {
-            const el = document.createElement('div');
-            el.className = 'glass-card';
-            el.id = 'scan-notification';
-            el.style.position = 'fixed';
-            el.style.top = '-150px';
-            el.style.left = '50%';
-            el.style.transform = 'translateX(-50%)';
-            el.style.zIndex = '999';
-            el.style.padding = '1rem 1.5rem';
-            el.style.width = '80%';
-            el.style.maxWidth = '350px';
-            el.style.boxSizing = 'border-box';
-            el.style.transition = 'top 0.5s ease-in-out';
-            el.innerHTML = `<p>${message}</p>`;
-            document.body.appendChild(el);
-            setTimeout(() => el.style.top = '20px', 10);
-            setTimeout(() => {
-                el.style.top = '-150px';
-                setTimeout(() => el.remove(), 500);
-            }, 3000);
-        }
-
-        function startScanner() {
-            if (document.getElementById('hunt-page')?.classList.contains('active')) {
-                html5QrCode = new Html5Qrcode("qr-reader");
-                html5QrCode.start({ facingMode: "environment" }, { fps: 10, qrbox: { width: 250, height: 250 } }, onScanSuccess)
-                .catch(err => console.log("QR Code scanner failed to start."));
-            }
-        }
-
-        function stopScanner() {
-            if (html5QrCode && html5QrCode.isScanning) {
-                html5QrCode.stop().catch(err => {});
-            }
-        }
-
-        function switchPage(pageId) {
-            stopScanner();
-            document.querySelectorAll('.app-page').forEach(p => p.classList.remove('active'));
-            document.getElementById(pageId)?.classList.add('active');
-            
-            document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
-            document.querySelector(`.tab-button[data-page="${pageId}"]`)?.classList.add('active');
-            
-            if (pageId === 'hunt-page') {
-                updateUserDashboard();
-                setTimeout(startScanner, 250);
-            }
-            if (pageId === 'leaderboard-page') {
-                updateLeaderboard();
-            }
-            if (pageId === 'log-page') {
-                updateScanHistory();
-            }
-            if (pageId === 'map-page') {
-                updateDuckMap(); // Call the card list update function
-            }
-        }
-
-        document.addEventListener('DOMContentLoaded', () => {
-            checkForInitialDuck();
-
-            const savedStudentId = sessionStorage.getItem('currentUserStudentId');
-            if (savedStudentId) {
-                signIn(savedStudentId);
-            }
-
-            document.getElementById('signin-btn').addEventListener('click', () => {
-                const studentId = document.getElementById('login-studentid').value.trim();
-                if (studentId) signIn(studentId);
-            });
-            document.getElementById('submit-btn').addEventListener('click', registerUser);
-            
-            document.getElementById('register-btn').addEventListener('click', () => {
-                loginView.classList.add('hidden');
-                registrationView.classList.remove('hidden');
-            });
-            document.getElementById('back-btn').addEventListener('click', () => {
-                registrationView.classList.add('hidden');
-                loginView.classList.remove('hidden');
-            });
-
-            document.getElementById('close-instructions').addEventListener('click', () => {
-                document.getElementById('instructions-card').style.display = 'none';
-            });
-
-            document.getElementById('tab-bar').addEventListener('click', (e) => {
-                if (e.target.matches('.tab-button')) {
-                    switchPage(e.target.dataset.page);
-                }
-            });
-        });
-    </script>
+/* Topbar */
+document.getElementById('search').addEventListener('input',e=>render(e.target.value,document.getElementById('sortMode').value));
+document.getElementById('sortMode').addEventListener('change',e=>render(document.getElementById('search').value,e.target.value));
+</script>
 </body>
 </html>
