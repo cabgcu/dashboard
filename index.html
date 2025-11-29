@@ -2,14 +2,14 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>GCU Event Dashboard — Ultimate</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>GCU Event Dashboard — Ultimate Mobile</title>
 
 <style>
 :root {
   /* Theme Colors */
   --bg-dark: #000000;
-  --glass-surface: rgba(20, 20, 20, 0.75);
+  --glass-surface: rgba(20, 20, 20, 0.85); /* Slightly more opaque for mobile contrast */
   --glass-border: rgba(255, 255, 255, 0.12);
   --text-main: #ffffff;
   --text-muted: #98989d;
@@ -31,7 +31,7 @@
 }
 
 /* Base Setup */
-* { box-sizing: border-box; }
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 body {
   margin: 0;
   font-family: var(--font-stack);
@@ -41,10 +41,11 @@ body {
   min-height: 100vh;
   padding-bottom: 80px;
   -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
 }
 
 /* Custom Scrollbar */
-::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; border: 2px solid var(--bg-dark); }
 
@@ -71,6 +72,7 @@ body {
   padding: 16px 24px; 
   border-radius: var(--radius-card);
   margin-bottom: 40px; margin-top: 24px;
+  transition: all 0.3s ease;
 }
 
 .brand { display: flex; align-items: center; gap: 16px; }
@@ -147,7 +149,7 @@ select.control-item {
 }
 
 /* Badges */
-.badge-container { position: absolute; top: 16px; left: 16px; display: flex; gap: 8px; z-index: 10; }
+.badge-container { position: absolute; top: 16px; left: 16px; display: flex; gap: 8px; z-index: 10; flex-wrap: wrap; }
 .badge {
   padding: 6px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; color: #fff;
   text-shadow: 0 1px 2px rgba(0,0,0,0.3); box-shadow: 0 4px 12px rgba(0,0,0,0.4);
@@ -190,7 +192,7 @@ select.control-item {
 
 /* Buttons */
 .actions { margin-top: auto; display: grid; grid-template-columns: 1fr auto; gap: 12px; }
-.btn { padding: 14px 20px; border-radius: var(--radius-btn); font-size: 0.9rem; font-weight: 600; cursor: pointer; border: none; font-family: inherit; transition: all 0.2s; }
+.btn { padding: 14px 20px; border-radius: var(--radius-btn); font-size: 0.9rem; font-weight: 600; cursor: pointer; border: none; font-family: inherit; transition: all 0.2s; -webkit-appearance: none;}
 .btn:active { transform: scale(0.96); }
 .btn-primary { background: var(--gradient-accent); color: white; box-shadow: 0 4px 15px rgba(10, 132, 255, 0.3); }
 .btn-primary:hover { background: var(--gradient-hover); box-shadow: 0 6px 20px rgba(10, 132, 255, 0.5); }
@@ -208,10 +210,10 @@ select.control-item {
   display: flex; flex-direction: column; box-shadow: 0 40px 80px -20px rgba(0, 0, 0, 1); overflow: hidden;
 }
 
-.modal-header { padding: 24px 28px; border-bottom: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.03); }
-.close-btn { background: transparent; border: none; color: var(--text-muted); font-size: 1.6rem; cursor: pointer; transition: 0.2s; }
+.modal-header { padding: 24px 28px; border-bottom: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.03); flex-shrink: 0;}
+.close-btn { background: transparent; border: none; color: var(--text-muted); font-size: 2rem; cursor: pointer; transition: 0.2s; line-height: 1; padding: 0 8px;}
 .close-btn:hover { color: #fff; transform: scale(1.1); }
-.modal-body { padding: 28px; overflow-y: auto; }
+.modal-body { padding: 28px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
 
 /* Modal - Team Stats Grid */
 .stats-grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
@@ -253,11 +255,48 @@ select.control-item {
 @keyframes shimmer { 100% { transform: translateX(100%); } }
 @keyframes fadeUp { from { opacity: 0; transform: translateY(20px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
 
+/* --- MOBILE OPTIMIZATION --- */
 @media(max-width: 900px) {
-  .topbar { flex-direction: column; align-items: stretch; gap: 16px; } 
-  .controls { flex-direction: column; align-items: stretch; }
+  .app-container { padding: 0 16px; }
+  
+  /* Navigation */
+  .topbar { 
+    position: relative; top: 0; /* Unstick on mobile to save space */
+    flex-direction: column; align-items: stretch; gap: 20px; 
+    padding: 20px; margin-top: 10px; margin-bottom: 24px;
+  } 
+  
+  .brand { flex-direction: column; align-items: flex-start; gap: 12px; }
+  .brand img { height: 40px; }
+  
+  .controls { flex-direction: column; align-items: stretch; gap: 12px; }
+  input.control-item, select.control-item, .btn-stats { width: 100% !important; }
+  
+  /* Grid */
+  #dashboard { grid-template-columns: 1fr; gap: 20px; }
+  
+  /* Cards */
+  .card-header { height: 140px; } /* Slightly shorter images on phone */
+  .card-body { padding: 20px; }
   .actions { grid-template-columns: 1fr; } 
-  input.control-item, select.control-item { width: 100%; }
+  .card h2 { font-size: 1.25rem; }
+  
+  /* Modal Mobile Takeover */
+  .modal { padding: 0; align-items: flex-end; }
+  .modal-content { 
+    max-height: 100vh; height: 100vh; border-radius: 0; 
+    border: none; width: 100%;
+  }
+  .modal-header { padding: 16px 20px; }
+  .modal-body { padding: 20px; }
+  
+  /* Modal Toolbar wrapping */
+  #modalToolbar { 
+    flex-direction: column; gap: 12px; align-items: stretch !important; padding: 16px 20px !important; 
+  }
+  #modalToolbar > div { display: flex; width: 100%; gap: 8px; }
+  #modalToolbar button { flex: 1; }
+  #modalSort { width: 100%; text-align: left; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 12px; margin-top: 4px; }
 }
 </style>
 </head>
@@ -272,7 +311,7 @@ select.control-item {
         <div class="brand-stat">
             Events: <strong id="totalEvents">...</strong>
             <span class="stat-divider">|</span>
-            Attendance: <strong id="globalAttendance">...</strong>
+            Attend: <strong id="globalAttendance">...</strong>
         </div>
       </div>
     </div>
@@ -298,16 +337,14 @@ select.control-item {
   </div>
 </div>
 
-<!-- Reusable Modal -->
 <div id="modal" class="modal">
   <div class="modal-bg" data-close="true"></div>
   <div class="modal-content">
     <div class="modal-header">
-      <h3 style="margin:0; font-size:1.4rem; font-weight:700;">Details</h3>
+      <h3 style="margin:0; font-size:1.2rem; font-weight:700; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-right:10px;">Details</h3>
       <button class="close-btn" data-close="true">&times;</button>
     </div>
     
-    <!-- Toolbar (Only visible for single events) -->
     <div id="modalToolbar" style="padding: 12px 28px; display:flex; justify-content:space-between; align-items:center; background: rgba(0,0,0,0.2);">
       <div style="display:flex; gap:10px">
         <button id="btnPDF" class="btn btn-secondary" style="padding:8px 16px; font-size:0.8rem">PDF</button>
@@ -334,7 +371,7 @@ let state = {
   imageMap: {}, 
   attendanceMap: {}, 
   surveysMap: {}, 
-  teamMap: {}, // Maps EventName -> ["TeamA", "TeamB"]
+  teamMap: {}, 
   groups: {}, 
   bgImages: [],
   allTeams: new Set()
@@ -349,7 +386,6 @@ async function init() {
     const fetchS = async (n) => {
       const res = await fetch(`https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(n)}`);
       const txt = await res.text();
-      // Robust Regex to find the JSON object (handles Google API padding changes)
       const jsonText = txt.match(/\{.*\}/s)[0]; 
       return JSON.parse(jsonText);
     };
@@ -374,13 +410,10 @@ async function init() {
         
         state.surveysMap[n] = +row["Total Surveys"] || 0;
         
-        // --- TEAM LOGIC FIX ---
-        // Splits by comma OR ampersand (&) to separate collaborative teams
         const tRaw = row["Hosting Team"] || "Unassigned";
         const teams = tRaw.split(/[,&]/).map(t => t.trim()).filter(t => t.length > 0);
         state.teamMap[n] = teams;
         teams.forEach(t => state.allTeams.add(t));
-        // ------------------
 
         if(row["Header Image"]) state.bgImages.push(row["Header Image"]);
       }
@@ -425,7 +458,6 @@ function render(filter = "", sort = "rating") {
   if(activeTeam) {
     list = list.filter(([k]) => {
       const eventTeams = state.teamMap[k] || ["Unassigned"];
-      // Checks if the active team is contained in this event's team list
       return eventTeams.includes(activeTeam);
     });
   }
@@ -453,7 +485,6 @@ function render(filter = "", sort = "rating") {
     const card = el("div", "frosted card");
     card.style.opacity = 0; card.style.animation = `fadeUp 0.4s ease forwards ${idx * 0.05}s`;
     
-    // Auto Badges
     let badgesHtml = "";
     if(!isNaN(rate) && rate >= 4.5) badgesHtml += `<span class="badge badge-fire">🔥 Top Rated</span>`;
     if(att > 350) badgesHtml += `<span class="badge badge-ok">👥 High Turnout</span>`;
@@ -495,17 +526,14 @@ function render(filter = "", sort = "rating") {
   });
 }
 
-// Logic for Sentiment Chips
 function getSentimentChips(text) {
   if(!text) return "";
   const t = text.toLowerCase();
   let chips = [];
 
-  // Positive
   if(t.includes("fun") || t.includes("great") || t.includes("good") || t.includes("amazing") || t.includes("loved") || t.includes("excited") || t.includes("best")) {
     chips.push(`<span class="chip chip-pos">😊 Fun/Positive</span>`);
   }
-  // Negative / Issues
   if(t.includes("wait") || t.includes("line") || t.includes("queue") || t.includes("slow")) {
     chips.push(`<span class="chip chip-neg">⚠️ Lines</span>`);
   }
@@ -515,7 +543,6 @@ function getSentimentChips(text) {
   if(t.includes("issue") || t.includes("bad") || t.includes("boring") || t.includes("problem")) {
     chips.push(`<span class="chip chip-neg">❗ Issues</span>`);
   }
-  // Categories (Neutral)
   if(t.includes("food") || t.includes("drink") || t.includes("snack") || t.includes("truck")) {
     chips.push(`<span class="chip chip-neu">🍕 Food</span>`);
   }
@@ -540,7 +567,6 @@ function openTeamStats() {
   
   const getRate = (r) => { const s = r.map(getScore).filter(x => !isNaN(x)); return s.length ? s.reduce((a,b)=>a+b,0)/s.length : 0; };
 
-  // Aggregate Data
   Object.keys(state.groups).forEach(evt => {
     const eventTeams = state.teamMap[evt] || ["Unassigned"];
     const att = state.attendanceMap[evt] || 0;
@@ -560,7 +586,6 @@ function openTeamStats() {
   modalBody.innerHTML = `<h2 style="margin-bottom:20px;">Team Overview & Statistics</h2><div class="stats-grid"></div>`;
   const grid = modalBody.querySelector(".stats-grid");
 
-  // Sort teams by Rating (High to Low)
   Object.values(teams).sort((a,b) => {
     const avgA = a.rates.length ? a.rates.reduce((x,y)=>x+y,0)/a.rates.length : 0;
     const avgB = b.rates.length ? b.rates.reduce((x,y)=>x+y,0)/b.rates.length : 0;
@@ -587,7 +612,8 @@ function openTeamStats() {
 function openEventModal(evt, resps) {
   currentModal = { event: evt, raw: resps, mode: "worst" };
   document.getElementById("modalSort").value = "worst";
-  document.getElementById("modalToolbar").style.display = "flex"; // Show toolbar
+  document.getElementById("modalToolbar").style.display = "flex";
+  document.querySelector("#modal .modal-header h3").textContent = evt;
   
   document.getElementById("btnPDF").onclick = () => downloadPDF(evt, getAverage(resps), state.briefMap[evt], state.attendanceMap[evt], resps);
   document.getElementById("btnCSV").onclick = () => downloadCSV(evt, resps);
@@ -643,7 +669,6 @@ function downloadPDF(evt, rt, sum, att, resps) {
   let h = `<html><head><title>${evt}</title><style>body{font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;padding:30px;color:#000;} h1{border-bottom:3px solid #0A84FF;padding-bottom:15px;margin-bottom:30px;} .box{background:#f0f9ff;padding:20px;border-radius:12px;margin-bottom:30px;border:1px solid #bae6fd;} .r{border:1px solid #e5e7eb;padding:15px;margin-bottom:15px;page-break-inside:avoid;border-radius:8px;background:#fff;} .l{font-weight:700;font-size:0.85em;color:#6b7280;text-transform:uppercase;display:block;margin-bottom:4px;} .v{margin-bottom:12px;line-height:1.4;}</style></head><body><h1>${evt}</h1><div class="box"><b>Rating:</b> ${rt?rt.toFixed(1)+"/5":"N/A"} | <b>Attendance:</b> ${att||0}<br><br><i style="color:#4b5563">${sum}</i></div>`;
   resps.forEach((r,i) => {
     h+=`<div class="r"><b style="color:#0A84FF;margin-bottom:10px;display:block;">Response #${i+1}</b>`;
-    // Explicitly filter "Student ID" (case insensitive) and Timestamp
     for(let k in r) if(r[k] && !/Timestamp|Student ID/i.test(k)) h+=`<div><span class="l">${k}</span><div class="v">${r[k]}</div></div>`;
     h+=`</div>`;
   });
