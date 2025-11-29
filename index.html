@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Event Survey Dashboard — Ultimate</title>
+<title>GCU Event Dashboard — Ultimate</title>
 
 <style>
 :root {
@@ -37,6 +37,7 @@ body {
   font-family: var(--font-stack);
   color: var(--text-main);
   background-color: var(--bg-dark);
+  /* SVG Noise Texture for high-fidelity look */
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.03'/%3E%3C/svg%3E");
   min-height: 100vh;
   padding-bottom: 80px;
@@ -48,7 +49,7 @@ body {
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; border: 2px solid var(--bg-dark); }
 
-/* --- Frosted Glass --- */
+/* --- Frosted Glass Class --- */
 .frosted {
   background: var(--glass-surface);
   backdrop-filter: blur(var(--blur)) saturate(120%);
@@ -89,20 +90,20 @@ body {
 .stat-divider { margin: 0 8px; opacity: 0.3; color: var(--text-muted); }
 
 /* Controls */
-.controls { display: flex; gap: 12px; }
+.controls { display: flex; gap: 12px; align-items: center; }
 
 .control-item {
   background: rgba(255,255,255,0.08);
   border: 1px solid rgba(255,255,255,0.1);
   color: #fff;
-  padding: 12px 20px;
+  padding: 0 20px;
   border-radius: var(--radius-pill);
   font-family: inherit; font-size: 0.9rem; font-weight: 500;
   outline: none; transition: all 0.2s ease;
   height: 46px; display: flex; align-items: center;
 }
 
-input.control-item { width: 240px; }
+input.control-item { width: 200px; }
 input.control-item::placeholder { color: var(--text-muted); }
 
 select.control-item {
@@ -115,7 +116,14 @@ select.control-item {
 .control-item:focus { border-color: #0A84FF; box-shadow: 0 0 0 4px rgba(10, 132, 255, 0.2); background: rgba(255,255,255,0.12); }
 .control-item:hover { border-color: rgba(255,255,255,0.3); background: rgba(255,255,255,0.12); }
 
-/* Grid Layout */
+/* Stats Button */
+.btn-stats {
+  background: var(--gradient-accent); border: none; cursor: pointer;
+  box-shadow: 0 4px 15px rgba(10, 132, 255, 0.2);
+}
+.btn-stats:hover { box-shadow: 0 6px 20px rgba(10, 132, 255, 0.4); transform: translateY(-1px); }
+
+/* Dashboard Grid */
 #dashboard {
   display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 28px;
 }
@@ -139,7 +147,7 @@ select.control-item {
   background: linear-gradient(to bottom, transparent 0%, rgba(20,20,20,0.4) 70%, rgba(20,20,20,0.9) 100%);
 }
 
-/* Smart Badges */
+/* Badges */
 .badge-container { position: absolute; top: 16px; left: 16px; display: flex; gap: 8px; z-index: 10; }
 .badge {
   padding: 6px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; color: #fff;
@@ -157,6 +165,15 @@ select.control-item {
 .stats-text { color: var(--text-muted); }
 
 .summary { font-size: 0.95rem; color: #b0b0b0; line-height: 1.6; margin-bottom: 20px; font-weight: 400; display: block; }
+
+/* --- TEAM TAGS --- */
+.team-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.team-tag {
+  font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
+  padding: 4px 10px; border-radius: 6px;
+  border: 1px solid rgba(255,255,255,0.15);
+  background: rgba(255,255,255,0.03); color: var(--text-muted);
+}
 
 /* --- SENTIMENT CHIPS --- */
 .chip-container { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; margin-top: auto; }
@@ -187,7 +204,7 @@ select.control-item {
 .modal-bg { position: absolute; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(16px); }
 
 .modal-content {
-  position: relative; width: 100%; max-width: 800px; max-height: 85vh;
+  position: relative; width: 100%; max-width: 900px; max-height: 85vh;
   background: #111; border: 1px solid var(--glass-border); border-radius: 28px;
   display: flex; flex-direction: column; box-shadow: 0 40px 80px -20px rgba(0, 0, 0, 1); overflow: hidden;
 }
@@ -196,6 +213,17 @@ select.control-item {
 .close-btn { background: transparent; border: none; color: var(--text-muted); font-size: 1.6rem; cursor: pointer; transition: 0.2s; }
 .close-btn:hover { color: #fff; transform: scale(1.1); }
 .modal-body { padding: 28px; overflow-y: auto; }
+
+/* Modal - Team Stats Grid */
+.stats-grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+.stat-box {
+  background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border);
+  border-radius: 16px; padding: 20px; display: flex; flex-direction: column;
+}
+.stat-box h4 { margin: 0 0 12px 0; font-size: 1.1rem; color: #fff; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 8px;}
+.stat-row { display: flex; justify-content: space-between; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 6px; }
+.stat-val { color: #fff; font-weight: 600; }
+.stat-big { font-size: 1.8rem; font-weight: 700; margin-top: auto; background: var(--gradient-accent); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
 
 /* Distribution Bars */
 .dist-container { margin-bottom: 24px; padding-bottom: 24px; border-bottom: 1px solid var(--glass-border); }
@@ -226,9 +254,11 @@ select.control-item {
 @keyframes shimmer { 100% { transform: translateX(100%); } }
 @keyframes fadeUp { from { opacity: 0; transform: translateY(20px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
 
-@media(max-width: 600px) {
-  .topbar { flex-direction: column; align-items: stretch; } .controls { flex-direction: column; }
-  .actions { grid-template-columns: 1fr; } input.control-item { width: 100%; }
+@media(max-width: 900px) {
+  .topbar { flex-direction: column; align-items: stretch; gap: 16px; } 
+  .controls { flex-direction: column; align-items: stretch; }
+  .actions { grid-template-columns: 1fr; } 
+  input.control-item, select.control-item { width: 100%; }
 }
 </style>
 </head>
@@ -248,6 +278,12 @@ select.control-item {
       </div>
     </div>
     <div class="controls">
+      <button onclick="openTeamStats()" class="control-item btn-stats">
+        📊 Team Analytics
+      </button>
+      <select id="teamFilter" class="control-item">
+        <option value="">All Teams</option>
+      </select>
       <input id="search" class="control-item" type="text" placeholder="Search events..." autocomplete="off" />
       <select id="sortMode" class="control-item">
         <option value="rating">Rating (High-Low)</option>
@@ -263,14 +299,17 @@ select.control-item {
   </div>
 </div>
 
+<!-- Reusable Modal -->
 <div id="modal" class="modal">
   <div class="modal-bg" data-close="true"></div>
   <div class="modal-content">
     <div class="modal-header">
-      <h3 style="margin:0; font-size:1.4rem; font-weight:700;">Response Details</h3>
+      <h3 style="margin:0; font-size:1.4rem; font-weight:700;">Details</h3>
       <button class="close-btn" data-close="true">&times;</button>
     </div>
-    <div style="padding: 12px 28px; display:flex; justify-content:space-between; align-items:center; background: rgba(0,0,0,0.2);">
+    
+    <!-- Toolbar (Only visible for single events) -->
+    <div id="modalToolbar" style="padding: 12px 28px; display:flex; justify-content:space-between; align-items:center; background: rgba(0,0,0,0.2);">
       <div style="display:flex; gap:10px">
         <button id="btnPDF" class="btn btn-secondary" style="padding:8px 16px; font-size:0.8rem">PDF</button>
         <button id="btnCSV" class="btn btn-secondary" style="padding:8px 16px; font-size:0.8rem">CSV</button>
@@ -281,6 +320,7 @@ select.control-item {
         <option value="newest">Sort: Newest</option>
       </select>
     </div>
+
     <div id="modalBody" class="modal-body"></div>
   </div>
 </div>
@@ -290,7 +330,17 @@ const sheetID = "1CqmQKvOkcLFV8XyzFrjK4H85skJCwRgSEwiP8j_6pMM";
 const RAW_SHEET = "Survey Responses";
 const OVW_SHEET = "Response overview";
 
-let state = { briefMap: {}, imageMap: {}, attendanceMap: {}, surveysMap: {}, groups: {}, bgImages: [] };
+let state = { 
+  briefMap: {}, 
+  imageMap: {}, 
+  attendanceMap: {}, 
+  surveysMap: {}, 
+  teamMap: {}, // Maps EventName -> ["TeamA", "TeamB"]
+  groups: {}, 
+  bgImages: [],
+  allTeams: new Set()
+};
+
 let currentModal = { event: "", raw: [], mode: "worst" };
 
 const el = (tag, cls, html) => { const n = document.createElement(tag); if(cls) n.className = cls; if(html) n.innerHTML = html; return n; };
@@ -299,13 +349,18 @@ async function init() {
   try {
     const fetchS = async (n) => {
       const res = await fetch(`https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(n)}`);
-      const txt = await res.text(); return JSON.parse(txt.substring(47, txt.length - 2));
+      const txt = await res.text();
+      // Robust Regex to find the JSON object (handles Google API padding changes)
+      const jsonText = txt.match(/\{.*\}/s)[0]; 
+      return JSON.parse(jsonText);
     };
+
     const [ovw, raw] = await Promise.all([fetchS(OVW_SHEET), fetchS(RAW_SHEET)]);
 
     let totalGlobalAttendance = 0;
     let validEventsCount = 0;
 
+    // Process Overview Sheet
     ovw.table.rows.forEach(r => {
       const row = ovw.table.cols.reduce((o, c, i) => { o[c.label] = r.c[i]?.v || ""; return o; }, {});
       const n = row["Event Name"];
@@ -316,18 +371,32 @@ async function init() {
         const att = +row["Attendance"] || 0;
         state.attendanceMap[n] = att;
         totalGlobalAttendance += att;
-        
-        // Count valid events
         validEventsCount++;
         
         state.surveysMap[n] = +row["Total Surveys"] || 0;
+        
+        // --- TEAM LOGIC ---
+        // Looks for a column named "Hosting Team" in the OVW sheet
+        const tRaw = row["Hosting Team"] || "Unassigned";
+        const teams = tRaw.split(",").map(t => t.trim()).filter(t => t.length > 0);
+        state.teamMap[n] = teams;
+        teams.forEach(t => state.allTeams.add(t));
+        // ------------------
+
         if(row["Header Image"]) state.bgImages.push(row["Header Image"]);
       }
+    });
+
+    // Populate Team Filter
+    const teamSelect = document.getElementById("teamFilter");
+    [...state.allTeams].sort().forEach(t => {
+       if(t !== "Unassigned") teamSelect.innerHTML += `<option value="${t}">${t}</option>`;
     });
 
     document.getElementById("globalAttendance").textContent = totalGlobalAttendance.toLocaleString();
     document.getElementById("totalEvents").textContent = validEventsCount;
 
+    // Process Raw Responses
     const hdr = raw.table.cols.map(c => c.label);
     raw.table.rows.forEach(r => {
       const row = hdr.reduce((o, h, i) => { o[h] = r.c[i]?.v || ""; return o; }, {});
@@ -338,23 +407,39 @@ async function init() {
 
     setBg();
     render();
-  } catch (e) { console.error(e); }
+  } catch (e) { 
+    console.error(e);
+    document.getElementById("dashboard").innerHTML = `<div class="empty-state"><h3>Error Loading Data</h3><p>Check console logs or Sheet permissions.</p></div>`;
+  }
 }
 
 function render(filter = "", sort = "rating") {
   const dash = document.getElementById("dashboard"); dash.innerHTML = "";
+  const activeTeam = document.getElementById("teamFilter").value;
+  
   let list = Object.entries(state.groups);
+  
+  // 1. Text Filter
   if(filter) list = list.filter(([k]) => k.toLowerCase().includes(filter.toLowerCase()));
+
+  // 2. Team Filter
+  if(activeTeam) {
+    list = list.filter(([k]) => {
+      const eventTeams = state.teamMap[k] || ["Unassigned"];
+      return eventTeams.includes(activeTeam);
+    });
+  }
   
   const getRate = (r) => { const s = r.map(getScore).filter(x => !isNaN(x)); return s.length ? s.reduce((a,b)=>a+b,0)/s.length : 0; };
   
+  // 3. Sorting
   if(sort === "rating") list.sort((a,b) => getRate(b[1]) - getRate(a[1]));
   else if(sort === "az") list.sort((a,b) => a[0].localeCompare(b[0]));
   else if(sort === "recent") list.sort((a,b) => (Math.max(...b[1].map(x=>new Date(x.Timestamp).getTime()||0)) - Math.max(...a[1].map(x=>new Date(x.Timestamp).getTime()||0))));
   else if(sort === "attendance") list.sort((a,b) => (state.attendanceMap[b[0]]||0) - (state.attendanceMap[a[0]]||0));
 
   if(list.length === 0) {
-    dash.innerHTML = `<div class="empty-state"><div class="empty-icon">🔍</div><h3>No events found</h3><p>Try adjusting your search terms.</p></div>`;
+    dash.innerHTML = `<div class="empty-state"><div class="empty-icon">🔍</div><h3>No events found</h3><p>Try adjusting your filters.</p></div>`;
     return;
   }
 
@@ -363,15 +448,16 @@ function render(filter = "", sort = "rating") {
     const att = state.attendanceMap[evt];
     const img = state.imageMap[evt];
     const surveyCount = state.surveysMap[evt] || resps.length;
+    const teams = state.teamMap[evt] || [];
     
     const card = el("div", "frosted card");
     card.style.opacity = 0; card.style.animation = `fadeUp 0.4s ease forwards ${idx * 0.05}s`;
     
     // Auto Badges
     let badgesHtml = "";
-    if(rate >= 4.5) badgesHtml += `<span class="badge badge-fire">🔥 Top Rated</span>`;
+    if(!isNaN(rate) && rate >= 4.5) badgesHtml += `<span class="badge badge-fire">🔥 Top Rated</span>`;
     if(att > 350) badgesHtml += `<span class="badge badge-ok">👥 High Turnout</span>`;
-    if(rate > 0 && rate < 3) badgesHtml += `<span class="badge badge-warn">⚠️ Needs Review</span>`;
+    if(!isNaN(rate) && rate > 0 && rate < 3) badgesHtml += `<span class="badge badge-warn">⚠️ Needs Review</span>`;
     
     if(img) {
       const head = el("div","card-header");
@@ -380,14 +466,15 @@ function render(filter = "", sort = "rating") {
     }
     
     const summaryText = state.briefMap[evt] || "";
-    // Generate Chips
     const chipsHtml = getSentimentChips(summaryText);
+    const teamHtml = teams.length ? `<div class="team-row">${teams.map(t => `<span class="team-tag">${t}</span>`).join("")}</div>` : "";
     
     const body = el("div", "card-body");
     body.innerHTML = `
+      ${teamHtml}
       <h2>${evt}</h2>
       <div class="stats">
-        <span class="rating-text">${rate ? "★ "+rate.toFixed(1) : "No Rating"}</span>
+        <span class="rating-text">${(!isNaN(rate) && rate > 0) ? "★ "+rate.toFixed(1) : "No Rating"}</span>
         <span style="color:#333">|</span>
         <span class="stats-text">👥 ${att || "--"}</span>
         <span style="color:#333">|</span>
@@ -399,7 +486,7 @@ function render(filter = "", sort = "rating") {
     
     const acts = el("div", "actions");
     const btnV = el("button", "btn btn-primary", "View Responses");
-    btnV.onclick = () => openModal(evt, resps);
+    btnV.onclick = () => openEventModal(evt, resps);
     acts.append(btnV);
     
     body.appendChild(acts);
@@ -447,9 +534,60 @@ function getScore(r) {
   return NaN;
 }
 
-function openModal(evt, resps) {
+// --- ANALYTICS MODAL ---
+function openTeamStats() {
+  const teams = {};
+  
+  const getRate = (r) => { const s = r.map(getScore).filter(x => !isNaN(x)); return s.length ? s.reduce((a,b)=>a+b,0)/s.length : 0; };
+
+  // Aggregate Data
+  Object.keys(state.groups).forEach(evt => {
+    const eventTeams = state.teamMap[evt] || ["Unassigned"];
+    const att = state.attendanceMap[evt] || 0;
+    const rate = getRate(state.groups[evt]); 
+    const surveys = state.surveysMap[evt] || state.groups[evt].length;
+
+    eventTeams.forEach(t => {
+      if(!teams[t]) teams[t] = { name: t, events: 0, att: 0, surv: 0, rates: [] };
+      teams[t].events++;
+      teams[t].att += att;
+      teams[t].surv += surveys;
+      if(rate > 0) teams[t].rates.push(rate);
+    });
+  });
+
+  const modalBody = document.getElementById("modalBody");
+  modalBody.innerHTML = `<h2 style="margin-bottom:20px;">Team Overview & Statistics</h2><div class="stats-grid"></div>`;
+  const grid = modalBody.querySelector(".stats-grid");
+
+  // Sort teams by Rating (High to Low)
+  Object.values(teams).sort((a,b) => {
+    const avgA = a.rates.length ? a.rates.reduce((x,y)=>x+y,0)/a.rates.length : 0;
+    const avgB = b.rates.length ? b.rates.reduce((x,y)=>x+y,0)/b.rates.length : 0;
+    return avgB - avgA;
+  }).forEach(t => {
+    const avg = t.rates.length ? (t.rates.reduce((a,b)=>a+b,0)/t.rates.length).toFixed(2) : "N/A";
+    
+    grid.innerHTML += `
+      <div class="stat-box">
+        <h4>${t.name}</h4>
+        <div class="stat-row"><span>Events</span><span class="stat-val">${t.events}</span></div>
+        <div class="stat-row"><span>Surveys</span><span class="stat-val">${t.surv}</span></div>
+        <div class="stat-row"><span>Attendees</span><span class="stat-val">${t.att.toLocaleString()}</span></div>
+        <div class="stat-big">${avg} <span style="font-size:1rem;color:#666">/ 5</span></div>
+      </div>
+    `;
+  });
+
+  document.getElementById("modalToolbar").style.display = "none"; 
+  document.getElementById("modal").classList.add("show");
+}
+
+// --- EVENT DETAILS MODAL ---
+function openEventModal(evt, resps) {
   currentModal = { event: evt, raw: resps, mode: "worst" };
   document.getElementById("modalSort").value = "worst";
+  document.getElementById("modalToolbar").style.display = "flex"; // Show toolbar
   
   document.getElementById("btnPDF").onclick = () => downloadPDF(evt, getAverage(resps), state.briefMap[evt], state.attendanceMap[evt], resps);
   document.getElementById("btnCSV").onclick = () => downloadCSV(evt, resps);
@@ -500,6 +638,7 @@ function renderModalBody() {
   });
 }
 
+// --- EXPORT TOOLS ---
 function downloadPDF(evt, rt, sum, att, resps) {
   let h = `<html><head><title>${evt}</title><style>body{font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;padding:30px;color:#000;} h1{border-bottom:3px solid #0A84FF;padding-bottom:15px;margin-bottom:30px;} .box{background:#f0f9ff;padding:20px;border-radius:12px;margin-bottom:30px;border:1px solid #bae6fd;} .r{border:1px solid #e5e7eb;padding:15px;margin-bottom:15px;page-break-inside:avoid;border-radius:8px;background:#fff;} .l{font-weight:700;font-size:0.85em;color:#6b7280;text-transform:uppercase;display:block;margin-bottom:4px;} .v{margin-bottom:12px;line-height:1.4;}</style></head><body><h1>${evt}</h1><div class="box"><b>Rating:</b> ${rt?rt.toFixed(1)+"/5":"N/A"} | <b>Attendance:</b> ${att||0}<br><br><i style="color:#4b5563">${sum}</i></div>`;
   resps.forEach((r,i) => {
@@ -541,8 +680,11 @@ function setBg() {
   }
 }
 
+// Event Listeners
 document.getElementById("search").oninput = e => render(e.target.value, document.getElementById("sortMode").value);
 document.getElementById("sortMode").onchange = e => render(document.getElementById("search").value, e.target.value);
+document.getElementById("teamFilter").onchange = e => render(document.getElementById("search").value, document.getElementById("sortMode").value);
+
 document.getElementById("modalSort").onchange = e => { currentModal.mode = e.target.value; renderModalBody(); };
 document.body.onclick = e => { if(e.target.dataset.close) document.getElementById("modal").classList.remove("show"); };
 
