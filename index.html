@@ -37,7 +37,6 @@ body {
   font-family: var(--font-stack);
   color: var(--text-main);
   background-color: var(--bg-dark);
-  /* SVG Noise Texture for high-fidelity look */
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.03'/%3E%3C/svg%3E");
   min-height: 100vh;
   padding-bottom: 80px;
@@ -375,10 +374,10 @@ async function init() {
         
         state.surveysMap[n] = +row["Total Surveys"] || 0;
         
-        // --- TEAM LOGIC ---
-        // Looks for a column named "Hosting Team" in the OVW sheet
+        // --- TEAM LOGIC FIX ---
+        // Splits by comma OR ampersand (&) to separate collaborative teams
         const tRaw = row["Hosting Team"] || "Unassigned";
-        const teams = tRaw.split(",").map(t => t.trim()).filter(t => t.length > 0);
+        const teams = tRaw.split(/[,&]/).map(t => t.trim()).filter(t => t.length > 0);
         state.teamMap[n] = teams;
         teams.forEach(t => state.allTeams.add(t));
         // ------------------
@@ -426,6 +425,7 @@ function render(filter = "", sort = "rating") {
   if(activeTeam) {
     list = list.filter(([k]) => {
       const eventTeams = state.teamMap[k] || ["Unassigned"];
+      // Checks if the active team is contained in this event's team list
       return eventTeams.includes(activeTeam);
     });
   }
