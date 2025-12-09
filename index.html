@@ -19,6 +19,7 @@
   --gradient-hover: linear-gradient(135deg, #007AFF, #AF52DE);
   --gradient-fire: linear-gradient(135deg, #FF9500, #FF3B30);
   --gradient-success: linear-gradient(135deg, #34C759, #30B0C7);
+  --gradient-nolan: linear-gradient(135deg, #FFD60A, #FF9F0A); /* Gold/Orange for Nolan */
   
   /* Modern Rounding */
   --radius-card: 24px;
@@ -39,7 +40,7 @@ body {
   background-color: var(--bg-dark);
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.03'/%3E%3C/svg%3E");
   min-height: 100vh;
-  padding-bottom: 80px;
+  padding-bottom: 40px;
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
 }
@@ -63,6 +64,9 @@ body {
   max-width: 1280px;
   margin: 0 auto;
   padding: 0 24px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Top Navigation */
@@ -127,6 +131,7 @@ select.control-item {
 /* Dashboard Grid */
 #dashboard {
   display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 28px;
+  margin-bottom: 60px; /* Space for footer */
 }
 
 /* Cards */
@@ -165,7 +170,34 @@ select.control-item {
 .rating-text { background: var(--gradient-accent); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
 .stats-text { color: var(--text-muted); }
 
-.summary { font-size: 0.95rem; color: #b0b0b0; line-height: 1.6; margin-bottom: 20px; font-weight: 400; display: block; }
+.summary { font-size: 0.95rem; color: #b0b0b0; line-height: 1.6; margin-bottom: 12px; font-weight: 400; display: block; }
+
+/* Nolan Ai Tag (Simplified) */
+.nolan-tag {
+  font-size: 0.7rem; font-weight: 700;
+  background: var(--gradient-nolan); -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  display: inline-block; margin-bottom: 20px; letter-spacing: 0.03em;
+  opacity: 0.9;
+}
+
+/* Footer */
+.app-footer {
+  margin-top: auto;
+  text-align: center;
+  padding: 30px;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  border-top: 1px solid var(--glass-border);
+  background: rgba(0,0,0,0.2);
+  border-radius: var(--radius-card);
+  margin-bottom: 24px;
+}
+.footer-link {
+  color: #fff; text-decoration: none; font-weight: 600;
+  transition: color 0.2s;
+}
+.footer-link:hover { color: #0A84FF; }
+
 
 /* --- TEAM TAGS --- */
 .team-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
@@ -319,6 +351,9 @@ select.control-item {
       <button onclick="openTeamStats()" class="control-item btn-stats">
         📊 Team Analytics
       </button>
+      <select id="semesterFilter" class="control-item">
+        <option value="">All Semesters</option>
+      </select>
       <select id="teamFilter" class="control-item">
         <option value="">All Teams</option>
       </select>
@@ -335,6 +370,10 @@ select.control-item {
   <div id="dashboard">
     <div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>
   </div>
+
+  <footer class="app-footer frosted">
+    <div style="margin-bottom:8px;">Powered by <span class="nolan-tag" style="margin:0; font-size:inherit;">Nolan Ai</span></div>
+  </footer>
 </div>
 
 <div id="modal" class="modal">
@@ -374,12 +413,25 @@ let state = {
   teamMap: {}, 
   groups: {}, 
   bgImages: [],
-  allTeams: new Set()
+  allTeams: new Set(),
+  semesters: new Set(),
+  eventSemMap: {}
 };
 
 let currentModal = { event: "", raw: [], mode: "worst" };
 
 const el = (tag, cls, html) => { const n = document.createElement(tag); if(cls) n.className = cls; if(html) n.innerHTML = html; return n; };
+
+// Helper: Determine Semester from Date
+// Jan-June = Spring, July-Dec = Fall
+function getSemester(dateString) {
+    if(!dateString) return "Unknown";
+    const d = new Date(dateString);
+    if(isNaN(d.getTime())) return "Unknown";
+    const month = d.getMonth(); // 0-11
+    const year = d.getFullYear();
+    return (month <= 5) ? `Spring ${year}` : `Fall ${year}`;
+}
 
 async function init() {
   try {
@@ -437,6 +489,27 @@ async function init() {
       state.groups[ev].push(row);
     });
 
+    // Determine Semesters based on Response Dates
+    Object.keys(state.groups).forEach(ev => {
+        const resps = state.groups[ev];
+        // Use the latest response timestamp to tag the event's semester
+        const timestamps = resps.map(r => new Date(r.Timestamp).getTime()).filter(t => !isNaN(t));
+        const latestTime = Math.max(...timestamps);
+        if(latestTime > 0) {
+            const sem = getSemester(latestTime);
+            state.eventSemMap[ev] = sem;
+            state.semesters.add(sem);
+        } else {
+            state.eventSemMap[ev] = "Unknown";
+        }
+    });
+
+    // Populate Semester Filter
+    const semSelect = document.getElementById("semesterFilter");
+    [...state.semesters].sort().reverse().forEach(s => {
+        semSelect.innerHTML += `<option value="${s}">${s}</option>`;
+    });
+
     setBg();
     render();
   } catch (e) { 
@@ -448,6 +521,7 @@ async function init() {
 function render(filter = "", sort = "rating") {
   const dash = document.getElementById("dashboard"); dash.innerHTML = "";
   const activeTeam = document.getElementById("teamFilter").value;
+  const activeSem = document.getElementById("semesterFilter").value;
   
   let list = Object.entries(state.groups);
   
@@ -461,10 +535,15 @@ function render(filter = "", sort = "rating") {
       return eventTeams.includes(activeTeam);
     });
   }
+
+  // 3. Semester Filter
+  if(activeSem) {
+      list = list.filter(([k]) => state.eventSemMap[k] === activeSem);
+  }
   
   const getRate = (r) => { const s = r.map(getScore).filter(x => !isNaN(x)); return s.length ? s.reduce((a,b)=>a+b,0)/s.length : 0; };
   
-  // 3. Sorting
+  // 4. Sorting
   if(sort === "rating") list.sort((a,b) => getRate(b[1]) - getRate(a[1]));
   else if(sort === "az") list.sort((a,b) => a[0].localeCompare(b[0]));
   else if(sort === "recent") list.sort((a,b) => (Math.max(...b[1].map(x=>new Date(x.Timestamp).getTime()||0)) - Math.max(...a[1].map(x=>new Date(x.Timestamp).getTime()||0))));
@@ -512,6 +591,7 @@ function render(filter = "", sort = "rating") {
         <span class="stats-text">📝 ${surveyCount} Surveys</span>
       </div>
       <div class="summary">${summaryText || "No summary available."}</div>
+      <div class="nolan-tag">✨ Analysis by Nolan Ai</div>
       ${chipsHtml}
     `;
     
@@ -710,6 +790,7 @@ function setBg() {
 document.getElementById("search").oninput = e => render(e.target.value, document.getElementById("sortMode").value);
 document.getElementById("sortMode").onchange = e => render(document.getElementById("search").value, e.target.value);
 document.getElementById("teamFilter").onchange = e => render(document.getElementById("search").value, document.getElementById("sortMode").value);
+document.getElementById("semesterFilter").onchange = e => render(document.getElementById("search").value, document.getElementById("sortMode").value);
 
 document.getElementById("modalSort").onchange = e => { currentModal.mode = e.target.value; renderModalBody(); };
 document.body.onclick = e => { if(e.target.dataset.close) document.getElementById("modal").classList.remove("show"); };
