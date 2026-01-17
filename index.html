@@ -423,15 +423,21 @@ let currentModal = { event: "", raw: [], mode: "worst" };
 
 const el = (tag, cls, html) => { const n = document.createElement(tag); if(cls) n.className = cls; if(html) n.innerHTML = html; return n; };
 
-// Helper: Determine Semester from Date
-// Jan-June = Spring, July-Dec = Fall
-function getSemester(dateString) {
-    if(!dateString) return "Unknown";
-    const d = new Date(dateString);
+// --- PROFANITY FILTER ---
+function bleep(text) {
+  if (!text || typeof text !== "string") return text;
+  const badWords = /\b(fuck|shit|asshole|bitch|bastard|damn|crap|piss|dick|cunt|slut|whore)\b/gi;
+  return text.replace(badWords, "****");
+}
+
+// Helper: Determine Semester (Jan-July = Spring, Aug-Dec = Fall)
+function getSemesterFromDate(dateValue) {
+    if(!dateValue) return "Unknown";
+    const d = new Date(dateValue);
     if(isNaN(d.getTime())) return "Unknown";
     const month = d.getMonth(); // 0-11
     const year = d.getFullYear();
-    return (month <= 5) ? `Spring ${year}` : `Fall ${year}`;
+    return (month <= 6) ? `Spring ${year}` : `Fall ${year}`;
 }
 
 async function init() {
@@ -453,7 +459,7 @@ async function init() {
       const row = ovw.table.cols.reduce((o, c, i) => { o[c.label] = r.c[i]?.v || ""; return o; }, {});
       const n = row["Event Name"];
       if (n) {
-        state.briefMap[n] = row["General Thoughts"];
+        state.briefMap[n] = bleep(row["General Thoughts"]);
         state.imageMap[n] = row["Header Image"];
         
         const att = +row["Attendance"] || 0;
@@ -469,6 +475,12 @@ async function init() {
         teams.forEach(t => state.allTeams.add(t));
 
         if(row["Header Image"]) state.bgImages.push(row["Header Image"]);
+
+        // Logic for Column H (Index 7) semester clumping
+        const dateFromH = r.c[7] ? (r.c[7].f || r.c[7].v) : null;
+        const sem = getSemesterFromDate(dateFromH);
+        state.eventSemMap[n] = sem;
+        if(sem !== "Unknown") state.semesters.add(sem);
       }
     });
 
@@ -484,32 +496,34 @@ async function init() {
     // Process Raw Responses
     const hdr = raw.table.cols.map(c => c.label);
     raw.table.rows.forEach(r => {
-      const row = hdr.reduce((o, h, i) => { o[h] = r.c[i]?.v || ""; return o; }, {});
+      const row = hdr.reduce((o, h, i) => { 
+        o[h] = bleep(r.c[i]?.v || ""); 
+        return o; 
+      }, {});
+      
+      // Explicitly check for Column K (10) and Column R (17) for feedback
+      const kVal = r.c[10]?.v || "";
+      const rVal = r.c[17]?.v || "";
+      if(kVal) row["Additional Comments"] = bleep(kVal);
+      if(rVal) row["Additional Comments"] = bleep(rVal);
+
       const ev = (row["Which Student Market Would You Like To Survey?"] || row["Which Event Would You Like To Survey?"] || "Unknown").trim();
       if (!state.groups[ev]) state.groups[ev] = [];
       state.groups[ev].push(row);
     });
 
-    // Determine Semesters based on Response Dates
-    Object.keys(state.groups).forEach(ev => {
-        const resps = state.groups[ev];
-        // Use the latest response timestamp to tag the event's semester
-        const timestamps = resps.map(r => new Date(r.Timestamp).getTime()).filter(t => !isNaN(t));
-        const latestTime = Math.max(...timestamps);
-        if(latestTime > 0) {
-            const sem = getSemester(latestTime);
-            state.eventSemMap[ev] = sem;
-            state.semesters.add(sem);
-        } else {
-            state.eventSemMap[ev] = "Unknown";
-        }
-    });
-
     // Populate Semester Filter
     const semSelect = document.getElementById("semesterFilter");
-    [...state.semesters].sort().reverse().forEach(s => {
+    const sortedSemesters = [...state.semesters].sort().reverse();
+    sortedSemesters.forEach(s => {
         semSelect.innerHTML += `<option value="${s}">${s}</option>`;
     });
+
+    // DEFAULT TO CURRENT SEMESTER
+    const currentSemLabel = getSemesterFromDate(new Date());
+    if (state.semesters.has(currentSemLabel)) {
+        semSelect.value = currentSemLabel;
+    }
 
     setBg();
     render();
@@ -526,25 +540,16 @@ function render(filter = "", sort = "rating") {
   
   let list = Object.entries(state.groups);
   
-  // 1. Text Filter
   if(filter) list = list.filter(([k]) => k.toLowerCase().includes(filter.toLowerCase()));
-
-  // 2. Team Filter
   if(activeTeam) {
-    list = list.filter(([k]) => {
-      const eventTeams = state.teamMap[k] || ["Unassigned"];
-      return eventTeams.includes(activeTeam);
-    });
+    list = list.filter(([k]) => (state.teamMap[k] || ["Unassigned"]).includes(activeTeam));
   }
-
-  // 3. Semester Filter
   if(activeSem) {
       list = list.filter(([k]) => state.eventSemMap[k] === activeSem);
   }
   
   const getRate = (r) => { const s = r.map(getScore).filter(x => !isNaN(x)); return s.length ? s.reduce((a,b)=>a+b,0)/s.length : 0; };
   
-  // 4. Sorting
   if(sort === "rating") list.sort((a,b) => getRate(b[1]) - getRate(a[1]));
   else if(sort === "az") list.sort((a,b) => a[0].localeCompare(b[0]));
   else if(sort === "recent") list.sort((a,b) => (Math.max(...b[1].map(x=>new Date(x.Timestamp).getTime()||0)) - Math.max(...a[1].map(x=>new Date(x.Timestamp).getTime()||0))));
@@ -611,7 +616,6 @@ function getSentimentChips(text) {
   if(!text) return "";
   const t = text.toLowerCase();
   let chips = [];
-
   if(t.includes("fun") || t.includes("great") || t.includes("good") || t.includes("amazing") || t.includes("loved") || t.includes("excited") || t.includes("best")) {
     chips.push(`<span class="chip chip-pos">😊 Fun/Positive</span>`);
   }
@@ -633,7 +637,6 @@ function getSentimentChips(text) {
   if(t.includes("weather") || t.includes("rain") || t.includes("hot") || t.includes("cold") || t.includes("wind")) {
     chips.push(`<span class="chip chip-neu">🌤️ Weather</span>`);
   }
-  
   return chips.length ? `<div class="chip-container">${chips.join("")}</div>` : "";
 }
 
@@ -645,15 +648,12 @@ function getScore(r) {
 // --- ANALYTICS MODAL ---
 function openTeamStats() {
   const teams = {};
-  
   const getRate = (r) => { const s = r.map(getScore).filter(x => !isNaN(x)); return s.length ? s.reduce((a,b)=>a+b,0)/s.length : 0; };
-
   Object.keys(state.groups).forEach(evt => {
     const eventTeams = state.teamMap[evt] || ["Unassigned"];
     const att = state.attendanceMap[evt] || 0;
     const rate = getRate(state.groups[evt]); 
     const surveys = state.surveysMap[evt] || state.groups[evt].length;
-
     eventTeams.forEach(t => {
       if(!teams[t]) teams[t] = { name: t, events: 0, att: 0, surv: 0, rates: [] };
       teams[t].events++;
@@ -662,18 +662,15 @@ function openTeamStats() {
       if(rate > 0) teams[t].rates.push(rate);
     });
   });
-
   const modalBody = document.getElementById("modalBody");
   modalBody.innerHTML = `<h2 style="margin-bottom:20px;">Team Overview & Statistics</h2><div class="stats-grid"></div>`;
   const grid = modalBody.querySelector(".stats-grid");
-
   Object.values(teams).sort((a,b) => {
     const avgA = a.rates.length ? a.rates.reduce((x,y)=>x+y,0)/a.rates.length : 0;
     const avgB = b.rates.length ? b.rates.reduce((x,y)=>x+y,0)/b.rates.length : 0;
     return avgB - avgA;
   }).forEach(t => {
     const avg = t.rates.length ? (t.rates.reduce((a,b)=>a+b,0)/t.rates.length).toFixed(2) : "N/A";
-    
     grid.innerHTML += `
       <div class="stat-box">
         <h4>${t.name}</h4>
@@ -681,10 +678,8 @@ function openTeamStats() {
         <div class="stat-row"><span>Surveys</span><span class="stat-val">${t.surv}</span></div>
         <div class="stat-row"><span>Attendees</span><span class="stat-val">${t.att.toLocaleString()}</span></div>
         <div class="stat-big">${avg} <span style="font-size:1rem;color:#666">/ 5</span></div>
-      </div>
-    `;
+      </div>`;
   });
-
   document.getElementById("modalToolbar").style.display = "none"; 
   document.getElementById("modal").classList.add("show");
 }
@@ -695,10 +690,8 @@ function openEventModal(evt, resps) {
   document.getElementById("modalSort").value = "worst";
   document.getElementById("modalToolbar").style.display = "flex";
   document.querySelector("#modal .modal-header h3").textContent = evt;
-  
   document.getElementById("btnPDF").onclick = () => downloadPDF(evt, getAverage(resps), state.briefMap[evt], state.attendanceMap[evt], resps);
   document.getElementById("btnCSV").onclick = () => downloadCSV(evt, resps);
-  
   renderModalBody();
   document.getElementById("modal").classList.add("show");
 }
@@ -707,7 +700,6 @@ function getAverage(r) { const s = r.map(getScore).filter(x=>!isNaN(x)); return 
 
 function renderModalBody() {
   const b = document.getElementById("modalBody"); b.innerHTML = "";
-  
   const counts = {5:0, 4:0, 3:0, 2:0, 1:0};
   let ratedCount = 0;
   currentModal.raw.forEach(r => { const s = getScore(r); if(!isNaN(s)) { counts[Math.round(s)] = (counts[Math.round(s)]||0)+1; ratedCount++; } });
@@ -727,7 +719,6 @@ function renderModalBody() {
   }
 
   const s = currentModal.raw.map((r,i)=>({r, i, sc: getScore(r), ts: new Date(r.Timestamp).getTime()}));
-  
   if(currentModal.mode==="worst") s.sort((a,b)=>(isNaN(a.sc)?99:a.sc)-(isNaN(b.sc)?99:b.sc));
   if(currentModal.mode==="best") s.sort((a,b)=>(isNaN(b.sc)?-1:b.sc)-(isNaN(a.sc)?-1:a.sc));
   if(currentModal.mode==="newest") s.sort((a,b)=>b.ts-a.ts);
@@ -747,10 +738,10 @@ function renderModalBody() {
 
 // --- EXPORT TOOLS ---
 function downloadPDF(evt, rt, sum, att, resps) {
-  let h = `<html><head><title>${evt}</title><style>body{font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;padding:30px;color:#000;} h1{border-bottom:3px solid #0A84FF;padding-bottom:15px;margin-bottom:30px;} .box{background:#f0f9ff;padding:20px;border-radius:12px;margin-bottom:30px;border:1px solid #bae6fd;} .r{border:1px solid #e5e7eb;padding:15px;margin-bottom:15px;page-break-inside:avoid;border-radius:8px;background:#fff;} .l{font-weight:700;font-size:0.85em;color:#6b7280;text-transform:uppercase;display:block;margin-bottom:4px;} .v{margin-bottom:12px;line-height:1.4;}</style></head><body><h1>${evt}</h1><div class="box"><b>Rating:</b> ${rt?rt.toFixed(1)+"/5":"N/A"} | <b>Attendance:</b> ${att||0}<br><br><i style="color:#4b5563">${sum}</i></div>`;
+  let h = `<html><head><title>${evt}</title><style>body{font-family:sans-serif;padding:30px;color:#000;} h1{border-bottom:3px solid #0A84FF;} .box{background:#f0f9ff;padding:20px;border-radius:12px;margin-bottom:30px;} .r{border:1px solid #e5e7eb;padding:15px;margin-bottom:15px;page-break-inside:avoid;}</style></head><body><h1>${evt}</h1><div class="box"><b>Rating:</b> ${rt?rt.toFixed(1)+"/5":"N/A"} | <b>Attendance:</b> ${att||0}<br><br><i>${sum}</i></div>`;
   resps.forEach((r,i) => {
-    h+=`<div class="r"><b style="color:#0A84FF;margin-bottom:10px;display:block;">Response #${i+1}</b>`;
-    for(let k in r) if(r[k] && !/Timestamp|Student ID/i.test(k)) h+=`<div><span class="l">${k}</span><div class="v">${r[k]}</div></div>`;
+    h+=`<div class="r"><b>Response #${i+1}</b>`;
+    for(let k in r) if(r[k] && !/Timestamp|Student ID/i.test(k)) h+=`<div><small>${k}</small><div>${r[k]}</div></div>`;
     h+=`</div>`;
   });
   const w = window.open(""); w.document.write(h); w.print();
