@@ -9,7 +9,7 @@
 :root {
   /* Theme Colors */
   --bg-dark: #000000;
-  --glass-surface: rgba(20, 20, 20, 0.85); 
+  --glass-surface: rgba(20, 20, 20, 0.85); /* Slightly more opaque for mobile contrast */
   --glass-border: rgba(255, 255, 255, 0.12);
   --text-main: #ffffff;
   --text-muted: #98989d;
@@ -19,7 +19,7 @@
   --gradient-hover: linear-gradient(135deg, #007AFF, #AF52DE);
   --gradient-fire: linear-gradient(135deg, #FF9500, #FF3B30);
   --gradient-success: linear-gradient(135deg, #34C759, #30B0C7);
-  --gradient-nolan: linear-gradient(135deg, #FFD60A, #FF9F0A); 
+  --gradient-nolan: linear-gradient(135deg, #FFD60A, #FF9F0A); /* Gold/Orange for Nolan */
   
   /* Modern Rounding */
   --radius-card: 24px;
@@ -45,10 +45,12 @@ body {
   overflow-x: hidden;
 }
 
+/* Custom Scrollbar */
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: #333; border-radius: 10px; border: 2px solid var(--bg-dark); }
 
+/* --- Frosted Glass Class --- */
 .frosted {
   background: var(--glass-surface);
   backdrop-filter: blur(var(--blur)) saturate(120%);
@@ -57,6 +59,7 @@ body {
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.6);
 }
 
+/* Container */
 .app-container {
   max-width: 1280px;
   margin: 0 auto;
@@ -66,6 +69,7 @@ body {
   flex-direction: column;
 }
 
+/* Top Navigation */
 .topbar {
   position: sticky; top: 24px; z-index: 50;
   display: flex; justify-content: space-between; align-items: center;
@@ -90,6 +94,7 @@ body {
 .brand-stat strong { color: #fff; font-weight: 700; }
 .stat-divider { margin: 0 8px; opacity: 0.3; color: var(--text-muted); }
 
+/* Controls */
 .controls { display: flex; gap: 12px; align-items: center; }
 
 .control-item {
@@ -116,17 +121,20 @@ select.control-item {
 .control-item:focus { border-color: #0A84FF; box-shadow: 0 0 0 4px rgba(10, 132, 255, 0.2); background: rgba(255,255,255,0.12); }
 .control-item:hover { border-color: rgba(255,255,255,0.3); background: rgba(255,255,255,0.12); }
 
+/* Stats Button */
 .btn-stats {
   background: var(--gradient-accent); border: none; cursor: pointer;
   box-shadow: 0 4px 15px rgba(10, 132, 255, 0.2);
 }
 .btn-stats:hover { box-shadow: 0 6px 20px rgba(10, 132, 255, 0.4); transform: translateY(-1px); }
 
+/* Dashboard Grid */
 #dashboard {
   display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 28px;
-  margin-bottom: 60px;
+  margin-bottom: 60px; /* Space for footer */
 }
 
+/* Cards */
 .card {
   border-radius: var(--radius-card); padding: 0;
   display: flex; flex-direction: column;
@@ -139,11 +147,13 @@ select.control-item {
 
 .card-header { position: relative; height: 180px; width: 100%; overflow: hidden; border-bottom: 1px solid var(--glass-border); }
 .card-img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.6s ease; }
+.card:hover .card-img { transform: scale(1.05); }
 .card-gradient-overlay {
   position: absolute; inset: 0;
   background: linear-gradient(to bottom, transparent 0%, rgba(20,20,20,0.4) 70%, rgba(20,20,20,0.9) 100%);
 }
 
+/* Badges */
 .badge-container { position: absolute; top: 16px; left: 16px; display: flex; gap: 8px; z-index: 10; flex-wrap: wrap; }
 .badge {
   padding: 6px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; color: #fff;
@@ -162,6 +172,7 @@ select.control-item {
 
 .summary { font-size: 0.95rem; color: #b0b0b0; line-height: 1.6; margin-bottom: 12px; font-weight: 400; display: block; }
 
+/* Nolan Ai Tag (Simplified) */
 .nolan-tag {
   font-size: 0.7rem; font-weight: 700;
   background: var(--gradient-nolan); -webkit-background-clip: text; -webkit-text-fill-color: transparent;
@@ -169,6 +180,7 @@ select.control-item {
   opacity: 0.9;
 }
 
+/* Footer */
 .app-footer {
   margin-top: auto;
   text-align: center;
@@ -180,7 +192,14 @@ select.control-item {
   border-radius: var(--radius-card);
   margin-bottom: 24px;
 }
+.footer-link {
+  color: #fff; text-decoration: none; font-weight: 600;
+  transition: color 0.2s;
+}
+.footer-link:hover { color: #0A84FF; }
 
+
+/* --- TEAM TAGS --- */
 .team-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
 .team-tag {
   font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;
@@ -189,6 +208,7 @@ select.control-item {
   background: rgba(255,255,255,0.03); color: var(--text-muted);
 }
 
+/* --- SENTIMENT CHIPS --- */
 .chip-container { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; margin-top: auto; }
 .chip {
   font-size: 0.75rem; padding: 6px 12px; border-radius: 12px; font-weight: 600;
@@ -196,14 +216,20 @@ select.control-item {
   color: #ddd; display: flex; align-items: center; gap: 6px;
   transition: transform 0.2s;
 }
+.chip:hover { transform: translateY(-2px); background: rgba(255,255,255,0.1); }
 .chip-pos { border-color: rgba(52, 199, 89, 0.3); color: #a0f0b0; background: rgba(52, 199, 89, 0.1); }
 .chip-neg { border-color: rgba(255, 59, 48, 0.3); color: #ffb0a0; background: rgba(255, 59, 48, 0.1); }
 .chip-neu { border-color: rgba(10, 132, 255, 0.3); color: #a0d0ff; background: rgba(10, 132, 255, 0.1); }
 
+
+/* Buttons */
 .actions { margin-top: auto; display: grid; grid-template-columns: 1fr auto; gap: 12px; }
 .btn { padding: 14px 20px; border-radius: var(--radius-btn); font-size: 0.9rem; font-weight: 600; cursor: pointer; border: none; font-family: inherit; transition: all 0.2s; -webkit-appearance: none;}
+.btn:active { transform: scale(0.96); }
 .btn-primary { background: var(--gradient-accent); color: white; box-shadow: 0 4px 15px rgba(10, 132, 255, 0.3); }
+.btn-primary:hover { background: var(--gradient-hover); box-shadow: 0 6px 20px rgba(10, 132, 255, 0.5); }
 .btn-secondary { background: rgba(255,255,255,0.08); color: var(--text-muted); border: 1px solid transparent; }
+.btn-secondary:hover { background: rgba(255,255,255,0.15); color: #fff; border-color: rgba(255,255,255,0.1); }
 
 /* Modal */
 .modal { position: fixed; inset: 0; z-index: 999; display: none; justify-content: center; align-items: center; padding: 20px; }
@@ -218,22 +244,18 @@ select.control-item {
 
 .modal-header { padding: 24px 28px; border-bottom: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.03); flex-shrink: 0;}
 .close-btn { background: transparent; border: none; color: var(--text-muted); font-size: 2rem; cursor: pointer; transition: 0.2s; line-height: 1; padding: 0 8px;}
+.close-btn:hover { color: #fff; transform: scale(1.1); }
 .modal-body { padding: 28px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
 
-/* Response Item UI */
-.response-row { background: rgba(255,255,255,0.04); border-radius: 18px; padding: 20px; margin-bottom: 16px; border: 1px solid var(--glass-border); }
-.row-head { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 0.9rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;}
-.score-badge { color: #fff; font-weight: 700; background: var(--gradient-accent); -webkit-background-clip: text; -webkit-text-fill-color: transparent;}
-.qa-pair { margin-bottom: 10px; }
-.qa-label { color: #666; font-size: 0.75rem; text-transform: uppercase; display: block; margin-bottom: 4px; font-weight:600;}
-.qa-val { color: #e5e5e5; line-height: 1.5; }
-
-/* Modal Stats Grid */
+/* Modal - Team Stats Grid */
 .stats-grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
 .stat-box {
   background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border);
   border-radius: 16px; padding: 20px; display: flex; flex-direction: column;
 }
+.stat-box h4 { margin: 0 0 12px 0; font-size: 1.1rem; color: #fff; border-bottom: 1px solid rgba(255,255,255,0.1); padding-bottom: 8px;}
+.stat-row { display: flex; justify-content: space-between; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 6px; }
+.stat-val { color: #fff; font-weight: 600; }
 .stat-big { font-size: 1.8rem; font-weight: 700; margin-top: auto; background: var(--gradient-accent); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
 
 /* Distribution Bars */
@@ -242,6 +264,14 @@ select.control-item {
 .dist-bar-bg { flex: 1; height: 6px; background: rgba(255,255,255,0.1); border-radius: 10px; overflow: hidden; }
 .dist-bar-fill { height: 100%; background: var(--gradient-accent); border-radius: 10px; width: 0; transition: width 0.6s ease; }
 
+.response-row { background: rgba(255,255,255,0.04); border-radius: 18px; padding: 20px; margin-bottom: 16px; border: 1px solid var(--glass-border); }
+.row-head { display: flex; justify-content: space-between; margin-bottom: 12px; font-size: 0.9rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700;}
+.score-badge { color: #fff; font-weight: 700; background: var(--gradient-accent); -webkit-background-clip: text; -webkit-text-fill-color: transparent;}
+.qa-pair { margin-bottom: 10px; }
+.qa-label { color: #666; font-size: 0.75rem; text-transform: uppercase; display: block; margin-bottom: 4px; font-weight:600;}
+.qa-val { color: #e5e5e5; line-height: 1.5; }
+
+/* Shimmer & Empty */
 .skeleton { 
   height: 400px; border-radius: var(--radius-card); border: 1px solid var(--glass-border); 
   background: #111; position: relative; overflow: hidden; 
@@ -252,17 +282,53 @@ select.control-item {
   animation: shimmer 1.5s infinite;
 }
 .empty-state { grid-column: 1/-1; text-align: center; padding: 60px 20px; color: var(--text-muted); }
+.empty-icon { font-size: 3rem; margin-bottom: 16px; opacity: 0.5; }
 
 @keyframes shimmer { 100% { transform: translateX(100%); } }
 @keyframes fadeUp { from { opacity: 0; transform: translateY(20px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
 
+/* --- MOBILE OPTIMIZATION --- */
 @media(max-width: 900px) {
   .app-container { padding: 0 16px; }
-  .topbar { position: relative; top: 0; flex-direction: column; align-items: stretch; gap: 20px; padding: 20px; margin-top: 10px; }  
+  
+  /* Navigation */
+  .topbar { 
+    position: relative; top: 0; /* Unstick on mobile to save space */
+    flex-direction: column; align-items: stretch; gap: 20px; 
+    padding: 20px; margin-top: 10px; margin-bottom: 24px;
+  }  
+  
+  .brand { flex-direction: column; align-items: flex-start; gap: 12px; }
+  .brand img { height: 40px; }
+  
   .controls { flex-direction: column; align-items: stretch; gap: 12px; }
-  #dashboard { grid-template-columns: 1fr; }
-  .modal-content { max-height: 100vh; height: 100vh; border-radius: 0; width: 100%; }
-  #modalToolbar { flex-direction: column; gap: 12px; padding: 16px 20px !important; }
+  input.control-item, select.control-item, .btn-stats { width: 100% !important; }
+  
+  /* Grid */
+  #dashboard { grid-template-columns: 1fr; gap: 20px; }
+  
+  /* Cards */
+  .card-header { height: 140px; } /* Slightly shorter images on phone */
+  .card-body { padding: 20px; }
+  .actions { grid-template-columns: 1fr; } 
+  .card h2 { font-size: 1.25rem; }
+  
+  /* Modal Mobile Takeover */
+  .modal { padding: 0; align-items: flex-end; }
+  .modal-content { 
+    max-height: 100vh; height: 100vh; border-radius: 0; 
+    border: none; width: 100%;
+  }
+  .modal-header { padding: 16px 20px; }
+  .modal-body { padding: 20px; }
+  
+  /* Modal Toolbar wrapping */
+  #modalToolbar { 
+    flex-direction: column; gap: 12px; align-items: stretch !important; padding: 16px 20px !important; 
+  }
+  #modalToolbar > div { display: flex; width: 100%; gap: 8px; }
+  #modalToolbar button { flex: 1; }
+  #modalSort { width: 100%; text-align: left; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 12px; margin-top: 4px; }
 }
 </style>
 </head>
@@ -282,9 +348,15 @@ select.control-item {
       </div>
     </div>
     <div class="controls">
-      <button onclick="openTeamStats()" class="control-item btn-stats">📊 Team Analytics</button>
-      <select id="semesterFilter" class="control-item"><option value="">All Semesters</option></select>
-      <select id="teamFilter" class="control-item"><option value="">All Teams</option></select>
+      <button onclick="openTeamStats()" class="control-item btn-stats">
+        📊 Team Analytics
+      </button>
+      <select id="semesterFilter" class="control-item">
+        <option value="">All Semesters</option>
+      </select>
+      <select id="teamFilter" class="control-item">
+        <option value="">All Teams</option>
+      </select>
       <input id="search" class="control-item" type="text" placeholder="Search events..." autocomplete="off" />
       <select id="sortMode" class="control-item">
         <option value="rating">Rating (High-Low)</option>
@@ -300,7 +372,8 @@ select.control-item {
   </div>
 
   <footer class="app-footer frosted">
-    <div>Automated Reporting System Powered by the CAB Survey Dashboard and <span style="font-weight:700; background: var(--gradient-nolan); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">Henry Ai</span></div>
+    <div style="margin-bottom:8px;"> Automated Reporting System Powered by the
+CAB Survey Dashboard and <span class="nolan-tag" style="margin:0; font-size:inherit;">Henry Ai</span></div>
   </footer>
 </div>
 
@@ -330,29 +403,41 @@ select.control-item {
 
 <script>
 const sheetID = "1CqmQKvOkcLFV8XyzFrjK4H85skJCwRgSEwiP8j_6pMM";
-const RAW_SHEET = "Survey Responses"; 
-const OVW_SHEET = "Response overview"; 
+const RAW_SHEET = "Survey Responses";
+const OVW_SHEET = "Response overview";
 
 let state = { 
-  briefMap: {}, imageMap: {}, attendanceMap: {}, 
-  surveysMap: {}, teamMap: {}, groups: {}, 
-  bgImages: [], allTeams: new Set(), semesters: new Set(), eventSemMap: {}
+  briefMap: {}, 
+  imageMap: {}, 
+  attendanceMap: {}, 
+  surveysMap: {}, 
+  teamMap: {}, 
+  groups: {}, 
+  bgImages: [],
+  allTeams: new Set(),
+  semesters: new Set(),
+  eventSemMap: {}
 };
 
 let currentModal = { event: "", raw: [], mode: "worst" };
+
 const el = (tag, cls, html) => { const n = document.createElement(tag); if(cls) n.className = cls; if(html) n.innerHTML = html; return n; };
 
+// --- PROFANITY FILTER ---
 function bleep(text) {
   if (!text || typeof text !== "string") return text;
   const badWords = /\b(fuck|shit|asshole|bitch|bastard|damn|crap|piss|dick|cunt|slut|whore)\b/gi;
   return text.replace(badWords, "****");
 }
 
+// Helper: Determine Semester
 function getSemesterFromDate(dateValue) {
     if(!dateValue) return "Unknown";
     const d = new Date(dateValue);
     if(isNaN(d.getTime())) return "Unknown";
-    return (d.getMonth() <= 6) ? `Spring ${d.getFullYear()}` : `Fall ${d.getFullYear()}`;
+    const month = d.getMonth(); 
+    const year = d.getFullYear();
+    return (month <= 6) ? `Spring ${year}` : `Fall ${year}`;
 }
 
 async function init() {
@@ -360,39 +445,55 @@ async function init() {
     const fetchS = async (n) => {
       const res = await fetch(`https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(n)}`);
       const txt = await res.text();
-      return JSON.parse(txt.match(/\{.*\}/s)[0]);
+      const jsonText = txt.match(/\{.*\}/s)[0]; 
+      return JSON.parse(jsonText);
     };
 
     const [ovw, raw] = await Promise.all([fetchS(OVW_SHEET), fetchS(RAW_SHEET)]);
 
-    let totalGlobalAtt = 0;
-    // Process Overview
+    let totalGlobalAttendance = 0;
+    let validEventsCount = 0;
+
+    // Process Overview Sheet (Sheet 3)
     ovw.table.rows.forEach(r => {
       const n = (r.c[0]?.v || "").toString().trim();
       if (n) {
-        state.briefMap[n] = bleep(r.c[3]?.v || ""); 
+        state.briefMap[n] = bleep(r.c[3]?.v || "");
         state.imageMap[n] = r.c[4]?.v || "";
-        state.attendanceMap[n] = +r.c[5]?.v || 0;
-        totalGlobalAtt += state.attendanceMap[n];
+        
+        const att = +r.c[5]?.v || 0;
+        state.attendanceMap[n] = att;
+        totalGlobalAttendance += att;
+        validEventsCount++;
+        
         state.surveysMap[n] = +r.c[2]?.v || 0;
-        const teams = (r.c[6]?.v || "Unassigned").toString().split(/[,&]/).map(t => t.trim()).filter(t => t);
+        
+        const tRaw = r.c[6]?.v || "Unassigned";
+        const teams = tRaw.toString().split(/[,&]/).map(t => t.trim()).filter(t => t.length > 0);
         state.teamMap[n] = teams;
         teams.forEach(t => state.allTeams.add(t));
+
         if(r.c[4]?.v) state.bgImages.push(r.c[4]?.v);
-        const sem = getSemesterFromDate(r.c[7]?.f || r.c[7]?.v);
+
+        const dateFromH = r.c[7] ? (r.c[7].f || r.c[7].v) : null;
+        const sem = getSemesterFromDate(dateFromH);
         state.eventSemMap[n] = sem;
         if(sem !== "Unknown") state.semesters.add(sem);
+
+        // Pre-initialize groups
         state.groups[n] = [];
       }
     });
 
-    document.getElementById("globalAttendance").textContent = totalGlobalAtt.toLocaleString();
-    document.getElementById("totalEvents").textContent = ovw.table.rows.length;
+    document.getElementById("globalAttendance").textContent = totalGlobalAttendance.toLocaleString();
+    document.getElementById("totalEvents").textContent = validEventsCount;
 
-    // Process Raw Responses
+    // Process Raw Responses (Sheet 1)
     const hdr = raw.table.cols.map(c => c.label);
     raw.table.rows.forEach(r => {
-      const rowData = hdr.reduce((o, h, i) => { o[h] = bleep(r.c[i]?.v || ""); return o; }, {});
+      const row = hdr.reduce((o, h, i) => { o[h] = bleep(r.c[i]?.v || ""); return o; }, {});
+      
+      // BRANCHING: CAB (Col C) or Market (Col L)
       const cabName = (r.c[2]?.v || "").toString().trim();
       const mktName = (r.c[11]?.v || "").toString().trim();
       const rawEvent = (cabName || mktName || "Unknown");
@@ -400,28 +501,33 @@ async function init() {
       let targetKey = Object.keys(state.groups).find(k => k.toLowerCase() === rawEvent.toLowerCase());
       if (!targetKey) targetKey = rawEvent;
 
-      // Extract Rating
-      const rawScore = parseFloat(r.c[3]?.v || r.c[12]?.v || NaN);
-      rowData["_computedScore"] = rawScore;
+      // Extract Rating: CAB (Col D) or Market (Col M)
+      row["_computedScore"] = parseFloat(r.c[3]?.v || r.c[12]?.v || NaN);
 
-      // Unify Additional Comments
+      // Unify Additional Comments: K (10) or R (17)
       const cmt = (r.c[10]?.v || r.c[17]?.v || "");
-      if(cmt) rowData["Additional Comments"] = bleep(cmt);
+      if(cmt) row["Additional Comments"] = bleep(cmt);
 
       if (!state.groups[targetKey]) state.groups[targetKey] = [];
-      state.groups[targetKey].push(rowData);
+      state.groups[targetKey].push(row);
     });
 
-    // Filters setup
+    // Populate Filters
     const teamSelect = document.getElementById("teamFilter");
-    [...state.allTeams].sort().forEach(t => { if(t!=="Unassigned") teamSelect.innerHTML += `<option value="${t}">${t}</option>`; });
+    [...state.allTeams].sort().forEach(t => { if(t !== "Unassigned") teamSelect.innerHTML += `<option value="${t}">${t}</option>`; });
+
     const semSelect = document.getElementById("semesterFilter");
     [...state.semesters].sort().reverse().forEach(s => semSelect.innerHTML += `<option value="${s}">${s}</option>`);
-    const currentSem = getSemesterFromDate(new Date());
-    if (state.semesters.has(currentSem)) semSelect.value = currentSem;
+
+    // Auto-select Current Semester
+    const currentSemLabel = getSemesterFromDate(new Date());
+    if (state.semesters.has(currentSemLabel)) semSelect.value = currentSemLabel;
 
     setBg(); render();
-  } catch (e) { console.error(e); }
+  } catch (e) { 
+    console.error(e);
+    document.getElementById("dashboard").innerHTML = `<div class="empty-state"><h3>Error Loading Data</h3></div>`;
+  }
 }
 
 function render(filter = "", sort = "rating") {
@@ -444,28 +550,34 @@ function render(filter = "", sort = "rating") {
   else if(sort === "recent") list.sort((a,b) => (Math.max(...b[1].map(x=>new Date(x.Timestamp).getTime()||0)) - Math.max(...a[1].map(x=>new Date(x.Timestamp).getTime()||0))));
   else if(sort === "attendance") list.sort((a,b) => (state.attendanceMap[b[0]]||0) - (state.attendanceMap[a[0]]||0));
 
+  if(list.length === 0) {
+    dash.innerHTML = `<div class="empty-state"><div class="empty-icon">🔍</div><h3>No events found</h3></div>`;
+    return;
+  }
+
   list.forEach(([evt, resps], idx) => {
     const rate = getRate(resps);
     const card = el("div", "frosted card");
     card.style.opacity = 0; card.style.animation = `fadeUp 0.4s ease forwards ${idx * 0.05}s`;
     
     if(state.imageMap[evt]) {
-      const h = el("div","card-header");
-      h.innerHTML = `<div class="badge-container">${rate >= 4.5 ? '<span class="badge badge-fire">🔥 Top Rated</span>' : ''}${state.attendanceMap[evt] > 350 ? '<span class="badge badge-ok">👥 High Turnout</span>' : ''}${rate > 0 && rate < 3 ? '<span class="badge badge-warn">⚠️ Needs Review</span>' : ''}</div><img src="${state.imageMap[evt]}" class="card-img"><div class="card-gradient-overlay"></div>`;
-      card.appendChild(h);
+      const head = el("div","card-header");
+      head.innerHTML = `<div class="badge-container">${rate >= 4.5 ? '<span class="badge badge-fire">🔥 Top Rated</span>' : ''}${state.attendanceMap[evt] > 350 ? '<span class="badge badge-ok">👥 High Turnout</span>' : ''}${rate > 0 && rate < 3 ? '<span class="badge badge-warn">⚠️ Needs Review</span>' : ''}</div><img src="${state.imageMap[evt]}" class="card-img"><div class="card-gradient-overlay"></div>`;
+      card.appendChild(head);
     }
+    
     const body = el("div", "card-body");
     body.innerHTML = `
-      <div class="team-row">${(state.teamMap[evt]||[]).map(t=>`<span class="team-tag">${t}</span>`).join("")}</div>
+      <div class="team-row">${(state.teamMap[evt]||[]).map(t => `<span class="team-tag">${t}</span>`).join("")}</div>
       <h2>${evt}</h2>
       <div class="stats">
-        <span class="rating-text">${rate > 0 ? "★ "+rate.toFixed(1) : "N/A"}</span>
+        <span class="rating-text">${(!isNaN(rate) && rate > 0) ? "★ "+rate.toFixed(1) : "No Rating"}</span>
         <span style="color:#333">|</span>
         <span class="stats-text">👥 ${state.attendanceMap[evt] || "--"}</span>
         <span style="color:#333">|</span>
         <span class="stats-text">📝 ${state.surveysMap[evt] || resps.length} Surveys</span>
       </div>
-      <div class="summary">${state.briefMap[evt]}</div>
+      <div class="summary">${state.briefMap[evt] || "No summary available."}</div>
       <div class="nolan-tag"></div>
       ${getSentimentChips(state.briefMap[evt])}
     `;
@@ -483,10 +595,7 @@ function getSentimentChips(text) {
   if(/fun|great|good|amazing|loved|excited|best/.test(t)) chips.push('<span class="chip chip-pos">😊 Fun/Positive</span>');
   if(/wait|line|queue|slow/.test(t)) chips.push('<span class="chip chip-neg">⚠️ Lines</span>');
   if(/crowd|busy|packed/.test(t)) chips.push('<span class="chip chip-neg">👥 Crowded</span>');
-  if(/issue|bad|boring|problem/.test(t)) chips.push('<span class="chip chip-neg">❗ Issues</span>');
   if(/food|drink|snack|truck/.test(t)) chips.push('<span class="chip chip-neu">🍕 Food</span>');
-  if(/music|dj|sound|band/.test(t)) chips.push('<span class="chip chip-neu">🎵 Music</span>');
-  if(/weather|rain|hot|cold|wind/.test(t)) chips.push('<span class="chip chip-neu">🌤️ Weather</span>');
   return chips.length ? `<div class="chip-container">${chips.join("")}</div>` : "";
 }
 
@@ -508,7 +617,7 @@ function openTeamStats() {
     });
   });
   const modalBody = document.getElementById("modalBody");
-  modalBody.innerHTML = '<h2 style="margin-bottom:20px;">Team Overview & Statistics</h2><div class="stats-grid"></div>';
+  modalBody.innerHTML = `<h2 style="margin-bottom:20px;">Team Overview & Statistics</h2><div class="stats-grid"></div>`;
   const grid = modalBody.querySelector(".stats-grid");
   Object.values(teams).sort((a,b) => {
     const avgA = a.rates.length ? a.rates.reduce((x,y)=>x+y,0)/a.rates.length : 0;
@@ -546,7 +655,7 @@ function renderModalBody() {
   currentModal.raw.forEach(r => { if(!isNaN(r._computedScore)) { counts[Math.round(r._computedScore)]++; ratedCount++; } });
   
   if(ratedCount > 0) {
-    const distDiv = document.createElement("div"); distDiv.className = "dist-container";
+    const distDiv = el("div", "dist-container");
     [5,4,3,2,1].forEach(star => {
       const pct = (counts[star] / ratedCount) * 100;
       distDiv.innerHTML += `
@@ -565,7 +674,7 @@ function renderModalBody() {
   if(currentModal.mode==="newest") s.sort((a,b)=>b.ts-a.ts);
 
   s.forEach(({r, i, sc}) => {
-    const d = document.createElement("div"); d.className = "response-row";
+    const d = el("div", "response-row");
     let h = `<div class="row-head"><span>Response #${i+1}</span><span class="score-badge">${!isNaN(sc) ? '★'.repeat(Math.round(sc)) + ' (' + sc + ')' : 'No Rating'}</span></div>`;
     for(let k in r) {
       if(!r[k] || k.startsWith("_") || /Timestamp|Student ID/i.test(k)) continue;
@@ -579,7 +688,7 @@ function downloadPDF(evt, resps) {
   let h = `<html><head><title>${evt}</title><style>body{font-family:sans-serif;padding:30px;} h1{border-bottom:3px solid #0A84FF;} .r{border:1px solid #eee;padding:15px;margin-bottom:15px;}</style></head><body><h1>${evt}</h1>`;
   resps.forEach((r,i) => {
     h+=`<div class="r"><b>Response #${i+1}</b>`;
-    for(let k in r) if(r[k] && !k.startsWith("_") && !/Timestamp|ID/i.test(k)) h+=`<div><small>${k}</small><div>${r[k]}</div></div>`;
+    for(let k in r) if(r[k] && !k.startsWith("_") && !/Timestamp/i.test(k)) h+=`<div><small>${k}</small><div>${r[k]}</div></div>`;
     h+=`</div>`;
   });
   const w = window.open(""); w.document.write(h); w.print();
@@ -587,7 +696,7 @@ function downloadPDF(evt, resps) {
 
 function downloadCSV(evt, resps) {
   if(!resps.length) return;
-  const keys = Object.keys(resps[0]).filter(k => !k.startsWith("_") && !/Timestamp|ID/i.test(k));
+  const keys = Object.keys(resps[0]).filter(k => !k.startsWith("_") && !/Timestamp/i.test(k));
   let csv = "ID," + keys.join(",") + "\n";
   resps.forEach((r, i) => {
     csv += `${i+1},` + keys.map(k => `"${(r[k]||'').toString().replace(/"/g, '""')}"`).join(",") + "\n";
@@ -598,8 +707,9 @@ function downloadCSV(evt, resps) {
 }
 
 function setBg() {
-  if (state.bgImages.length) {
-    const img = state.bgImages[Math.floor(Math.random() * state.bgImages.length)];
+  const valid = state.bgImages.filter(u => u.startsWith("http"));
+  if (valid.length) {
+    const img = valid[Math.floor(Math.random() * valid.length)];
     document.body.style.backgroundImage = `linear-gradient(rgba(0,0,0,0.85), rgba(0,0,0,0.95)), url('${img}')`;
     document.body.style.backgroundSize = "cover";
   }
@@ -611,6 +721,7 @@ document.getElementById("teamFilter").onchange = () => render(document.getElemen
 document.getElementById("semesterFilter").onchange = () => render(document.getElementById("search").value);
 document.getElementById("modalSort").onchange = e => { currentModal.mode = e.target.value; renderModalBody(); };
 document.body.onclick = e => { if(e.target.dataset.close) document.getElementById("modal").classList.remove("show"); };
+
 init();
 </script>
 </body>
