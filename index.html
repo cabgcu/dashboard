@@ -557,6 +557,7 @@ document.getElementById("semesterFilter").onchange = () => render(document.getEl
 document.getElementById("modalSort").onchange = e => { currentModal.mode = e.target.value; renderModalBody(); };
 document.body.onclick = e => { if(e.target.dataset.close) document.getElementById("modal").classList.remove("show"); };
 
+  
 init();
 </script>
 </body>
