@@ -755,7 +755,19 @@ function openTeamStats() {
 }
 
 function openEventModal(evt) {
-  currentModal = { event: evt, raw: state.groups[evt] || [], mode: "worst" };
+  // Try exact match first
+  let responses = state.groups[evt];
+
+  // If no exact match, try flexible matching
+  if (!responses) {
+    const eventKey = Object.keys(state.groups).find(key =>
+      key.toLowerCase().includes(evt.toLowerCase()) ||
+      evt.toLowerCase().includes(key.toLowerCase())
+    );
+    responses = eventKey ? state.groups[eventKey] : [];
+  }
+
+  currentModal = { event: evt, raw: responses || [], mode: "worst" };
   document.getElementById("modalToolbar").style.display = "flex";
   document.querySelector("#modal h3").textContent = evt;
   document.getElementById("btnPDF").onclick = () => downloadPDF(evt, currentModal.raw);
