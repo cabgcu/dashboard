@@ -594,7 +594,9 @@ async function init() {
           skippedCount++;
       }
     });
-    console.log(`Response parsing: ${parsedCount} parsed, ${noEventCount} missing event field, ${skippedCount} errors`);
+    const debugMsg = `Response parsing: ${parsedCount} parsed, ${noEventCount} missing event field, ${skippedCount} errors`;
+    console.log(debugMsg);
+    window._debugParsing = debugMsg;
 
     window._debugParsedCount = Object.keys(state.groups).length;
 
