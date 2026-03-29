@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
 <title>GCU Event Dashboard — Pro Edition</title>
 
+<!-- Supabase Library -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 <style>
 :root {
   /* Theme Colors */
@@ -238,6 +241,7 @@ select.control-item { cursor: pointer; padding-right: 36px; appearance: none; -w
       <div style="display:flex; gap:12px">
         <button id="btnPDF" class="btn btn-secondary" style="width:auto; padding:8px 20px; font-size:0.85rem; font-weight:700;">Export PDF</button>
         <button id="btnCSV" class="btn btn-secondary" style="width:auto; padding:8px 20px; font-size:0.85rem; font-weight:700;">Export CSV</button>
+        <button id="btnEdit" class="btn btn-secondary" style="width:auto; padding:8px 20px; font-size:0.85rem; font-weight:700; background:rgba(10, 132, 255, 0.2); color:#0A84FF; border:1px solid #0A84FF;">✏️ Edit</button>
       </div>
       <select id="modalSort" style="background:transparent; border:none; color:var(--text-muted); font-size:0.95rem; outline:none; font-weight:700; cursor:pointer;">
         <option value="worst">Sort: Critical First</option>
@@ -251,9 +255,16 @@ select.control-item { cursor: pointer; padding-right: 36px; appearance: none; -w
 </div>
 
 <script>
-const sheetID = "1ZUseZRskfgiYfaFKylCpjysVIB2PIA-xuKlA6kQy06E";
-const RAW_SHEET = "Survey Responses";
-const OVW_SHEET = "Response overview";
+// Supabase Configuration
+const SUPABASE_URL = 'https://hpkhhtzbhkjkdfprsmnt.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_--X_qzfO-yz_IPK1IN-sug_l83Dwmn2'; 
+
+let supabaseClient = null;
+if (window.supabase) {
+    supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+} else {
+    console.error("Supabase failed to load. Check network connection.");
+}
 
 let state = { 
   briefMap: {}, 
@@ -271,8 +282,8 @@ let state = {
 let currentModal = { event: "", raw: [], mode: "worst" };
 
 const headerMap = {
-  eventName: ["CAB Event Name", "Market Event Name", "Which Event Would You Like To Survey?", "Which Student Market Would You Like To Survey?"],
-  rating: ["CAB Rating", "Market Rating", "How would you rate your overall experience at this event?", "How would you rate your overall experience at the Student Market?"]
+  eventName: ["CAB Event Name", "Market Event Name"],
+  rating: ["CAB Rating", "Market Rating"]
 };
 
 // Full description mapping
@@ -305,97 +316,226 @@ function bleep(text) {
   return text.replace(badWords, "****");
 }
 
-function parseGvizDate(str) {
+function parseDateStr(str) {
   if (!str) return null;
   if (str instanceof Date) return str;
-  if (typeof str === 'string' && str.startsWith('Date(')) {
-    const parts = str.match(/\d+/g);
-    if (parts) return new Date(parts[0], parts[1], parts[2] || 1, parts[3] || 0, parts[4] || 0, parts[5] || 0);
-  }
   const d = new Date(str);
   return isNaN(d.getTime()) ? null : d;
 }
 
 function getSemesterFromDate(dateValue) {
-    const d = (dateValue instanceof Date) ? dateValue : parseGvizDate(dateValue);
-    if(!d) return "Unknown";
-    return (d.getMonth() <= 6) ? `Spring ${d.getFullYear()}` : `Fall ${d.getFullYear()}`;
+    const d = parseDateStr(dateValue);
+    if(!d || d.getFullYear() < 2000) return "Unknown";
+    const m = d.getMonth() + 1; // 1-12
+    const year = d.getFullYear();
+    if (m <= 5) return `Spring ${year}`;
+    if (m <= 7) return `Summer ${year}`;
+    return `Fall ${year}`;
+}
+
+function extractSemester(eventName, fallbackDate) {
+    let year = null;
+    let season = null;
+
+    // 0. Try to find a standalone year anywhere in the title first
+    const yearMatch = eventName.match(/\b(20\d{2})\b/);
+    if (yearMatch) year = yearMatch[1];
+
+    // 1. Explicit Full Date Check (e.g., "Tote-Tally Summer - 06/10/25")
+    const dateMatch = eventName.match(/(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
+    if (dateMatch) {
+        const month = parseInt(dateMatch[1], 10);
+        let y = dateMatch[3];
+        if (!year) year = y.length === 2 ? "20" + y : y;
+        
+        if (month <= 5) season = "Spring";
+        else if (month <= 7) season = "Summer";
+        else season = "Fall";
+    } 
+    // 2. Partial Date Check (e.g., "09/20 & 09/21")
+    else {
+        const partialDateMatch = eventName.match(/(\d{1,2})\/(\d{1,2})/);
+        if (partialDateMatch) {
+            const month = parseInt(partialDateMatch[1], 10);
+            if (month <= 5) season = "Spring";
+            else if (month <= 7) season = "Summer";
+            else season = "Fall";
+        }
+    }
+
+    // 3. Try to find a combination like "Fall 2024", "Spring '23", "Fall 24"
+    const comboMatch = eventName.match(/\b(Fall|Spring|Winter|Summer)\s*'?(\d{2,4})\b/i);
+    if (comboMatch) {
+        if (!season) season = comboMatch[1];
+        let y = comboMatch[2];
+        if (!year) year = y.length === 2 ? "20" + y : y;
+    } else if (!season) {
+        // Try to find just a season word
+        const seasonMatch = eventName.match(/\b(Fall|Spring|Winter|Summer)\b/i);
+        if (seasonMatch) season = seasonMatch[1];
+    }
+
+    if (season) season = season.charAt(0).toUpperCase() + season.slice(1).toLowerCase();
+
+    // Fill in any missing pieces using the fallback timestamp from the survey submissions
+    const d = parseDateStr(fallbackDate);
+    // Ignore the date if it's 1969/1970 (Epoch zero issues from empty/broken timestamps)
+    if (d && d.getFullYear() > 2000) {
+        if (!year) year = d.getFullYear().toString();
+        if (!season) {
+            const m = d.getMonth() + 1;
+            if (m <= 5) season = "Spring";
+            else if (m <= 7) season = "Summer";
+            else season = "Fall";
+        }
+    }
+
+    // FINAL SAFETY NET: If no year could be found from the title or the timestamp, 
+    // default to the current calendar year instead of staying null/unknown
+    if (!year) {
+        year = new Date().getFullYear().toString();
+    }
+
+    if (season && year) return `${season} ${year}`;
+    if (year) return `Event ${year}`;
+    return "Unknown";
 }
 
 async function init() {
   try {
-    const fetchS = async (n) => {
-      const res = await fetch(`https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(n)}`);
-      const txt = await res.text();
-      const jsonText = txt.match(/\{.*\}/s)[0]; 
-      return JSON.parse(jsonText);
-    };
+    if (!supabaseClient) throw new Error("Database not initialized.");
 
-    const [ovw, raw] = await Promise.all([fetchS(OVW_SHEET), fetchS(RAW_SHEET)]);
+    // Fetch data from Supabase tables
+    const { data: ovwData, error: ovwErr } = await supabaseClient.from('event_overviews').select('*');
+    if (ovwErr) throw ovwErr;
+
+    const { data: rawData, error: rawErr } = await supabaseClient.from('responses').select('data, created_at');
+    if (rawErr) throw rawErr;
 
     let totalGlobalAttendance = 0;
     let validEventsCount = 0;
 
-    ovw.table.rows.forEach(r => {
-      const n = r.c[0]?.v || "";
+    // Process Overviews
+    (ovwData || []).forEach(r => {
+      const n = r.eventname || "";
       if (n) {
-        state.briefMap[n] = bleep(r.c[3]?.v || "");
-        state.imageMap[n] = r.c[4]?.v || "";
-        const att = +r.c[5]?.v || 0;
-        state.attendanceMap[n] = att;
-        totalGlobalAttendance += att;
+        state.briefMap[n] = bleep(r.summary || "");
+        
+        // Handle custom image URL from Supabase, or fall back to dynamic placeholder
+        if (r.imageurl && r.imageurl.trim() !== "") {
+            state.imageMap[n] = r.imageurl;
+            state.bgImages.push(r.imageurl);
+        } else {
+            const imgId = Math.abs(n.split('').reduce((a,b)=>a+b.charCodeAt(0),0)) % 1000;
+            state.imageMap[n] = `https://picsum.photos/seed/${imgId}/800/400`;
+            state.bgImages.push(`https://picsum.photos/seed/${imgId}/1920/1080`);
+        }
+
+        const attText = (r.attendance || "0").toString().replace(/,/g, '');
+        const att = parseInt(attText);
+        state.attendanceMap[n] = isNaN(att) ? 0 : att;
+        totalGlobalAttendance += isNaN(att) ? 0 : att;
+        
         validEventsCount++;
-        state.surveysMap[n] = +r.c[2]?.v || 0;
-        const tRaw = r.c[6]?.v || "Unassigned";
+        state.surveysMap[n] = parseInt(r.surveys) || 0;
+        
+        const tRaw = r.hostingteam || "Unassigned";
         const teams = tRaw.split(/[,&]/).map(t => t.trim()).filter(t => t.length > 0);
         state.teamMap[n] = teams;
         teams.forEach(t => state.allTeams.add(t));
-        if(r.c[4]?.v) state.bgImages.push(r.c[4].v);
       }
     });
 
-    const hdr = raw.table.cols.map(c => c.label);
-    raw.table.rows.forEach(r => {
-      const row = {};
-      hdr.forEach((h, i) => {
-        let val = r.c[i]?.v;
-        if (typeof val === 'string' && !val.startsWith('Date(')) val = bleep(val);
-        row[h] = val ?? "";
-      });
-      let ev = "Unknown";
-      for (const key of headerMap.eventName) { if (row[key]) { ev = row[key].toString().trim(); break; } }
+    // Process Raw Survey Submissions (Mapping back to original dashboard structure)
+    (rawData || []).forEach(row => {
+      const d = row.data;
+      if (!d || !d.event) return;
+
+      const ev = d.event;
       if (!state.groups[ev]) state.groups[ev] = [];
-      state.groups[ev].push(row);
+
+      const mappedRow = {
+        "Timestamp": d.timestamp || row.created_at,
+        "Student ID": d.studentID || "Unknown"
+      };
+
+      if (d.isMarket) {
+        mappedRow["Market Event Name"] = ev;
+        mappedRow["Market Rating"] = d.rating || 0;
+        mappedRow["MKT Favorite Part"] = bleep(d.favoritePart || d.favorite || "");
+        mappedRow["MKT First Time"] = d.mktFirstTime || "";
+        mappedRow["MKT Variety Sat"] = d.variety || "";
+        mappedRow["MKT Purchase Made"] = d.purchase || "";
+        mappedRow["MKT Comments"] = bleep(d.comments || "");
+      } else {
+        mappedRow["CAB Event Name"] = ev;
+        mappedRow["CAB Rating"] = d.rating || 0;
+        mappedRow["CAB First Time"] = d.firstTime || "";
+        mappedRow["CAB Hear About"] = d.hearAbout || "";
+        mappedRow["CAB Favorite Part"] = bleep(d.favoritePart || "");
+        mappedRow["CAB Improvements"] = bleep(d.improve || "");
+        mappedRow["CAB Likely Return"] = d.likelyToReturn || "";
+        mappedRow["CAB Staff Connect"] = bleep(d.staffConnect || "");
+        mappedRow["CAB Comments"] = bleep(d.comments || "");
+      }
+
+      state.groups[ev].push(mappedRow);
     });
 
+    // Map Semesters dynamically
     Object.entries(state.groups).forEach(([evt, resps]) => {
         if (evt === "Unknown") return;
-        const tsMs = resps.map(r => parseGvizDate(r.Timestamp)?.getTime()).filter(t => t);
+        
+        const tsMs = resps.map(r => parseDateStr(r.Timestamp)?.getTime()).filter(t => t);
+        let fallbackDate = null;
         if (tsMs.length > 0) {
-            const first = Math.min(...tsMs);
-            const sem = getSemesterFromDate(new Date(first));
-            state.eventSemMap[evt] = sem;
-            state.semesters.add(sem);
-        } else state.eventSemMap[evt] = "Unknown";
+            fallbackDate = new Date(Math.min(...tsMs));
+        }
+        
+        const sem = extractSemester(evt, fallbackDate);
+        state.eventSemMap[evt] = sem;
+        if (sem !== "Unknown") state.semesters.add(sem);
     });
 
+    // Update UI Dropsdowns & Global Stats
     document.getElementById("teamFilter").innerHTML += [...state.allTeams].sort().map(t => `<option value="${t}">${t}</option>`).join("");
     document.getElementById("globalAttendance").textContent = totalGlobalAttendance.toLocaleString();
     document.getElementById("totalEvents").textContent = validEventsCount;
 
     const semSelect = document.getElementById("semesterFilter");
+    
+    // Safely sort semesters, pushing "Unknown" or invalid dates to the very bottom
     const sortedSem = [...state.semesters].sort((a,b) => {
-      const p = (s) => { const [m, y] = s.split(' '); return parseInt(y) * 10 + (m === 'Fall' ? 2 : 1); };
+      if (a === "Unknown" || !a) return 1;
+      if (b === "Unknown" || !b) return -1;
+      
+      const p = (s) => { 
+        const parts = s.split(' '); 
+        if (parts.length < 2) return 0;
+        
+        // Give weight to seasons so they sort naturally within the same year
+        let weight = 1; // Spring
+        if (parts[0] === 'Summer') weight = 2;
+        if (parts[0] === 'Fall') weight = 3;
+        if (parts[0] === 'Winter') weight = 4;
+        
+        return parseInt(parts[1]) * 10 + weight; 
+      };
+      
       return p(b) - p(a);
     });
-    sortedSem.forEach(s => { semSelect.innerHTML += `<option value="${s}">${s}</option>`; });
-    if (sortedSem.length > 0) semSelect.value = sortedSem[0];
+    
+    // Reset and append sorted options
+    semSelect.innerHTML = '<option value="">All Semesters</option>';
+    sortedSem.forEach(s => { 
+        if (s) semSelect.innerHTML += `<option value="${s}">${s}</option>`; 
+    });
 
     setBg();
     render();
   } catch (e) { 
     console.error(e);
-    document.getElementById("dashboard").innerHTML = `<div class="empty-state"><h3>Error Loading Data</h3></div>`;
+    document.getElementById("dashboard").innerHTML = `<div class="empty-state" style="text-align:center; padding: 40px;"><h3 style="color:#FF3B30;">Error Loading Database</h3><p style="color:var(--text-muted); font-size:0.9rem;">Make sure your Supabase project is active and URL/Key are correct.</p></div>`;
   }
 }
 
@@ -421,13 +561,13 @@ function render(filter = "", sort = "rating") {
   
   if(sort === "rating") list.sort((a,b) => getRate(b[1]) - getRate(a[1]));
   else if(sort === "recent") list.sort((a,b) => {
-    const f = (arr) => Math.min(...arr.map(r => parseGvizDate(r.Timestamp)?.getTime() || 0));
+    const f = (arr) => Math.min(...arr.map(r => parseDateStr(r.Timestamp)?.getTime() || 0));
     return f(b[1]) - f(a[1]);
   });
   else if(sort === "attendance") list.sort((a,b) => (state.attendanceMap[b[0]]||0) - (state.attendanceMap[a[0]]||0));
   else if(sort === "az") list.sort((a,b) => a[0].localeCompare(b[0]));
 
-  if(list.length === 0) { dash.innerHTML = `<div class="empty-state"><h3>No events found.</h3></div>`; return; }
+  if(list.length === 0) { dash.innerHTML = `<div class="empty-state" style="grid-column: 1/-1; text-align:center; padding:60px;"><h3 style="color:var(--text-muted);">No events found.</h3></div>`; return; }
 
   list.forEach(([evt, resps], idx) => {
     const rate = getRate(resps);
@@ -441,7 +581,7 @@ function render(filter = "", sort = "rating") {
     if(att > 300) badges += `<span class="badge badge-ok">👥 High Turnout</span>`;
     
     const head = el("div","card-header");
-    head.innerHTML = `<div class="badge-container">${badges}</div><img src="${img || 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=800'}" class="card-img"><div class="card-gradient-overlay"></div>`;
+    head.innerHTML = `<div class="badge-container">${badges}</div><img src="${img}" class="card-img" loading="lazy"><div class="card-gradient-overlay"></div>`;
     
     const body = el("div", "card-body");
     body.innerHTML = `
@@ -498,13 +638,14 @@ function openEventModal(evt) {
   document.querySelector("#modal h3").textContent = evt;
   document.getElementById("btnPDF").onclick = () => downloadPDF(evt, state.groups[evt]);
   document.getElementById("btnCSV").onclick = () => downloadCSV(evt, state.groups[evt]);
+  document.getElementById("btnEdit").onclick = () => toggleEditMode(evt);
   renderModalBody();
   document.getElementById("modal").classList.add("show");
 }
 
 function renderModalBody() {
   const b = document.getElementById("modalBody"); b.innerHTML = "";
-  const s = currentModal.raw.map((r,i)=>({r, i, sc: getScore(r), ts: parseGvizDate(r.Timestamp)?.getTime() || 0}));
+  const s = currentModal.raw.map((r,i)=>({r, i, sc: getScore(r), ts: parseDateStr(r.Timestamp)?.getTime() || 0}));
   if(currentModal.mode==="worst") s.sort((a,b)=>(isNaN(a.sc)?9:a.sc)-(isNaN(b.sc)?9:b.sc));
   if(currentModal.mode==="best") s.sort((a,b)=>(isNaN(b.sc)?-1:b.sc)-(isNaN(a.sc)?-1:a.sc));
   if(currentModal.mode==="newest") s.sort((a,b)=>b.ts-a.ts);
@@ -518,6 +659,85 @@ function renderModalBody() {
     }
     d.innerHTML = h; b.appendChild(d);
   });
+}
+
+function toggleEditMode(evt) {
+    const b = document.getElementById("modalBody");
+    const currentAtt = state.attendanceMap[evt] || 0;
+    
+    b.innerHTML = `
+        <div style="background: rgba(255,255,255,0.03); padding: 32px; border-radius: 20px; border: 1px solid var(--glass-border); margin-bottom: 20px;">
+            <h3 style="margin-top:0; color:#0A84FF; margin-bottom:24px;">Edit Dashboard Details</h3>
+            
+            <label style="display:block; margin-bottom:10px; font-size:0.9rem; color:var(--text-muted); font-weight:bold; text-transform:uppercase;">Total Attendance</label>
+            <input type="number" id="editAttendance" value="${currentAtt}" style="width:100%; padding:14px; border-radius:12px; border:1px solid rgba(255,255,255,0.1); background:rgba(0,0,0,0.5); color:#fff; margin-bottom:24px; outline:none; font-size:1rem;" />
+            
+            <label style="display:block; margin-bottom:10px; font-size:0.9rem; color:var(--text-muted); font-weight:bold; text-transform:uppercase;">Cover Image (Upload)</label>
+            <input type="file" id="editImage" accept="image/*" style="width:100%; padding:14px; border-radius:12px; border:1px dashed rgba(255,255,255,0.3); background:rgba(0,0,0,0.5); color:#fff; margin-bottom:32px; outline:none; font-size:1rem; cursor:pointer;" />
+            
+            <div style="display:flex; gap:12px;">
+                <button onclick="saveEventDetails('${evt.replace(/'/g, "\\'")}')" class="btn btn-primary" style="flex:2; padding:16px;">Save Changes</button>
+                <button onclick="renderModalBody()" class="btn" style="flex:1; padding:16px; background:transparent; border:1px solid var(--glass-border); color:#fff;">Cancel</button>
+            </div>
+        </div>
+    `;
+}
+
+async function saveEventDetails(evt) {
+    const newAtt = document.getElementById("editAttendance").value;
+    const fileInput = document.getElementById("editImage");
+    const b = document.getElementById("modalBody");
+    
+    b.innerHTML = `<div style="text-align:center; padding:60px; color:var(--text-muted); font-size:1.1rem;">Saving changes to Supabase...<br><small style="opacity:0.6; display:block; margin-top:10px;">(Large images may take a few seconds)</small></div>`;
+    
+    try {
+        const updatePayload = { attendance: newAtt.toString() };
+
+        // If a new image is uploaded, convert it to Base64 Text
+        if (fileInput.files && fileInput.files[0]) {
+            const file = fileInput.files[0];
+            const base64Img = await new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = error => reject(error);
+                reader.readAsDataURL(file);
+            });
+            updatePayload.imageurl = base64Img;
+        }
+        
+        // 1. Check if row exists
+        const { data: existingData } = await supabaseClient.from('event_overviews').select('eventname').eq('eventname', evt).maybeSingle();
+        
+        // 2. Update or Insert
+        if (existingData) {
+            const { error } = await supabaseClient.from('event_overviews').update(updatePayload).eq('eventname', evt);
+            if (error) throw error;
+        } else {
+            const getRate = (r) => { const s = r.map(getScore).filter(x => !isNaN(x)); return s.length ? s.reduce((a,b)=>a+b,0)/s.length : 0; };
+            const { error } = await supabaseClient.from('event_overviews').insert({
+                eventname: evt,
+                summary: state.briefMap[evt] || "Manual edit applied.",
+                rating: getRate(state.groups[evt] || []),
+                surveys: state.surveysMap[evt] || 1,
+                ...updatePayload
+            });
+            if (error) throw error;
+        }
+
+        // 3. Apply changes locally so you don't have to refresh the page
+        state.attendanceMap[evt] = parseInt(newAtt) || 0;
+        if (updatePayload.imageurl) {
+            state.imageMap[evt] = updatePayload.imageurl;
+        }
+        
+        // Render updates to Dashboard behind the modal
+        render(document.getElementById("search").value, document.getElementById("sortMode").value);
+        renderModalBody();
+        
+    } catch (e) {
+        console.error(e);
+        b.innerHTML = `<div style="color:#FF3B30; padding:30px; text-align:center;">Error saving to database: ${e.message}</div><div style="text-align:center;"><button onclick="renderModalBody()" class="btn" style="background:rgba(255,255,255,0.1); color:#fff; width:auto; padding:10px 30px;">Go Back</button></div>`;
+    }
 }
 
 function downloadPDF(evt, resps) {
@@ -556,9 +776,12 @@ document.getElementById("teamFilter").onchange = () => render(document.getElemen
 document.getElementById("semesterFilter").onchange = () => render(document.getElementById("search").value);
 document.getElementById("modalSort").onchange = e => { currentModal.mode = e.target.value; renderModalBody(); };
 document.body.onclick = e => { if(e.target.dataset.close) document.getElementById("modal").classList.remove("show"); };
-
   
-init();
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+} else {
+    init();
+}
 </script>
 </body>
 </html>
