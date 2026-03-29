@@ -112,6 +112,8 @@ select.control-item { cursor: pointer; padding-right: 36px; appearance: none; -w
 
 .btn-stats { background: var(--gradient-accent); border: none; padding: 0 24px; box-shadow: 0 8px 20px rgba(10, 132, 255, 0.2); }
 .btn-stats:hover { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(10, 132, 255, 0.4); }
+.btn-refresh { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15); cursor: pointer; }
+.btn-refresh:hover { background: rgba(255,255,255,0.2); }
 
 /* Dashboard Grid */
 #dashboard {
@@ -158,6 +160,8 @@ select.control-item { cursor: pointer; padding-right: 36px; appearance: none; -w
 .btn { width: 100%; padding: 14px; border-radius: var(--radius-btn); font-size: 1rem; font-weight: 700; cursor: pointer; border: none; transition: 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
 .btn-primary { background: var(--gradient-accent); color: white; box-shadow: 0 4px 15px rgba(10, 132, 255, 0.2); }
 .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(10, 132, 255, 0.4); }
+.btn-secondary { background: rgba(255,255,255,0.1); color: #fff; }
+.btn-secondary:hover { background: rgba(255,255,255,0.2); }
 
 /* Modal */
 .modal { position: fixed; inset: 0; z-index: 999; display: none; justify-content: center; align-items: center; padding: 40px; }
@@ -185,7 +189,7 @@ select.control-item { cursor: pointer; padding-right: 36px; appearance: none; -w
   .app-container { padding: 0 20px; }
   .topbar { position: relative; top: 0; flex-direction: column; gap: 20px; padding: 24px; margin-top: 10px; }
   .controls { width: 100%; flex-direction: column; align-items: stretch; gap: 12px; }
-  input.control-item, select.control-item, .btn-stats { width: 100% !important; height: 48px; }
+  input.control-item, select.control-item, .btn-stats, .btn-refresh { width: 100% !important; height: 48px; }
   #dashboard { grid-template-columns: 1fr; gap: 24px; }
   .modal { padding: 0; }
   .modal-content { height: 100%; border-radius: 0; }
@@ -207,6 +211,7 @@ select.control-item { cursor: pointer; padding-right: 36px; appearance: none; -w
       </div>
     </div>
     <div class="controls">
+      <button onclick="init()" class="control-item btn-refresh">🔄 Refresh</button>
       <button onclick="openTeamStats()" class="control-item btn-stats">📊 Team Analytics</button>
       <select id="semesterFilter" class="control-item"><option value="">All Semesters</option></select>
       <select id="teamFilter" class="control-item"><option value="">All Teams</option></select>
@@ -238,12 +243,12 @@ select.control-item { cursor: pointer; padding-right: 36px; appearance: none; -w
     </div>
     
     <div id="modalToolbar" style="padding: 14px 32px; display:flex; justify-content:space-between; align-items:center; background: rgba(255,255,255,0.03); border-bottom: 1px solid var(--glass-border);">
-      <div style="display:flex; gap:12px">
+      <div style="display:flex; gap:12px; flex-wrap:wrap;">
         <button id="btnPDF" class="btn btn-secondary" style="width:auto; padding:8px 20px; font-size:0.85rem; font-weight:700;">Export PDF</button>
         <button id="btnCSV" class="btn btn-secondary" style="width:auto; padding:8px 20px; font-size:0.85rem; font-weight:700;">Export CSV</button>
-        <button id="btnEdit" class="btn btn-secondary" style="width:auto; padding:8px 20px; font-size:0.85rem; font-weight:700; background:rgba(10, 132, 255, 0.2); color:#0A84FF; border:1px solid #0A84FF;">✏️ Edit</button>
+        <button id="btnEdit" class="btn btn-secondary" style="width:auto; padding:8px 20px; font-size:0.85rem; font-weight:700; background:rgba(10, 132, 255, 0.2); color:#0A84FF; border:1px solid #0A84FF;">✏️ Edit Dashboard</button>
       </div>
-      <select id="modalSort" style="background:transparent; border:none; color:var(--text-muted); font-size:0.95rem; outline:none; font-weight:700; cursor:pointer;">
+      <select id="modalSort" style="background:transparent; border:none; color:var(--text-muted); font-size:0.95rem; outline:none; font-weight:700; cursor:pointer; margin-top: 5px;">
         <option value="worst">Sort: Critical First</option>
         <option value="best">Sort: Positive First</option>
         <option value="newest">Sort: Latest Feedback</option>
@@ -267,16 +272,9 @@ if (window.supabase) {
 }
 
 let state = { 
-  briefMap: {}, 
-  imageMap: {}, 
-  attendanceMap: {}, 
-  surveysMap: {}, 
-  teamMap: {}, 
-  groups: {}, 
-  bgImages: [],
-  allTeams: new Set(),
-  semesters: new Set(),
-  eventSemMap: {}
+  briefMap: {}, imageMap: {}, attendanceMap: {}, surveysMap: {}, ratingMap: {},
+  teamMap: {}, groups: {}, bgImages: [], allTeams: new Set(),
+  semesters: new Set(), eventSemMap: {}
 };
 
 let currentModal = { event: "", raw: [], mode: "worst" };
@@ -288,24 +286,15 @@ const headerMap = {
 
 // Full description mapping
 const labelMap = {
-  "Timestamp": "Timestamp",
-  "Student ID": "Student ID Number",
-  "CAB Event Name": "Which Event Would You Like To Survey?",
-  "CAB Rating": "How would you rate your overall experience at this event?",
-  "CAB First Time": "Was this your first time attending a CAB event?",
-  "CAB Hear About": "How did you hear about this event?",
-  "CAB Favorite Part": "What was your favorite part of the event?",
-  "CAB Improvements": "What would you change or improve for next time?",
-  "CAB Likely Return": "How likely are you to attend a CAB event again?",
-  "CAB Staff Connect": "Did any CAB Event Staff take the time to connect with you or talk to you during the event? (If so who?)",
-  "CAB Comments": "Any additional comments or suggestions for the CAB team?",
-  "Market Event Name": "Which Student Market Would You Like To Survey?",
-  "Market Rating": "How would you rate your overall experience at the Student Market?",
-  "MKT Favorite Part": "What did you enjoy most about this market?",
-  "MKT First Time": "Was this your first time attending a CAB Student Market?",
-  "MKT Variety Sat": "How satisfied were you with the variety of vendors?",
-  "MKT Purchase Made": "Did you make a purchase at the market?",
-  "MKT Comments": "Any additional comments or suggestions for the CAB team?"
+  "Timestamp": "Timestamp", "Student ID": "Student ID Number",
+  "CAB Event Name": "Which Event Would You Like To Survey?", "CAB Rating": "How would you rate your overall experience at this event?",
+  "CAB First Time": "Was this your first time attending a CAB event?", "CAB Hear About": "How did you hear about this event?",
+  "CAB Favorite Part": "What was your favorite part of the event?", "CAB Improvements": "What would you change or improve for next time?",
+  "CAB Likely Return": "How likely are you to attend a CAB event again?", "CAB Staff Connect": "Did any CAB Event Staff take the time to connect with you or talk to you during the event? (If so who?)",
+  "CAB Comments": "Any additional comments or suggestions for the CAB team?", "Market Event Name": "Which Student Market Would You Like To Survey?",
+  "Market Rating": "How would you rate your overall experience at the Student Market?", "MKT Favorite Part": "What did you enjoy most about this market?",
+  "MKT First Time": "Was this your first time attending a CAB Student Market?", "MKT Variety Sat": "How satisfied were you with the variety of vendors?",
+  "MKT Purchase Made": "Did you make a purchase at the market?", "MKT Comments": "Any additional comments or suggestions for the CAB team?"
 };
 
 const el = (tag, cls, html) => { const n = document.createElement(tag); if(cls) n.className = cls; if(html) n.innerHTML = html; return n; };
@@ -323,242 +312,204 @@ function parseDateStr(str) {
   return isNaN(d.getTime()) ? null : d;
 }
 
-function getSemesterFromDate(dateValue) {
-    const d = parseDateStr(dateValue);
-    if(!d || d.getFullYear() < 2000) return "Unknown";
-    const m = d.getMonth() + 1; // 1-12
-    const year = d.getFullYear();
-    if (m <= 5) return `Spring ${year}`;
-    if (m <= 7) return `Summer ${year}`;
-    return `Fall ${year}`;
-}
-
 function extractSemester(eventName, fallbackDate) {
-    let year = null;
-    let season = null;
+    try {
+        eventName = String(eventName || '');
+        let year = null; let season = null;
 
-    // 0. Try to find a standalone year anywhere in the title first
-    const yearMatch = eventName.match(/\b(20\d{2})\b/);
-    if (yearMatch) year = yearMatch[1];
+        const yearMatch = eventName.match(/\b(20\d{2})\b/);
+        if (yearMatch) year = yearMatch[1];
 
-    // 1. Explicit Full Date Check (e.g., "Tote-Tally Summer - 06/10/25")
-    const dateMatch = eventName.match(/(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
-    if (dateMatch) {
-        const month = parseInt(dateMatch[1], 10);
-        let y = dateMatch[3];
-        if (!year) year = y.length === 2 ? "20" + y : y;
-        
-        if (month <= 5) season = "Spring";
-        else if (month <= 7) season = "Summer";
-        else season = "Fall";
-    } 
-    // 2. Partial Date Check (e.g., "09/20 & 09/21")
-    else {
-        const partialDateMatch = eventName.match(/(\d{1,2})\/(\d{1,2})/);
-        if (partialDateMatch) {
-            const month = parseInt(partialDateMatch[1], 10);
-            if (month <= 5) season = "Spring";
-            else if (month <= 7) season = "Summer";
-            else season = "Fall";
+        const dateMatch = eventName.match(/(\d{1,2})\/(\d{1,2})\/(\d{2,4})/);
+        if (dateMatch) {
+            const month = parseInt(dateMatch[1], 10);
+            let y = dateMatch[3];
+            if (!year) year = y.length === 2 ? "20" + y : y;
+            if (month <= 5) season = "Spring"; else if (month <= 7) season = "Summer"; else season = "Fall";
+        } else {
+            const partialDateMatch = eventName.match(/(\d{1,2})\/(\d{1,2})/);
+            if (partialDateMatch) {
+                const month = parseInt(partialDateMatch[1], 10);
+                if (month <= 5) season = "Spring"; else if (month <= 7) season = "Summer"; else season = "Fall";
+            }
         }
-    }
 
-    // 3. Try to find a combination like "Fall 2024", "Spring '23", "Fall 24"
-    const comboMatch = eventName.match(/\b(Fall|Spring|Winter|Summer)\s*'?(\d{2,4})\b/i);
-    if (comboMatch) {
-        if (!season) season = comboMatch[1];
-        let y = comboMatch[2];
-        if (!year) year = y.length === 2 ? "20" + y : y;
-    } else if (!season) {
-        // Try to find just a season word
-        const seasonMatch = eventName.match(/\b(Fall|Spring|Winter|Summer)\b/i);
-        if (seasonMatch) season = seasonMatch[1];
-    }
-
-    if (season) season = season.charAt(0).toUpperCase() + season.slice(1).toLowerCase();
-
-    // Fill in any missing pieces using the fallback timestamp from the survey submissions
-    const d = parseDateStr(fallbackDate);
-    // Ignore the date if it's 1969/1970 (Epoch zero issues from empty/broken timestamps)
-    if (d && d.getFullYear() > 2000) {
-        if (!year) year = d.getFullYear().toString();
-        if (!season) {
-            const m = d.getMonth() + 1;
-            if (m <= 5) season = "Spring";
-            else if (m <= 7) season = "Summer";
-            else season = "Fall";
+        const comboMatch = eventName.match(/\b(Fall|Spring|Winter|Summer)\s*'?(\d{2,4})\b/i);
+        if (comboMatch) {
+            if (!season) season = comboMatch[1];
+            let y = comboMatch[2];
+            if (!year) year = y.length === 2 ? "20" + y : y;
+        } else if (!season) {
+            const seasonMatch = eventName.match(/\b(Fall|Spring|Winter|Summer)\b/i);
+            if (seasonMatch) season = seasonMatch[1];
         }
-    }
 
-    // FINAL SAFETY NET: If no year could be found from the title or the timestamp, 
-    // default to the current calendar year instead of staying null/unknown
-    if (!year) {
-        year = new Date().getFullYear().toString();
-    }
+        if (season) season = season.charAt(0).toUpperCase() + season.slice(1).toLowerCase();
 
-    if (season && year) return `${season} ${year}`;
-    if (year) return `Event ${year}`;
-    return "Unknown";
+        const d = parseDateStr(fallbackDate);
+        if (d && d.getFullYear() > 2000) {
+            if (!year) year = d.getFullYear().toString();
+            if (!season) {
+                const m = d.getMonth() + 1;
+                if (m <= 5) season = "Spring"; else if (m <= 7) season = "Summer"; else season = "Fall";
+            }
+        }
+
+        if (!year) year = new Date().getFullYear().toString();
+        if (season && year) return `${season} ${year}`;
+        if (year) return `Event ${year}`;
+        return "Unknown";
+    } catch (e) { return "Unknown"; }
 }
 
 async function init() {
   try {
     if (!supabaseClient) throw new Error("Database not initialized.");
+    
+    // Reset state on init
+    state.groups = {}; state.semesters.clear(); state.allTeams.clear();
+    state.teamMap = {}; state.eventSemMap = {}; state.bgImages = [];
+    state.ratingMap = {};
+    document.getElementById("dashboard").innerHTML = `<div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>`;
 
-    // Fetch data from Supabase tables (independently so one table error does not block the dashboard)
+    // 1. Fetch Event Overviews & Responses concurrently
     const [{ data: ovwData, error: ovwErr }, { data: rawData, error: rawErr }] = await Promise.all([
       supabaseClient.from('event_overviews').select('*'),
       supabaseClient.from('responses').select('data, created_at')
     ]);
 
-    let totalGlobalAttendance = 0;
-    let validEventsCount = 0;
-
-    // Process Overviews
-    if (ovwErr) {
-      console.warn("Unable to load event_overviews. Rendering from survey responses only.", ovwErr.message || ovwErr);
-    }
+    window._debugRawCount = rawData ? rawData.length : 0;
+    
+    // 2. Process Event Overviews FIRST (Source of Truth for Dashboard Display)
+    if (ovwErr) console.warn("Unable to load event_overviews.", ovwErr.message);
     (ovwData || []).forEach(r => {
       const n = r.eventname || "";
       if (n) {
-        state.briefMap[n] = bleep(r.summary || "");
-        
-        // Handle custom image URL from Supabase, or fall back to dynamic placeholder
+        state.groups[n] = []; // GUARANTEE IT RENDERS EVEN IF RAW RESPONSES ARE BLOCKED
+        state.briefMap[n] = bleep(r.summary || "Awaiting AI Summary...");
         if (r.imageurl && r.imageurl.trim() !== "") {
             state.imageMap[n] = r.imageurl;
             state.bgImages.push(r.imageurl);
         } else {
-            const imgId = Math.abs(n.split('').reduce((a,b)=>a+b.charCodeAt(0),0)) % 1000;
+            const imgId = Math.abs(String(n).split('').reduce((a,b)=>a+b.charCodeAt(0),0)) % 1000;
             state.imageMap[n] = `https://picsum.photos/seed/${imgId}/800/400`;
             state.bgImages.push(`https://picsum.photos/seed/${imgId}/1920/1080`);
         }
-
-        const attText = (r.attendance || "0").toString().replace(/,/g, '');
-        const att = parseInt(attText);
-        state.attendanceMap[n] = isNaN(att) ? 0 : att;
-        totalGlobalAttendance += isNaN(att) ? 0 : att;
         
-        validEventsCount++;
+        state.attendanceMap[n] = parseInt((r.attendance || "0").toString().replace(/,/g, '')) || 0;
         state.surveysMap[n] = parseInt(r.surveys) || 0;
+        state.ratingMap[n] = Number(r.rating) || 0;
         
-        const tRaw = r.hostingteam || "Unassigned";
-        const teams = tRaw.split(/[,&]/).map(t => t.trim()).filter(t => t.length > 0);
+        const teams = (r.hostingteam || "Unassigned").split(/[,&]/).map(t => t.trim()).filter(t => t.length > 0);
         state.teamMap[n] = teams;
         teams.forEach(t => state.allTeams.add(t));
       }
     });
 
-    // Process Raw Survey Submissions (Mapping back to original dashboard structure)
-    if (rawErr) {
-      throw rawErr;
-    }
+    // 3. Process Raw Responses (Populate modal data if RLS allows)
+    if (rawErr) console.warn("Notice: Raw responses blocked by RLS.", rawErr.message);
     (rawData || []).forEach(row => {
-      const d = typeof row.data === "string" ? (() => { try { return JSON.parse(row.data); } catch { return null; } })() : row.data;
-      if (!d) return;
+      try {
+          let d = typeof row.data === "string" ? JSON.parse(row.data) : row.data;
+          if (!d) return;
+          
+          if (Array.isArray(d)) d = d[0];
+          if (!d) return;
 
-      const ev =
-        d.event ||
-        d.eventName ||
-        d.event_name ||
-        d["CAB Event Name"] ||
-        d["Market Event Name"] ||
-        "Unknown";
-      if (!ev || ev === "Unknown") return;
-      if (!state.groups[ev]) state.groups[ev] = [];
+          const ev = d.event || d.eventName || d.event_name || d["CAB Event Name"] || d["Market Event Name"];
+          if (!ev || String(ev).trim() === "Unknown" || String(ev).trim() === "") return;
+          
+          const evStr = String(ev).trim();
+          if (!state.groups[evStr]) state.groups[evStr] = [];
 
-      const mappedRow = {
-        "Timestamp": d.timestamp || d.created_at || row.created_at,
-        "Student ID": d.studentID || d.student_id || d["Student ID"] || "Unknown"
-      };
+          const mappedRow = {
+            "Timestamp": d.timestamp || d.created_at || row.created_at,
+            "Student ID": d.studentID || d.student_id || d["Student ID"] || "Unknown"
+          };
 
-      const isMarketSurvey =
-        d.isMarket === true ||
-        d.eventType === "market" ||
-        !!d["Market Event Name"] ||
-        /^market/i.test((d.surveyType || "").toString());
+          const isMarketSurvey = String(d.isMarket) === "true" || d.isMarket === true || d.eventType === "market" || !!d["Market Event Name"];
 
-      if (isMarketSurvey) {
-        mappedRow["Market Event Name"] = ev;
-        mappedRow["Market Rating"] = d.rating || d["Market Rating"] || 0;
-        mappedRow["MKT Favorite Part"] = bleep(d.favoritePart || d.favorite || "");
-        mappedRow["MKT First Time"] = d.mktFirstTime || "";
-        mappedRow["MKT Variety Sat"] = d.variety || "";
-        mappedRow["MKT Purchase Made"] = d.purchase || "";
-        mappedRow["MKT Comments"] = bleep(d.comments || "");
-      } else {
-        mappedRow["CAB Event Name"] = ev;
-        mappedRow["CAB Rating"] = d.rating || d["CAB Rating"] || 0;
-        mappedRow["CAB First Time"] = d.firstTime || "";
-        mappedRow["CAB Hear About"] = d.hearAbout || "";
-        mappedRow["CAB Favorite Part"] = bleep(d.favoritePart || "");
-        mappedRow["CAB Improvements"] = bleep(d.improve || "");
-        mappedRow["CAB Likely Return"] = d.likelyToReturn || "";
-        mappedRow["CAB Staff Connect"] = bleep(d.staffConnect || "");
-        mappedRow["CAB Comments"] = bleep(d.comments || "");
+          if (isMarketSurvey) {
+            mappedRow["Market Event Name"] = evStr;
+            mappedRow["Market Rating"] = d.rating || d["Market Rating"] || 0;
+            mappedRow["MKT Favorite Part"] = bleep(d.favoritePart || d.favorite || "");
+            mappedRow["MKT First Time"] = d.mktFirstTime || "";
+            mappedRow["MKT Variety Sat"] = d.variety || "";
+            mappedRow["MKT Purchase Made"] = d.purchase || "";
+            mappedRow["MKT Comments"] = bleep(d.comments || "");
+          } else {
+            mappedRow["CAB Event Name"] = evStr;
+            mappedRow["CAB Rating"] = d.rating || d["CAB Rating"] || 0;
+            mappedRow["CAB First Time"] = d.firstTime || "";
+            mappedRow["CAB Hear About"] = d.hearAbout || "";
+            mappedRow["CAB Favorite Part"] = bleep(d.favoritePart || "");
+            mappedRow["CAB Improvements"] = bleep(d.improve || "");
+            mappedRow["CAB Likely Return"] = d.likelyToReturn || "";
+            mappedRow["CAB Staff Connect"] = bleep(d.staffConnect || "");
+            mappedRow["CAB Comments"] = bleep(d.comments || "");
+          }
+
+          state.groups[evStr].push(mappedRow);
+      } catch (e) {
+          console.warn("Skipped a malformed row", e);
       }
-
-      state.groups[ev].push(mappedRow);
     });
 
-    // If overviews were unavailable, still show useful high-level totals from response data
-    if (validEventsCount === 0) {
-      validEventsCount = Object.keys(state.groups).filter(evt => evt !== "Unknown").length;
-    }
+    window._debugParsedCount = Object.keys(state.groups).length;
 
-    // Map Semesters dynamically
+    // Apply strict fallbacks for any brand new raw events not in overviews yet
+    Object.keys(state.groups).forEach(evt => {
+        if (!state.imageMap[evt]) {
+            const imgId = Math.abs(String(evt).split('').reduce((a,b)=>a+b.charCodeAt(0),0)) % 1000;
+            state.imageMap[evt] = `https://picsum.photos/seed/${imgId}/800/400`;
+            state.bgImages.push(`https://picsum.photos/seed/${imgId}/1920/1080`);
+        }
+        if (!state.briefMap[evt]) state.briefMap[evt] = "Awaiting AI Summary Generation...";
+        if (state.attendanceMap[evt] === undefined) state.attendanceMap[evt] = 0;
+        if (state.surveysMap[evt] === undefined || state.surveysMap[evt] === 0) state.surveysMap[evt] = state.groups[evt].length;
+        if (!state.ratingMap[evt]) state.ratingMap[evt] = 0;
+        if (!state.teamMap[evt]) {
+            state.teamMap[evt] = ["CAB Team"];
+            state.allTeams.add("CAB Team");
+        }
+    });
+
+    const totalGlobalAttendance = Object.values(state.attendanceMap).reduce((acc, val) => acc + (parseInt(val) || 0), 0);
+    const validEventsCount = Object.keys(state.groups).length;
+
     Object.entries(state.groups).forEach(([evt, resps]) => {
-        if (evt === "Unknown") return;
-        
         const tsMs = resps.map(r => parseDateStr(r.Timestamp)?.getTime()).filter(t => t);
         let fallbackDate = null;
-        if (tsMs.length > 0) {
-            fallbackDate = new Date(Math.min(...tsMs));
-        }
+        if (tsMs.length > 0) fallbackDate = new Date(Math.min(...tsMs));
         
         const sem = extractSemester(evt, fallbackDate);
         state.eventSemMap[evt] = sem;
         if (sem !== "Unknown") state.semesters.add(sem);
     });
 
-    // Update UI Dropsdowns & Global Stats
-    document.getElementById("teamFilter").innerHTML += [...state.allTeams].sort().map(t => `<option value="${t}">${t}</option>`).join("");
+    document.getElementById("teamFilter").innerHTML = '<option value="">All Teams</option>' + [...state.allTeams].sort().map(t => `<option value="${t}">${t}</option>`).join("");
     document.getElementById("globalAttendance").textContent = totalGlobalAttendance.toLocaleString();
     document.getElementById("totalEvents").textContent = validEventsCount;
 
     const semSelect = document.getElementById("semesterFilter");
-    
-    // Safely sort semesters, pushing "Unknown" or invalid dates to the very bottom
     const sortedSem = [...state.semesters].sort((a,b) => {
-      if (a === "Unknown" || !a) return 1;
-      if (b === "Unknown" || !b) return -1;
-      
+      if (a === "Unknown" || !a) return 1; if (b === "Unknown" || !b) return -1;
       const p = (s) => { 
-        const parts = s.split(' '); 
-        if (parts.length < 2) return 0;
-        
-        // Give weight to seasons so they sort naturally within the same year
-        let weight = 1; // Spring
-        if (parts[0] === 'Summer') weight = 2;
-        if (parts[0] === 'Fall') weight = 3;
-        if (parts[0] === 'Winter') weight = 4;
-        
+        const parts = s.split(' '); if (parts.length < 2) return 0;
+        let weight = 1; if (parts[0] === 'Summer') weight = 2; if (parts[0] === 'Fall') weight = 3; if (parts[0] === 'Winter') weight = 4;
         return parseInt(parts[1]) * 10 + weight; 
       };
-      
       return p(b) - p(a);
     });
     
-    // Reset and append sorted options
     semSelect.innerHTML = '<option value="">All Semesters</option>';
-    sortedSem.forEach(s => { 
-        if (s) semSelect.innerHTML += `<option value="${s}">${s}</option>`; 
-    });
+    sortedSem.forEach(s => { if (s) semSelect.innerHTML += `<option value="${s}">${s}</option>`; });
 
     setBg();
     render();
   } catch (e) { 
     console.error(e);
-    document.getElementById("dashboard").innerHTML = `<div class="empty-state" style="text-align:center; padding: 40px;"><h3 style="color:#FF3B30;">Error Loading Database</h3><p style="color:var(--text-muted); font-size:0.9rem;">Make sure your Supabase project is active and URL/Key are correct.</p></div>`;
+    document.getElementById("dashboard").innerHTML = `<div class="empty-state" style="text-align:center; padding: 40px;"><h3 style="color:#FF3B30;">Error Loading Database</h3><p style="color:var(--text-muted); font-size:0.9rem;">${e.message}</p></div>`;
   }
 }
 
@@ -582,7 +533,10 @@ function render(filter = "", sort = "rating") {
   
   const getRate = (r) => { const s = r.map(getScore).filter(x => !isNaN(x)); return s.length ? s.reduce((a,b)=>a+b,0)/s.length : 0; };
   
-  if(sort === "rating") list.sort((a,b) => getRate(b[1]) - getRate(a[1]));
+  // Use pre-calculated rating from event_overviews if available, otherwise calculate it
+  const getEffectiveRate = (evt, resps) => state.ratingMap[evt] || getRate(resps) || 0;
+  
+  if(sort === "rating") list.sort((a,b) => getEffectiveRate(b[0], b[1]) - getEffectiveRate(a[0], a[1]));
   else if(sort === "recent") list.sort((a,b) => {
     const f = (arr) => Math.min(...arr.map(r => parseDateStr(r.Timestamp)?.getTime() || 0));
     return f(b[1]) - f(a[1]);
@@ -590,10 +544,23 @@ function render(filter = "", sort = "rating") {
   else if(sort === "attendance") list.sort((a,b) => (state.attendanceMap[b[0]]||0) - (state.attendanceMap[a[0]]||0));
   else if(sort === "az") list.sort((a,b) => a[0].localeCompare(b[0]));
 
-  if(list.length === 0) { dash.innerHTML = `<div class="empty-state" style="grid-column: 1/-1; text-align:center; padding:60px;"><h3 style="color:var(--text-muted);">No events found.</h3></div>`; return; }
+  if(list.length === 0) { 
+      const raw = window._debugRawCount || 0;
+      const parsed = window._debugParsedCount || 0;
+      dash.innerHTML = `<div class="empty-state" style="grid-column: 1/-1; text-align:center; padding:60px; background: rgba(255,255,255,0.02); border-radius: 24px; border: 1px dashed rgba(255,255,255,0.1);">
+          <h3 style="color:var(--text-muted); margin-top:0;">No event data found.</h3>
+          <p style="color:#888; font-size:0.95rem; line-height: 1.6; max-width: 500px; margin: 16px auto 0;">
+            <strong>Diagnostic Info:</strong><br>
+            Database Rows Fetched: ${raw}<br>
+            Events Parsed Successfully: ${parsed}<br><br>
+            ${raw === 0 ? "If you just submitted a survey but see 0 rows fetched, your Supabase <b>Row Level Security (RLS)</b> policy is likely blocking read access to the responses table. Run the SQL initialization script!" : "Rows were fetched, but no valid event names were found inside the JSON data, or they are filtered out."}
+          </p>
+      </div>`; 
+      return; 
+  }
 
   list.forEach(([evt, resps], idx) => {
-    const rate = getRate(resps);
+    const rate = getEffectiveRate(evt, resps);
     const att = state.attendanceMap[evt];
     const img = state.imageMap[evt];
     const card = el("div", "frosted card");
@@ -613,9 +580,9 @@ function render(filter = "", sort = "rating") {
       <div class="stats">
         <span class="rating-text">${rate > 0 ? "★ "+rate.toFixed(1) : "No Rating"}</span>
         <span class="stats-text">👥 ${att || "--"}</span>
-        <span class="stats-text">📝 ${state.surveysMap[evt] || resps.length} Surveys</span>
+        <span class="stats-text">📝 ${state.surveysMap[evt] || resps.length || 0} Surveys</span>
       </div>
-      <div class="summary">${state.briefMap[evt] || "No overview summary provided for this event."}</div>
+      <div class="summary">${state.briefMap[evt]}</div>
       <div class="actions"><button class="btn btn-primary" onclick="openEventModal('${evt.replace(/'/g, "\\'")}')">View Details</button></div>
     `;
     card.append(head, body);
@@ -629,7 +596,7 @@ function openTeamStats() {
   Object.keys(state.groups).forEach(evt => {
     const eventTeams = state.teamMap[evt] || ["Unassigned"];
     const att = state.attendanceMap[evt] || 0;
-    const rate = getRate(state.groups[evt]); 
+    const rate = state.ratingMap[evt] || getRate(state.groups[evt]) || 0; 
     eventTeams.forEach(t => {
       if(!teams[t]) teams[t] = { name: t, events: 0, att: 0, rates: [] };
       teams[t].events++;
@@ -656,11 +623,11 @@ function openTeamStats() {
 }
 
 function openEventModal(evt) {
-  currentModal = { event: evt, raw: state.groups[evt], mode: "worst" };
+  currentModal = { event: evt, raw: state.groups[evt] || [], mode: "worst" };
   document.getElementById("modalToolbar").style.display = "flex";
   document.querySelector("#modal h3").textContent = evt;
-  document.getElementById("btnPDF").onclick = () => downloadPDF(evt, state.groups[evt]);
-  document.getElementById("btnCSV").onclick = () => downloadCSV(evt, state.groups[evt]);
+  document.getElementById("btnPDF").onclick = () => downloadPDF(evt, currentModal.raw);
+  document.getElementById("btnCSV").onclick = () => downloadCSV(evt, currentModal.raw);
   document.getElementById("btnEdit").onclick = () => toggleEditMode(evt);
   renderModalBody();
   document.getElementById("modal").classList.add("show");
@@ -668,6 +635,12 @@ function openEventModal(evt) {
 
 function renderModalBody() {
   const b = document.getElementById("modalBody"); b.innerHTML = "";
+  
+  if (!currentModal.raw || currentModal.raw.length === 0) {
+      b.innerHTML = `<div style="text-align:center; padding: 40px; color: var(--text-muted);">No raw feedback available. (Responses table is empty or blocked by RLS).</div>`;
+      return;
+  }
+
   const s = currentModal.raw.map((r,i)=>({r, i, sc: getScore(r), ts: parseDateStr(r.Timestamp)?.getTime() || 0}));
   if(currentModal.mode==="worst") s.sort((a,b)=>(isNaN(a.sc)?9:a.sc)-(isNaN(b.sc)?9:b.sc));
   if(currentModal.mode==="best") s.sort((a,b)=>(isNaN(b.sc)?-1:b.sc)-(isNaN(a.sc)?-1:a.sc));
@@ -687,6 +660,8 @@ function renderModalBody() {
 function toggleEditMode(evt) {
     const b = document.getElementById("modalBody");
     const currentAtt = state.attendanceMap[evt] || 0;
+    const currentTeam = (state.teamMap[evt] || ["CAB Team"]).join(", ");
+    const currentSummary = state.briefMap[evt] || "";
     
     b.innerHTML = `
         <div style="background: rgba(255,255,255,0.03); padding: 32px; border-radius: 20px; border: 1px solid var(--glass-border); margin-bottom: 20px;">
@@ -695,12 +670,18 @@ function toggleEditMode(evt) {
             <label style="display:block; margin-bottom:10px; font-size:0.9rem; color:var(--text-muted); font-weight:bold; text-transform:uppercase;">Total Attendance</label>
             <input type="number" id="editAttendance" value="${currentAtt}" style="width:100%; padding:14px; border-radius:12px; border:1px solid rgba(255,255,255,0.1); background:rgba(0,0,0,0.5); color:#fff; margin-bottom:24px; outline:none; font-size:1rem;" />
             
+            <label style="display:block; margin-bottom:10px; font-size:0.9rem; color:var(--text-muted); font-weight:bold; text-transform:uppercase;">Hosting Team(s) (Comma separated)</label>
+            <input type="text" id="editTeam" value="${currentTeam}" style="width:100%; padding:14px; border-radius:12px; border:1px solid rgba(255,255,255,0.1); background:rgba(0,0,0,0.5); color:#fff; margin-bottom:24px; outline:none; font-size:1rem;" />
+
+            <label style="display:block; margin-bottom:10px; font-size:0.9rem; color:var(--text-muted); font-weight:bold; text-transform:uppercase;">Event Summary</label>
+            <textarea id="editSummary" style="width:100%; padding:14px; border-radius:12px; border:1px solid rgba(255,255,255,0.1); background:rgba(0,0,0,0.5); color:#fff; margin-bottom:24px; outline:none; font-size:1rem; min-height:120px; resize:vertical; line-height:1.5;">${currentSummary}</textarea>
+
             <label style="display:block; margin-bottom:10px; font-size:0.9rem; color:var(--text-muted); font-weight:bold; text-transform:uppercase;">Cover Image (Upload)</label>
             <input type="file" id="editImage" accept="image/*" style="width:100%; padding:14px; border-radius:12px; border:1px dashed rgba(255,255,255,0.3); background:rgba(0,0,0,0.5); color:#fff; margin-bottom:32px; outline:none; font-size:1rem; cursor:pointer;" />
             
-            <div style="display:flex; gap:12px;">
+            <div style="display:flex; gap:12px; flex-wrap:wrap;">
                 <button onclick="saveEventDetails('${evt.replace(/'/g, "\\'")}')" class="btn btn-primary" style="flex:2; padding:16px;">Save Changes</button>
-                <button onclick="renderModalBody()" class="btn" style="flex:1; padding:16px; background:transparent; border:1px solid var(--glass-border); color:#fff;">Cancel</button>
+                <button onclick="renderModalBody()" class="btn btn-secondary" style="flex:1; padding:16px;">Cancel</button>
             </div>
         </div>
     `;
@@ -708,24 +689,31 @@ function toggleEditMode(evt) {
 
 async function saveEventDetails(evt) {
     const newAtt = document.getElementById("editAttendance").value;
+    const newTeam = document.getElementById("editTeam").value;
+    const newSummary = document.getElementById("editSummary").value;
     const fileInput = document.getElementById("editImage");
     const b = document.getElementById("modalBody");
     
     b.innerHTML = `<div style="text-align:center; padding:60px; color:var(--text-muted); font-size:1.1rem;">Saving changes to Supabase...<br><small style="opacity:0.6; display:block; margin-top:10px;">(Large images may take a few seconds)</small></div>`;
     
     try {
-        const updatePayload = { attendance: newAtt.toString() };
+        const updatePayload = { 
+            attendance: newAtt.toString(),
+            hostingteam: newTeam.toString(),
+            summary: newSummary.toString()
+        };
 
-        // If a new image is uploaded, convert it to Base64 Text
+        // Handle Image Upload directly to Supabase storage if selected
         if (fileInput.files && fileInput.files[0]) {
             const file = fileInput.files[0];
-            const base64Img = await new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = () => resolve(reader.result);
-                reader.onerror = error => reject(error);
-                reader.readAsDataURL(file);
-            });
-            updatePayload.imageurl = base64Img;
+            const fileExt = file.name.split('.').pop();
+            const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
+            
+            const { data, error: uploadErr } = await supabaseClient.storage.from('images').upload(fileName, file);
+            if (uploadErr) throw uploadErr;
+
+            const { data: { publicUrl } } = supabaseClient.storage.from('images').getPublicUrl(fileName);
+            updatePayload.imageurl = publicUrl;
         }
         
         // 1. Check if row exists
@@ -747,23 +735,18 @@ async function saveEventDetails(evt) {
             if (error) throw error;
         }
 
-        // 3. Apply changes locally so you don't have to refresh the page
-        state.attendanceMap[evt] = parseInt(newAtt) || 0;
-        if (updatePayload.imageurl) {
-            state.imageMap[evt] = updatePayload.imageurl;
-        }
-        
-        // Render updates to Dashboard behind the modal
-        render(document.getElementById("search").value, document.getElementById("sortMode").value);
-        renderModalBody();
+        // 3. Re-trigger init to get the freshest data and redraw
+        init();
+        document.getElementById("modal").classList.remove("show");
         
     } catch (e) {
         console.error(e);
-        b.innerHTML = `<div style="color:#FF3B30; padding:30px; text-align:center;">Error saving to database: ${e.message}</div><div style="text-align:center;"><button onclick="renderModalBody()" class="btn" style="background:rgba(255,255,255,0.1); color:#fff; width:auto; padding:10px 30px;">Go Back</button></div>`;
+        b.innerHTML = `<div style="color:#FF3B30; padding:30px; text-align:center;">Error saving to database: ${e.message}</div><div style="text-align:center;"><button onclick="renderModalBody()" class="btn btn-secondary" style="width:auto; padding:10px 30px;">Go Back</button></div>`;
     }
 }
 
 function downloadPDF(evt, resps) {
+  if(!resps || !resps.length) { alert("No raw responses to export."); return; }
   let h = `<html><head><title>${evt}</title><style>body{font-family:sans-serif;padding:30px; color:#000;} h2{color:#0A84FF; border-bottom:1px solid #ccc; padding-bottom:10px;}</style></head><body><h2>Event Insight Report: ${evt}</h2>`;
   resps.forEach((r,i) => {
     h+=`<div style="border:1px solid #ddd; padding:20px; border-radius:10px; margin-bottom:20px; page-break-inside:avoid;"><strong>Response Entry #${i+1}</strong><br><br>`;
@@ -774,7 +757,7 @@ function downloadPDF(evt, resps) {
 }
 
 function downloadCSV(evt, resps) {
-  if(!resps.length) return;
+  if(!resps || !resps.length) { alert("No raw responses to export."); return; }
   const keys = Object.keys(resps[0]).filter(k => !/Timestamp|Student ID/i.test(k));
   let csv = "Entry ID," + keys.map(k => `"${labelMap[k]||k}"`).join(",") + "\n";
   resps.forEach((r, i) => csv += `${i+1},` + keys.map(k => `"${(r[k]||"").toString().replace(/"/g, '""')}"`).join(",") + "\n");
