@@ -405,17 +405,19 @@ async function init() {
   try {
     if (!supabaseClient) throw new Error("Database not initialized.");
 
-    // Fetch data from Supabase tables
-    const { data: ovwData, error: ovwErr } = await supabaseClient.from('event_overviews').select('*');
-    if (ovwErr) throw ovwErr;
-
-    const { data: rawData, error: rawErr } = await supabaseClient.from('responses').select('data, created_at');
-    if (rawErr) throw rawErr;
+    // Fetch data from Supabase tables (independently so one table error does not block the dashboard)
+    const [{ data: ovwData, error: ovwErr }, { data: rawData, error: rawErr }] = await Promise.all([
+      supabaseClient.from('event_overviews').select('*'),
+      supabaseClient.from('responses').select('data, created_at')
+    ]);
 
     let totalGlobalAttendance = 0;
     let validEventsCount = 0;
 
     // Process Overviews
+    if (ovwErr) {
+      console.warn("Unable to load event_overviews. Rendering from survey responses only.", ovwErr.message || ovwErr);
+    }
     (ovwData || []).forEach(r => {
       const n = r.eventname || "";
       if (n) {
@@ -447,21 +449,37 @@ async function init() {
     });
 
     // Process Raw Survey Submissions (Mapping back to original dashboard structure)
+    if (rawErr) {
+      throw rawErr;
+    }
     (rawData || []).forEach(row => {
-      const d = row.data;
-      if (!d || !d.event) return;
+      const d = typeof row.data === "string" ? (() => { try { return JSON.parse(row.data); } catch { return null; } })() : row.data;
+      if (!d) return;
 
-      const ev = d.event;
+      const ev =
+        d.event ||
+        d.eventName ||
+        d.event_name ||
+        d["CAB Event Name"] ||
+        d["Market Event Name"] ||
+        "Unknown";
+      if (!ev || ev === "Unknown") return;
       if (!state.groups[ev]) state.groups[ev] = [];
 
       const mappedRow = {
-        "Timestamp": d.timestamp || row.created_at,
-        "Student ID": d.studentID || "Unknown"
+        "Timestamp": d.timestamp || d.created_at || row.created_at,
+        "Student ID": d.studentID || d.student_id || d["Student ID"] || "Unknown"
       };
 
-      if (d.isMarket) {
+      const isMarketSurvey =
+        d.isMarket === true ||
+        d.eventType === "market" ||
+        !!d["Market Event Name"] ||
+        /^market/i.test((d.surveyType || "").toString());
+
+      if (isMarketSurvey) {
         mappedRow["Market Event Name"] = ev;
-        mappedRow["Market Rating"] = d.rating || 0;
+        mappedRow["Market Rating"] = d.rating || d["Market Rating"] || 0;
         mappedRow["MKT Favorite Part"] = bleep(d.favoritePart || d.favorite || "");
         mappedRow["MKT First Time"] = d.mktFirstTime || "";
         mappedRow["MKT Variety Sat"] = d.variety || "";
@@ -469,7 +487,7 @@ async function init() {
         mappedRow["MKT Comments"] = bleep(d.comments || "");
       } else {
         mappedRow["CAB Event Name"] = ev;
-        mappedRow["CAB Rating"] = d.rating || 0;
+        mappedRow["CAB Rating"] = d.rating || d["CAB Rating"] || 0;
         mappedRow["CAB First Time"] = d.firstTime || "";
         mappedRow["CAB Hear About"] = d.hearAbout || "";
         mappedRow["CAB Favorite Part"] = bleep(d.favoritePart || "");
@@ -481,6 +499,11 @@ async function init() {
 
       state.groups[ev].push(mappedRow);
     });
+
+    // If overviews were unavailable, still show useful high-level totals from response data
+    if (validEventsCount === 0) {
+      validEventsCount = Object.keys(state.groups).filter(evt => evt !== "Unknown").length;
+    }
 
     // Map Semesters dynamically
     Object.entries(state.groups).forEach(([evt, resps]) => {
