@@ -276,7 +276,7 @@ select.control-item { cursor: pointer; padding-right: 36px; appearance: none; -w
 </div>
 
 <!-- Admin Settings Modal -->
-<div id="settingsModal" class="modal" style="display:none;">
+<div id="settingsModal" class="modal">
   <div class="modal-bg" data-close-settings="true"></div>
   <div class="modal-content" style="max-width:1000px; max-height:90vh; overflow-y:auto;">
     <div class="modal-header">
@@ -768,9 +768,10 @@ function openEventModal(evt) {
 
 function renderModalBody() {
   const b = document.getElementById("modalBody"); b.innerHTML = "";
-  
+
   if (!currentModal.raw || currentModal.raw.length === 0) {
-      b.innerHTML = `<div style="text-align:center; padding: 40px; color: var(--text-muted);">No raw feedback available. (Responses table is empty or blocked by RLS).</div>`;
+      const debugMsg = window._debugRawCount === 0 ? "<br><small>Database returned 0 responses. Run the RLS_FIX.sql script in Supabase.</small>" : "<br><small>(Debug: Database has " + window._debugRawCount + " responses total)</small>";
+      b.innerHTML = `<div style="text-align:center; padding: 40px; color: var(--text-muted);">No raw feedback available. (Responses table is empty or blocked by RLS).${debugMsg}</div>`;
       return;
   }
 
@@ -1034,12 +1035,7 @@ document.getElementById("semesterFilter").onchange = () => render(document.getEl
 document.getElementById("modalSort").onchange = e => { currentModal.mode = e.target.value; renderModalBody(); };
 document.body.onclick = e => {
   if(e.target.dataset.close) document.getElementById("modal").classList.remove("show");
-  if(e.target.dataset.closeSettings) {
-    document.getElementById("settingsModal").style.display = "none";
-    document.getElementById("adminGate").style.display = "none";
-    document.getElementById("adminConsole").style.display = "none";
-    document.getElementById("adminSettingsPass").value = "";
-  }
+  if(e.target.dataset.closeSettings) closeSettingsModal();
 };
 
 // ========== SETTINGS MODAL FUNCTIONS ==========
@@ -1062,7 +1058,7 @@ async function loadEditPasswordFromSupabase() {
 }
 
 function openSettingsGate() {
-  document.getElementById("settingsModal").style.display = "block";
+  document.getElementById("settingsModal").classList.add("show");
   document.getElementById("adminGate").style.display = "block";
   document.getElementById("adminConsole").style.display = "none";
   document.getElementById("adminSettingsPass").focus();
@@ -1070,7 +1066,7 @@ function openSettingsGate() {
 }
 
 function closeSettingsModal() {
-  document.getElementById("settingsModal").style.display = "none";
+  document.getElementById("settingsModal").classList.remove("show");
   document.getElementById("adminGate").style.display = "none";
   document.getElementById("adminConsole").style.display = "none";
   settingsState.isAdmin = false;
