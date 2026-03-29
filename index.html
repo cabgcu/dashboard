@@ -511,7 +511,8 @@ async function init() {
     ]);
 
     window._debugRawCount = rawData ? rawData.length : 0;
-    
+    window._debugStartProcessing = true;
+
     // 2. Process Event Overviews FIRST (Source of Truth for Dashboard Display)
     if (ovwErr) console.warn("Unable to load event_overviews.", ovwErr.message);
     (ovwData || []).forEach(r => {
@@ -544,13 +545,13 @@ async function init() {
       try {
           let d = typeof row.data === "string" ? JSON.parse(row.data) : row.data;
           if (!d) return;
-          
+
           if (Array.isArray(d)) d = d[0];
           if (!d) return;
 
           const ev = d.event || d.eventName || d.event_name || d["CAB Event Name"] || d["Market Event Name"];
           if (!ev || String(ev).trim() === "Unknown" || String(ev).trim() === "") return;
-          
+
           const evStr = String(ev).trim();
           if (!state.groups[evStr]) state.groups[evStr] = [];
 
@@ -587,8 +588,6 @@ async function init() {
           console.warn("Skipped a malformed row", e);
       }
     });
-
-    window._debugParsedCount = Object.keys(state.groups).length;
 
     // Apply strict fallbacks for any brand new raw events not in overviews yet
     Object.keys(state.groups).forEach(evt => {
