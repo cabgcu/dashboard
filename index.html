@@ -276,24 +276,7 @@ let state = {
 
 let currentModal = { event: "", raw: [], mode: "worst" };
 let isEditUnlocked = false;
-let editDashboardPassword = "evbethng";
-
-async function loadEditPasswordFromSupabase() {
-  try {
-    const { data, error } = await supabaseClient
-      .from('dashboard_settings')
-      .select('value')
-      .eq('key', 'edit_password')
-      .maybeSingle();
-    if (error) {
-      console.warn("Could not load edit password from dashboard_settings.", error.message);
-      return;
-    }
-    if (data && data.value) editDashboardPassword = String(data.value);
-  } catch (e) {
-    console.warn("Password settings lookup skipped.", e.message);
-  }
-}
+const EDIT_DASHBOARD_PASSWORD = "evbethng";
 
 const headerMap = {
   eventName: ["CAB Event Name", "Market Event Name"],
@@ -679,7 +662,7 @@ function requestProtectedEdit(evt) {
     if (!isEditUnlocked) {
         const typedPassword = prompt("Enter dashboard edit password:");
         if (typedPassword === null) return;
-        if (typedPassword !== editDashboardPassword) {
+        if (typedPassword !== EDIT_DASHBOARD_PASSWORD) {
             alert("Incorrect password.");
             return;
         }
@@ -737,14 +720,6 @@ function toggleEditMode(evt) {
                 <button onclick="saveEventDetails('${safeEvt}')" class="btn btn-primary" style="flex:2; padding:16px;">Save Changes</button>
                 <button onclick="renderModalBody()" class="btn btn-secondary" style="flex:1; padding:16px;">Cancel</button>
             </div>
-        </div>
-        <div style="background: rgba(255,255,255,0.03); padding: 24px; border-radius: 20px; border: 1px solid var(--glass-border); margin-bottom:20px;">
-          <h3 style="margin:0 0 10px; color:#fff;">Password Protection</h3>
-          <p style="margin:0 0 12px; color:var(--text-muted); font-size:0.9rem;">Update the dashboard edit password stored in Supabase (dashboard_settings).</p>
-          <div style="display:flex; gap:10px; flex-wrap:wrap;">
-            <input id="newDashboardPassword" type="password" placeholder="New password" style="flex:1; min-width:220px; padding:12px; border-radius:10px; border:1px solid rgba(255,255,255,0.15); background:rgba(0,0,0,0.45); color:#fff;" />
-            <button onclick="saveDashboardPassword()" class="btn btn-secondary" style="width:auto; padding:10px 16px;">Save Password</button>
-          </div>
         </div>
         <div style="background: rgba(255,255,255,0.03); padding: 24px; border-radius: 20px; border: 1px solid var(--glass-border);">
           <h3 style="margin:0 0 10px; color:#fff;">Protected Response Manager</h3>
@@ -853,25 +828,6 @@ async function saveResponseEdits(evt, index) {
     requestProtectedEdit(evt);
   } catch (e) {
     alert(`Failed to update response: ${e.message}`);
-  }
-}
-
-async function saveDashboardPassword() {
-  const val = document.getElementById("newDashboardPassword")?.value?.trim();
-  if (!val) {
-    alert("Enter a new password first.");
-    return;
-  }
-  try {
-    const { error } = await supabaseClient
-      .from('dashboard_settings')
-      .upsert({ key: 'edit_password', value: val }, { onConflict: 'key' });
-    if (error) throw error;
-    editDashboardPassword = val;
-    alert("Dashboard password updated.");
-    document.getElementById("newDashboardPassword").value = "";
-  } catch (e) {
-    alert(`Could not save password. Make sure dashboard_settings table exists. (${e.message})`);
   }
 }
 
