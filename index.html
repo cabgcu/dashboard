@@ -599,6 +599,10 @@ async function init() {
     window._debugParsing = debugMsg;
 
     window._debugParsedCount = Object.keys(state.groups).length;
+    window._debugEventResponseCounts = {};
+    Object.entries(state.groups).forEach(([evt, resps]) => {
+      window._debugEventResponseCounts[evt] = resps.length;
+    });
 
     // Apply strict fallbacks for any brand new raw events not in overviews yet
     Object.keys(state.groups).forEach(evt => {
