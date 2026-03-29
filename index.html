@@ -112,8 +112,6 @@ select.control-item { cursor: pointer; padding-right: 36px; appearance: none; -w
 
 .btn-stats { background: var(--gradient-accent); border: none; padding: 0 24px; box-shadow: 0 8px 20px rgba(10, 132, 255, 0.2); }
 .btn-stats:hover { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(10, 132, 255, 0.4); }
-.btn-refresh { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15); cursor: pointer; }
-.btn-refresh:hover { background: rgba(255,255,255,0.2); }
 
 /* Dashboard Grid */
 #dashboard {
@@ -189,7 +187,7 @@ select.control-item { cursor: pointer; padding-right: 36px; appearance: none; -w
   .app-container { padding: 0 20px; }
   .topbar { position: relative; top: 0; flex-direction: column; gap: 20px; padding: 24px; margin-top: 10px; }
   .controls { width: 100%; flex-direction: column; align-items: stretch; gap: 12px; }
-  input.control-item, select.control-item, .btn-stats, .btn-refresh { width: 100% !important; height: 48px; }
+  input.control-item, select.control-item, .btn-stats { width: 100% !important; height: 48px; }
   #dashboard { grid-template-columns: 1fr; gap: 24px; }
   .modal { padding: 0; }
   .modal-content { height: 100%; border-radius: 0; }
@@ -211,7 +209,6 @@ select.control-item { cursor: pointer; padding-right: 36px; appearance: none; -w
       </div>
     </div>
     <div class="controls">
-      <button onclick="init()" class="control-item btn-refresh">🔄 Refresh</button>
       <button onclick="openTeamStats()" class="control-item btn-stats">📊 Team Analytics</button>
       <select id="semesterFilter" class="control-item"><option value="">All Semesters</option></select>
       <select id="teamFilter" class="control-item"><option value="">All Teams</option></select>
@@ -278,6 +275,25 @@ let state = {
 };
 
 let currentModal = { event: "", raw: [], mode: "worst" };
+let isEditUnlocked = false;
+let editDashboardPassword = "evbethng";
+
+async function loadEditPasswordFromSupabase() {
+  try {
+    const { data, error } = await supabaseClient
+      .from('dashboard_settings')
+      .select('value')
+      .eq('key', 'edit_password')
+      .maybeSingle();
+    if (error) {
+      console.warn("Could not load edit password from dashboard_settings.", error.message);
+      return;
+    }
+    if (data && data.value) editDashboardPassword = String(data.value);
+  } catch (e) {
+    console.warn("Password settings lookup skipped.", e.message);
+  }
+}
 
 const headerMap = {
   eventName: ["CAB Event Name", "Market Event Name"],
@@ -365,6 +381,7 @@ function extractSemester(eventName, fallbackDate) {
 async function init() {
   try {
     if (!supabaseClient) throw new Error("Database not initialized.");
+    await loadEditPasswordFromSupabase();
     
     // Reset state on init
     state.groups = {}; state.semesters.clear(); state.allTeams.clear();
@@ -375,7 +392,7 @@ async function init() {
     // 1. Fetch Event Overviews & Responses concurrently
     const [{ data: ovwData, error: ovwErr }, { data: rawData, error: rawErr }] = await Promise.all([
       supabaseClient.from('event_overviews').select('*'),
-      supabaseClient.from('responses').select('data, created_at')
+      supabaseClient.from('responses').select('id, data, created_at')
     ]);
 
     window._debugRawCount = rawData ? rawData.length : 0;
@@ -423,6 +440,7 @@ async function init() {
           if (!state.groups[evStr]) state.groups[evStr] = [];
 
           const mappedRow = {
+            "_responseId": row.id || null,
             "Timestamp": d.timestamp || d.created_at || row.created_at,
             "Student ID": d.studentID || d.student_id || d["Student ID"] || "Unknown"
           };
@@ -628,7 +646,7 @@ function openEventModal(evt) {
   document.querySelector("#modal h3").textContent = evt;
   document.getElementById("btnPDF").onclick = () => downloadPDF(evt, currentModal.raw);
   document.getElementById("btnCSV").onclick = () => downloadCSV(evt, currentModal.raw);
-  document.getElementById("btnEdit").onclick = () => toggleEditMode(evt);
+  document.getElementById("btnEdit").onclick = () => requestProtectedEdit(evt);
   renderModalBody();
   document.getElementById("modal").classList.add("show");
 }
@@ -650,11 +668,24 @@ function renderModalBody() {
     const d = el("div", "response-row");
     let h = `<div style="display:flex; justify-content:space-between; margin-bottom:16px; font-size:0.85rem; color:var(--text-muted); font-weight:700;"><span>SUBMISSION #${i+1}</span><strong>${isNaN(sc)?"":"SCORE: ★ "+sc}</strong></div>`;
     for(let k in r) {
-      if(!r[k] || /Timestamp|Student ID/i.test(k)) continue;
+      if(!r[k] || /Timestamp|Student ID/i.test(k) || k === "_responseId") continue;
       h += `<div class="qa-pair"><span class="qa-label">${labelMap[k] || k}</span><div class="qa-val">${r[k]}</div></div>`;
     }
     d.innerHTML = h; b.appendChild(d);
   });
+}
+
+function requestProtectedEdit(evt) {
+    if (!isEditUnlocked) {
+        const typedPassword = prompt("Enter dashboard edit password:");
+        if (typedPassword === null) return;
+        if (typedPassword !== editDashboardPassword) {
+            alert("Incorrect password.");
+            return;
+        }
+        isEditUnlocked = true;
+    }
+    toggleEditMode(evt);
 }
 
 function toggleEditMode(evt) {
@@ -662,10 +693,33 @@ function toggleEditMode(evt) {
     const currentAtt = state.attendanceMap[evt] || 0;
     const currentTeam = (state.teamMap[evt] || ["CAB Team"]).join(", ");
     const currentSummary = state.briefMap[evt] || "";
+    const safeEvt = evt.replace(/'/g, "\\'");
+    const responseEditor = (state.groups[evt] || []).map((row, idx) => {
+      const responseId = row._responseId;
+      const favorite = row["CAB Favorite Part"] || row["MKT Favorite Part"] || "";
+      const comments = row["CAB Comments"] || row["MKT Comments"] || "";
+      return `
+        <div style="border:1px solid rgba(255,255,255,0.12); border-radius:14px; padding:16px; margin-top:12px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:12px;">
+            <strong>Response #${idx + 1}</strong>
+            <button onclick="deleteResponse('${safeEvt}', ${idx})" class="btn btn-secondary" style="width:auto; padding:8px 14px; background:rgba(255,59,48,0.18); border:1px solid rgba(255,59,48,0.5);">Delete</button>
+          </div>
+          <label style="display:block; margin-bottom:6px; font-size:0.8rem; color:var(--text-muted); text-transform:uppercase;">Favorite Part</label>
+          <textarea id="respFav-${idx}" style="width:100%; padding:10px; border-radius:10px; border:1px solid rgba(255,255,255,0.1); background:rgba(0,0,0,0.45); color:#fff; min-height:70px; margin-bottom:12px;">${favorite}</textarea>
+          <label style="display:block; margin-bottom:6px; font-size:0.8rem; color:var(--text-muted); text-transform:uppercase;">Comments</label>
+          <textarea id="respCom-${idx}" style="width:100%; padding:10px; border-radius:10px; border:1px solid rgba(255,255,255,0.1); background:rgba(0,0,0,0.45); color:#fff; min-height:90px;">${comments}</textarea>
+          <button onclick="saveResponseEdits('${safeEvt}', ${idx})" class="btn btn-secondary" style="width:auto; margin-top:10px; padding:8px 14px;">Save Response</button>
+          <div style="font-size:0.7rem; color:var(--text-muted); margin-top:6px;">Supabase ID: ${responseId || "Unavailable"}</div>
+        </div>
+      `;
+    }).join("");
     
     b.innerHTML = `
         <div style="background: rgba(255,255,255,0.03); padding: 32px; border-radius: 20px; border: 1px solid var(--glass-border); margin-bottom: 20px;">
             <h3 style="margin-top:0; color:#0A84FF; margin-bottom:24px;">Edit Dashboard Details</h3>
+
+            <label style="display:block; margin-bottom:10px; font-size:0.9rem; color:var(--text-muted); font-weight:bold; text-transform:uppercase;">Event Name</label>
+            <input type="text" id="editEventName" value="${evt}" style="width:100%; padding:14px; border-radius:12px; border:1px solid rgba(255,255,255,0.1); background:rgba(0,0,0,0.5); color:#fff; margin-bottom:24px; outline:none; font-size:1rem;" />
             
             <label style="display:block; margin-bottom:10px; font-size:0.9rem; color:var(--text-muted); font-weight:bold; text-transform:uppercase;">Total Attendance</label>
             <input type="number" id="editAttendance" value="${currentAtt}" style="width:100%; padding:14px; border-radius:12px; border:1px solid rgba(255,255,255,0.1); background:rgba(0,0,0,0.5); color:#fff; margin-bottom:24px; outline:none; font-size:1rem;" />
@@ -680,14 +734,28 @@ function toggleEditMode(evt) {
             <input type="file" id="editImage" accept="image/*" style="width:100%; padding:14px; border-radius:12px; border:1px dashed rgba(255,255,255,0.3); background:rgba(0,0,0,0.5); color:#fff; margin-bottom:32px; outline:none; font-size:1rem; cursor:pointer;" />
             
             <div style="display:flex; gap:12px; flex-wrap:wrap;">
-                <button onclick="saveEventDetails('${evt.replace(/'/g, "\\'")}')" class="btn btn-primary" style="flex:2; padding:16px;">Save Changes</button>
+                <button onclick="saveEventDetails('${safeEvt}')" class="btn btn-primary" style="flex:2; padding:16px;">Save Changes</button>
                 <button onclick="renderModalBody()" class="btn btn-secondary" style="flex:1; padding:16px;">Cancel</button>
             </div>
+        </div>
+        <div style="background: rgba(255,255,255,0.03); padding: 24px; border-radius: 20px; border: 1px solid var(--glass-border); margin-bottom:20px;">
+          <h3 style="margin:0 0 10px; color:#fff;">Password Protection</h3>
+          <p style="margin:0 0 12px; color:var(--text-muted); font-size:0.9rem;">Update the dashboard edit password stored in Supabase (dashboard_settings).</p>
+          <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <input id="newDashboardPassword" type="password" placeholder="New password" style="flex:1; min-width:220px; padding:12px; border-radius:10px; border:1px solid rgba(255,255,255,0.15); background:rgba(0,0,0,0.45); color:#fff;" />
+            <button onclick="saveDashboardPassword()" class="btn btn-secondary" style="width:auto; padding:10px 16px;">Save Password</button>
+          </div>
+        </div>
+        <div style="background: rgba(255,255,255,0.03); padding: 24px; border-radius: 20px; border: 1px solid var(--glass-border);">
+          <h3 style="margin:0 0 10px; color:#fff;">Protected Response Manager</h3>
+          <p style="margin:0 0 14px; color:var(--text-muted); font-size:0.9rem;">Edit or delete individual responses from Supabase.</p>
+          ${responseEditor || '<div style="color:var(--text-muted);">No responses available to edit.</div>'}
         </div>
     `;
 }
 
 async function saveEventDetails(evt) {
+    const newEventName = document.getElementById("editEventName").value.trim();
     const newAtt = document.getElementById("editAttendance").value;
     const newTeam = document.getElementById("editTeam").value;
     const newSummary = document.getElementById("editSummary").value;
@@ -698,6 +766,7 @@ async function saveEventDetails(evt) {
     
     try {
         const updatePayload = { 
+            eventname: (newEventName || evt).toString(),
             attendance: newAtt.toString(),
             hostingteam: newTeam.toString(),
             summary: newSummary.toString()
@@ -726,13 +795,28 @@ async function saveEventDetails(evt) {
         } else {
             const getRate = (r) => { const s = r.map(getScore).filter(x => !isNaN(x)); return s.length ? s.reduce((a,b)=>a+b,0)/s.length : 0; };
             const { error } = await supabaseClient.from('event_overviews').insert({
-                eventname: evt,
+                eventname: newEventName || evt,
                 summary: state.briefMap[evt] || "Manual edit applied.",
                 rating: getRate(state.groups[evt] || []),
                 surveys: state.surveysMap[evt] || 1,
                 ...updatePayload
             });
             if (error) throw error;
+        }
+
+        if (newEventName && newEventName !== evt) {
+          const eventRows = (state.groups[evt] || []).filter(r => r._responseId);
+          for (const row of eventRows) {
+            const { _responseId, ...rest } = row;
+            const payload = { ...rest };
+            if (payload["CAB Event Name"]) payload["CAB Event Name"] = newEventName;
+            if (payload["Market Event Name"]) payload["Market Event Name"] = newEventName;
+            payload.event = newEventName;
+            payload.eventName = newEventName;
+            payload.event_name = newEventName;
+            const { error } = await supabaseClient.from('responses').update({ data: payload }).eq('id', _responseId);
+            if (error) throw error;
+          }
         }
 
         // 3. Re-trigger init to get the freshest data and redraw
@@ -743,6 +827,71 @@ async function saveEventDetails(evt) {
         console.error(e);
         b.innerHTML = `<div style="color:#FF3B30; padding:30px; text-align:center;">Error saving to database: ${e.message}</div><div style="text-align:center;"><button onclick="renderModalBody()" class="btn btn-secondary" style="width:auto; padding:10px 30px;">Go Back</button></div>`;
     }
+}
+
+async function saveResponseEdits(evt, index) {
+  const row = (state.groups[evt] || [])[index];
+  if (!row || !row._responseId) {
+    alert("This response cannot be edited because no Supabase row ID was found.");
+    return;
+  }
+  const newFav = document.getElementById(`respFav-${index}`)?.value || "";
+  const newCom = document.getElementById(`respCom-${index}`)?.value || "";
+  const payload = { ...row };
+  delete payload._responseId;
+  if (payload["CAB Favorite Part"] !== undefined) payload["CAB Favorite Part"] = newFav;
+  if (payload["MKT Favorite Part"] !== undefined) payload["MKT Favorite Part"] = newFav;
+  if (payload["CAB Comments"] !== undefined) payload["CAB Comments"] = newCom;
+  if (payload["MKT Comments"] !== undefined) payload["MKT Comments"] = newCom;
+
+  try {
+    const { error } = await supabaseClient.from('responses').update({ data: payload }).eq('id', row._responseId);
+    if (error) throw error;
+    alert("Response updated.");
+    await init();
+    openEventModal(evt);
+    requestProtectedEdit(evt);
+  } catch (e) {
+    alert(`Failed to update response: ${e.message}`);
+  }
+}
+
+async function saveDashboardPassword() {
+  const val = document.getElementById("newDashboardPassword")?.value?.trim();
+  if (!val) {
+    alert("Enter a new password first.");
+    return;
+  }
+  try {
+    const { error } = await supabaseClient
+      .from('dashboard_settings')
+      .upsert({ key: 'edit_password', value: val }, { onConflict: 'key' });
+    if (error) throw error;
+    editDashboardPassword = val;
+    alert("Dashboard password updated.");
+    document.getElementById("newDashboardPassword").value = "";
+  } catch (e) {
+    alert(`Could not save password. Make sure dashboard_settings table exists. (${e.message})`);
+  }
+}
+
+async function deleteResponse(evt, index) {
+  const row = (state.groups[evt] || [])[index];
+  if (!row || !row._responseId) {
+    alert("This response cannot be deleted because no Supabase row ID was found.");
+    return;
+  }
+  if (!confirm("Delete this response from Supabase permanently?")) return;
+  try {
+    const { error } = await supabaseClient.from('responses').delete().eq('id', row._responseId);
+    if (error) throw error;
+    alert("Response deleted.");
+    await init();
+    openEventModal(evt);
+    requestProtectedEdit(evt);
+  } catch (e) {
+    alert(`Delete failed: ${e.message}`);
+  }
 }
 
 function downloadPDF(evt, resps) {
