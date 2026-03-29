@@ -540,17 +540,22 @@ async function init() {
 
     // 3. Process Raw Responses (Populate modal data if RLS allows)
     if (rawErr) console.warn("Notice: Raw responses blocked by RLS.", rawErr.message);
-    (rawData || []).forEach(row => {
+    let parsedCount = 0, skippedCount = 0, noEventCount = 0;
+    (rawData || []).forEach((row, idx) => {
       try {
           let d = typeof row.data === "string" ? JSON.parse(row.data) : row.data;
-          if (!d) return;
-          
+          if (!d) { skippedCount++; return; }
+
           if (Array.isArray(d)) d = d[0];
-          if (!d) return;
+          if (!d) { skippedCount++; return; }
 
           const ev = d.event || d.eventName || d.event_name || d["CAB Event Name"] || d["Market Event Name"];
-          if (!ev || String(ev).trim() === "Unknown" || String(ev).trim() === "") return;
-          
+          if (!ev || String(ev).trim() === "Unknown" || String(ev).trim() === "") {
+            noEventCount++;
+            if (idx < 3) console.log("Sample response with no event:", d);
+            return;
+          }
+
           const evStr = String(ev).trim();
           if (!state.groups[evStr]) state.groups[evStr] = [];
 
@@ -583,10 +588,13 @@ async function init() {
           }
 
           state.groups[evStr].push(mappedRow);
+          parsedCount++;
       } catch (e) {
           console.warn("Skipped a malformed row", e);
+          skippedCount++;
       }
     });
+    console.log(`Response parsing: ${parsedCount} parsed, ${noEventCount} missing event field, ${skippedCount} errors`);
 
     window._debugParsedCount = Object.keys(state.groups).length;
 
