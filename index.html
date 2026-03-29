@@ -540,79 +540,54 @@ async function init() {
     });
 
     // 3. Process Raw Responses (Populate modal data if RLS allows)
-    try {
-      if (rawErr) console.warn("Notice: Raw responses blocked by RLS.", rawErr.message);
-      let parsedCount = 0, skippedCount = 0, noEventCount = 0;
-      window._debugProcessingResponses = true;
+    if (rawErr) console.warn("Notice: Raw responses blocked by RLS.", rawErr.message);
+    (rawData || []).forEach(row => {
+      try {
+          let d = typeof row.data === "string" ? JSON.parse(row.data) : row.data;
+          if (!d) return;
 
-      (rawData || []).forEach((row, idx) => {
-        try {
-            let d = typeof row.data === "string" ? JSON.parse(row.data) : row.data;
-            if (!d) { skippedCount++; return; }
+          if (Array.isArray(d)) d = d[0];
+          if (!d) return;
 
-            if (Array.isArray(d)) d = d[0];
-            if (!d) { skippedCount++; return; }
+          const ev = d.event || d.eventName || d.event_name || d["CAB Event Name"] || d["Market Event Name"];
+          if (!ev || String(ev).trim() === "Unknown" || String(ev).trim() === "") return;
 
-            const ev = d.event || d.eventName || d.event_name || d["CAB Event Name"] || d["Market Event Name"];
-            if (!ev || String(ev).trim() === "Unknown" || String(ev).trim() === "") {
-              noEventCount++;
-              if (idx < 3) console.log("Sample response with no event:", d);
-              return;
-            }
+          const evStr = String(ev).trim();
+          if (!state.groups[evStr]) state.groups[evStr] = [];
 
-            const evStr = String(ev).trim();
-            if (!state.groups[evStr]) state.groups[evStr] = [];
+          const mappedRow = {
+            "_responseId": row.id || null,
+            "Timestamp": d.timestamp || d.created_at || row.created_at,
+            "Student ID": d.studentID || d.student_id || d["Student ID"] || "Unknown"
+          };
 
-            const mappedRow = {
-              "_responseId": row.id || null,
-              "Timestamp": d.timestamp || d.created_at || row.created_at,
-              "Student ID": d.studentID || d.student_id || d["Student ID"] || "Unknown"
-            };
+          const isMarketSurvey = String(d.isMarket) === "true" || d.isMarket === true || d.eventType === "market" || !!d["Market Event Name"];
 
-            const isMarketSurvey = String(d.isMarket) === "true" || d.isMarket === true || d.eventType === "market" || !!d["Market Event Name"];
+          if (isMarketSurvey) {
+            mappedRow["Market Event Name"] = evStr;
+            mappedRow["Market Rating"] = d.rating || d["Market Rating"] || 0;
+            mappedRow["MKT Favorite Part"] = bleep(d.favoritePart || d.favorite || "");
+            mappedRow["MKT First Time"] = d.mktFirstTime || "";
+            mappedRow["MKT Variety Sat"] = d.variety || "";
+            mappedRow["MKT Purchase Made"] = d.purchase || "";
+            mappedRow["MKT Comments"] = bleep(d.comments || "");
+          } else {
+            mappedRow["CAB Event Name"] = evStr;
+            mappedRow["CAB Rating"] = d.rating || d["CAB Rating"] || 0;
+            mappedRow["CAB First Time"] = d.firstTime || "";
+            mappedRow["CAB Hear About"] = d.hearAbout || "";
+            mappedRow["CAB Favorite Part"] = bleep(d.favoritePart || "");
+            mappedRow["CAB Improvements"] = bleep(d.improve || "");
+            mappedRow["CAB Likely Return"] = d.likelyToReturn || "";
+            mappedRow["CAB Staff Connect"] = bleep(d.staffConnect || "");
+            mappedRow["CAB Comments"] = bleep(d.comments || "");
+          }
 
-            if (isMarketSurvey) {
-              mappedRow["Market Event Name"] = evStr;
-              mappedRow["Market Rating"] = d.rating || d["Market Rating"] || 0;
-              mappedRow["MKT Favorite Part"] = bleep(d.favoritePart || d.favorite || "");
-              mappedRow["MKT First Time"] = d.mktFirstTime || "";
-              mappedRow["MKT Variety Sat"] = d.variety || "";
-              mappedRow["MKT Purchase Made"] = d.purchase || "";
-              mappedRow["MKT Comments"] = bleep(d.comments || "");
-            } else {
-              mappedRow["CAB Event Name"] = evStr;
-              mappedRow["CAB Rating"] = d.rating || d["CAB Rating"] || 0;
-              mappedRow["CAB First Time"] = d.firstTime || "";
-              mappedRow["CAB Hear About"] = d.hearAbout || "";
-              mappedRow["CAB Favorite Part"] = bleep(d.favoritePart || "");
-              mappedRow["CAB Improvements"] = bleep(d.improve || "");
-              mappedRow["CAB Likely Return"] = d.likelyToReturn || "";
-              mappedRow["CAB Staff Connect"] = bleep(d.staffConnect || "");
-              mappedRow["CAB Comments"] = bleep(d.comments || "");
-            }
-
-            state.groups[evStr].push(mappedRow);
-            parsedCount++;
-        } catch (e) {
-            console.warn("Skipped a malformed row", e);
-            skippedCount++;
-        }
-      });
-
-      window._debugProcessingDone = true;
-      const debugMsg = `Response parsing: ${parsedCount} parsed, ${noEventCount} missing event field, ${skippedCount} errors`;
-      console.log(debugMsg);
-      window._debugParsing = debugMsg;
-
-      window._debugParsedCount = Object.keys(state.groups).length;
-      window._debugEventResponseCounts = {};
-      Object.entries(state.groups).forEach(([evt, resps]) => {
-        window._debugEventResponseCounts[evt] = resps.length;
-      });
-    } catch (err) {
-      window._debugProcessingError = err.message;
-      console.error("Error processing responses:", err);
-    }
+          state.groups[evStr].push(mappedRow);
+      } catch (e) {
+          console.warn("Skipped a malformed row", e);
+      }
+    });
 
     // Apply strict fallbacks for any brand new raw events not in overviews yet
     Object.keys(state.groups).forEach(evt => {
