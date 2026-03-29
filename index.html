@@ -364,6 +364,7 @@ function extractSemester(eventName, fallbackDate) {
 async function init() {
   try {
     if (!supabaseClient) throw new Error("Database not initialized.");
+    await loadEditPasswordFromSupabase();
     
     // Reset state on init
     state.groups = {}; state.semesters.clear(); state.allTeams.clear();
