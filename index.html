@@ -87,7 +87,7 @@ body {
   -webkit-text-fill-color: transparent;
 }
 .brand-stat { font-size: 0.85rem; color: var(--text-muted); margin-top: 6px; font-weight: 500; }
-.brand-stat strong { color: #fff; font-weight: 700; }
+.brand-stat strong { color: #fff; font-weight: 700; transition: color 0.3s ease; }
 
 /* Controls */
 .controls { display: flex; gap: 12px; align-items: center; }
@@ -205,7 +205,8 @@ select.control-item { cursor: pointer; padding-right: 36px; appearance: none; -w
     </div>
     <div class="controls">
       <button onclick="openTeamStats()" class="control-item btn-stats">📊 Team Analytics</button>
-      <select id="semesterFilter" class="control-item"><option value="">All Semesters</option></select>
+      <!-- Changed from Semester to Academic Year -->
+      <select id="yearFilter" class="control-item"><option value="">All Academic Years</option></select>
       <select id="teamFilter" class="control-item"><option value="">All Teams</option></select>
       <input id="search" class="control-item" type="text" placeholder="Search events..." autocomplete="off" />
       <select id="sortMode" class="control-item">
@@ -264,8 +265,8 @@ let state = {
   groups: {}, 
   bgImages: [],
   allTeams: new Set(),
-  semesters: new Set(),
-  eventSemMap: {}
+  academicYears: new Set(),
+  eventYearMap: {}
 };
 
 let currentModal = { event: "", raw: [], mode: "worst" };
@@ -316,10 +317,17 @@ function parseGvizDate(str) {
   return isNaN(d.getTime()) ? null : d;
 }
 
-function getSemesterFromDate(dateValue) {
+// Group dates into academic years (e.g. August 2026 to July 2027 becomes "2026-2027 Academic Year")
+function getAcademicYear(dateValue) {
     const d = (dateValue instanceof Date) ? dateValue : parseGvizDate(dateValue);
     if(!d) return "Unknown";
-    return (d.getMonth() <= 6) ? `Spring ${d.getFullYear()}` : `Fall ${d.getFullYear()}`;
+    const year = d.getFullYear();
+    // Assuming Fall starts in August (Month index 7)
+    if (d.getMonth() >= 7) { 
+        return `${year}-${year + 1} Academic Year`;
+    } else {
+        return `${year - 1}-${year} Academic Year`;
+    }
 }
 
 async function init() {
@@ -333,18 +341,12 @@ async function init() {
 
     const [ovw, raw] = await Promise.all([fetchS(OVW_SHEET), fetchS(RAW_SHEET)]);
 
-    let totalGlobalAttendance = 0;
-    let validEventsCount = 0;
-
     ovw.table.rows.forEach(r => {
       const n = r.c[0]?.v || "";
       if (n) {
         state.briefMap[n] = bleep(r.c[3]?.v || "");
         state.imageMap[n] = r.c[4]?.v || "";
-        const att = +r.c[5]?.v || 0;
-        state.attendanceMap[n] = att;
-        totalGlobalAttendance += att;
-        validEventsCount++;
+        state.attendanceMap[n] = +r.c[5]?.v || 0;
         state.surveysMap[n] = +r.c[2]?.v || 0;
         const tRaw = r.c[6]?.v || "Unassigned";
         const teams = tRaw.split(/[,&]/).map(t => t.trim()).filter(t => t.length > 0);
@@ -368,31 +370,30 @@ async function init() {
       state.groups[ev].push(row);
     });
 
+    // Populate Academic Years
     Object.entries(state.groups).forEach(([evt, resps]) => {
         if (evt === "Unknown") return;
         const tsMs = resps.map(r => parseGvizDate(r.Timestamp)?.getTime()).filter(t => t);
         if (tsMs.length > 0) {
             const first = Math.min(...tsMs);
-            const sem = getSemesterFromDate(new Date(first));
-            state.eventSemMap[evt] = sem;
-            state.semesters.add(sem);
-        } else state.eventSemMap[evt] = "Unknown";
+            const ay = getAcademicYear(new Date(first));
+            state.eventYearMap[evt] = ay;
+            state.academicYears.add(ay);
+        } else {
+            state.eventYearMap[evt] = "Unknown";
+        }
     });
 
     document.getElementById("teamFilter").innerHTML += [...state.allTeams].sort().map(t => `<option value="${t}">${t}</option>`).join("");
-    document.getElementById("globalAttendance").textContent = totalGlobalAttendance.toLocaleString();
-    document.getElementById("totalEvents").textContent = validEventsCount;
-
-    const semSelect = document.getElementById("semesterFilter");
-    const sortedSem = [...state.semesters].sort((a,b) => {
-      const p = (s) => { const [m, y] = s.split(' '); return parseInt(y) * 10 + (m === 'Fall' ? 2 : 1); };
-      return p(b) - p(a);
-    });
-    sortedSem.forEach(s => { semSelect.innerHTML += `<option value="${s}">${s}</option>`; });
-    if (sortedSem.length > 0) semSelect.value = sortedSem[0];
+    
+    // Sort academic years descending (e.g. 2026-2027 before 2025-2026)
+    const yearSelect = document.getElementById("yearFilter");
+    const sortedYears = [...state.academicYears].sort((a,b) => b.localeCompare(a));
+    sortedYears.forEach(y => { yearSelect.innerHTML += `<option value="${y}">${y}</option>`; });
+    if (sortedYears.length > 0) yearSelect.value = sortedYears[0];
 
     setBg();
-    render();
+    render(); // Initial render will also calculate and set the dynamic top bar totals
   } catch (e) { 
     console.error(e);
     document.getElementById("dashboard").innerHTML = `<div class="empty-state"><h3>Error Loading Data</h3></div>`;
@@ -410,15 +411,25 @@ function getScore(r) {
 function render(filter = "", sort = "rating") {
   const dash = document.getElementById("dashboard"); dash.innerHTML = "";
   const activeTeam = document.getElementById("teamFilter").value;
-  const activeSem = document.getElementById("semesterFilter").value;
+  const activeYear = document.getElementById("yearFilter").value;
   
   let list = Object.entries(state.groups).filter(([k]) => k !== "Unknown");
+  
+  // Apply Filters
   if(filter) list = list.filter(([k]) => k.toLowerCase().includes(filter.toLowerCase()));
   if(activeTeam) list = list.filter(([k]) => (state.teamMap[k] || []).includes(activeTeam));
-  if(activeSem) list = list.filter(([k]) => state.eventSemMap[k] === activeSem);
+  if(activeYear) list = list.filter(([k]) => state.eventYearMap[k] === activeYear);
+  
+  // Update Dynamic Statistics based on current filter view
+  let filteredEventsCount = list.length;
+  let filteredAttendance = list.reduce((sum, [evt]) => sum + (state.attendanceMap[evt] || 0), 0);
+  
+  document.getElementById("totalEvents").textContent = filteredEventsCount;
+  document.getElementById("globalAttendance").textContent = filteredAttendance.toLocaleString();
   
   const getRate = (r) => { const s = r.map(getScore).filter(x => !isNaN(x)); return s.length ? s.reduce((a,b)=>a+b,0)/s.length : 0; };
   
+  // Sorting
   if(sort === "rating") list.sort((a,b) => getRate(b[1]) - getRate(a[1]));
   else if(sort === "recent") list.sort((a,b) => {
     const f = (arr) => Math.min(...arr.map(r => parseGvizDate(r.Timestamp)?.getTime() || 0));
@@ -429,6 +440,7 @@ function render(filter = "", sort = "rating") {
 
   if(list.length === 0) { dash.innerHTML = `<div class="empty-state"><h3>No events found.</h3></div>`; return; }
 
+  // Draw Cards
   list.forEach(([evt, resps], idx) => {
     const rate = getRate(resps);
     const att = state.attendanceMap[evt];
@@ -462,8 +474,14 @@ function render(filter = "", sort = "rating") {
 
 function openTeamStats() {
   const teams = {};
+  const activeYear = document.getElementById("yearFilter").value;
+  
   const getRate = (r) => { const s = r.map(getScore).filter(x => !isNaN(x)); return s.length ? s.reduce((a,b)=>a+b,0)/s.length : 0; };
+  
   Object.keys(state.groups).forEach(evt => {
+    // Only analyze teams for events currently in view based on year filter
+    if (activeYear && state.eventYearMap[evt] !== activeYear) return;
+
     const eventTeams = state.teamMap[evt] || ["Unassigned"];
     const att = state.attendanceMap[evt] || 0;
     const rate = getRate(state.groups[evt]); 
@@ -474,9 +492,11 @@ function openTeamStats() {
       if(rate > 0) teams[t].rates.push(rate);
     });
   });
+
   const body = document.getElementById("modalBody");
-  body.innerHTML = `<h2 style="margin-bottom:28px; font-size:1.6rem; font-weight:800;">Hosting Team Performance</h2><div class="stats-grid" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:20px;"></div>`;
+  body.innerHTML = `<h2 style="margin-bottom:28px; font-size:1.6rem; font-weight:800;">Hosting Team Performance ${activeYear ? '(' + activeYear + ')' : ''}</h2><div class="stats-grid" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:20px;"></div>`;
   const grid = body.querySelector(".stats-grid");
+  
   Object.values(teams).sort((a,b) => b.events - a.events).forEach(t => {
     const avg = t.rates.length ? (t.rates.reduce((a,b)=>a+b,0)/t.rates.length).toFixed(2) : "N/A";
     grid.innerHTML += `
@@ -550,14 +570,14 @@ function setBg() {
   }
 }
 
-document.getElementById("search").oninput = e => render(e.target.value);
+// Event Listeners for Filters
+document.getElementById("search").oninput = e => render(e.target.value, document.getElementById("sortMode").value);
 document.getElementById("sortMode").onchange = e => render(document.getElementById("search").value, e.target.value);
-document.getElementById("teamFilter").onchange = () => render(document.getElementById("search").value);
-document.getElementById("semesterFilter").onchange = () => render(document.getElementById("search").value);
+document.getElementById("teamFilter").onchange = () => render(document.getElementById("search").value, document.getElementById("sortMode").value);
+document.getElementById("yearFilter").onchange = () => render(document.getElementById("search").value, document.getElementById("sortMode").value);
 document.getElementById("modalSort").onchange = e => { currentModal.mode = e.target.value; renderModalBody(); };
 document.body.onclick = e => { if(e.target.dataset.close) document.getElementById("modal").classList.remove("show"); };
 
-  
 init();
 </script>
 </body>
