@@ -1,584 +1,711 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-<title>GCU Event Dashboard — Pro Edition</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <title>GCU Event Dashboard — Pro Edition</title>
 
-<style>
-:root {
-  /* Theme Colors */
-  --bg-dark: #000000;
-  --glass-surface: rgba(15, 15, 15, 0.85); 
-  --glass-border: rgba(255, 255, 255, 0.1);
-  --text-main: #ffffff;
-  --text-muted: #a1a1aa;
-  
-  /* Gradient Accents */
-  --gradient-accent: linear-gradient(135deg, #0A84FF, #BF5AF2);
-  --gradient-hover: linear-gradient(135deg, #007AFF, #AF52DE);
-  --gradient-fire: linear-gradient(135deg, #FF9500, #FF3B30);
-  --gradient-success: linear-gradient(135deg, #34C759, #30B0C7);
-  --gradient-nolan: linear-gradient(135deg, #FFD60A, #FF9F0A);
-  
-  /* Modern Rounding */
-  --radius-card: 28px;
-  --radius-pill: 100px;
-  --radius-btn: 16px;
-  --blur: 40px;
-  
-  /* Font */
-  --font-stack: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-}
+    <!-- GSAP for Smooth Animations -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 
-/* Base Setup */
-* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-body {
-  margin: 0;
-  font-family: var(--font-stack);
-  color: var(--text-main);
-  background-color: var(--bg-dark);
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.03'/%3E%3C/svg%3E");
-  min-height: 100vh;
-  padding-bottom: 40px;
-  -webkit-font-smoothing: antialiased;
-  overflow-x: hidden;
-}
-
-/* Custom Scrollbar */
-::-webkit-scrollbar { width: 8px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #444; border-radius: 10px; border: 2px solid var(--bg-dark); }
-
-.frosted {
-  background: var(--glass-surface);
-  backdrop-filter: blur(var(--blur)) saturate(150%);
-  -webkit-backdrop-filter: blur(var(--blur)) saturate(150%);
-  border: 1px solid var(--glass-border);
-  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
-}
-
-.app-container {
-  max-width: 1440px;
-  margin: 0 auto;
-  padding: 0 40px;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
-
-/* Top Navigation */
-.topbar {
-  position: sticky; top: 20px; z-index: 50;
-  display: flex; justify-content: space-between; align-items: center;
-  padding: 20px 32px; 
-  border-radius: var(--radius-card);
-  margin-bottom: 40px; margin-top: 20px;
-  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.brand { display: flex; align-items: center; gap: 18px; }
-.brand img { height: 52px; border-radius: 14px; box-shadow: 0 8px 16px rgba(0,0,0,0.3); }
-.brand-text { display: flex; flex-direction: column; }
-.brand h1 {
-  font-size: 1.4rem; font-weight: 800; margin: 0; letter-spacing: -0.02em; line-height: 1.1;
-  background: var(--gradient-accent);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-}
-.brand-stat { font-size: 0.85rem; color: var(--text-muted); margin-top: 6px; font-weight: 500; }
-.brand-stat strong { color: #fff; font-weight: 700; transition: color 0.3s ease; }
-
-/* Controls */
-.controls { display: flex; gap: 12px; align-items: center; }
-.control-item {
-  background: rgba(255,255,255,0.06);
-  border: 1px solid rgba(255,255,255,0.08);
-  color: #fff;
-  padding: 0 20px;
-  border-radius: var(--radius-pill);
-  font-family: inherit; font-size: 0.9rem; font-weight: 600;
-  outline: none; transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  height: 46px; display: flex; align-items: center;
-}
-.control-item:hover { background: rgba(255,255,255,0.12); border-color: rgba(255,255,255,0.2); }
-.control-item:focus { border-color: #0A84FF; box-shadow: 0 0 0 4px rgba(10, 132, 255, 0.15); }
-
-input.control-item { width: 220px; }
-select.control-item { cursor: pointer; padding-right: 36px; appearance: none; -webkit-appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; background-size: 14px; }
-
-.btn-stats { background: var(--gradient-accent); border: none; padding: 0 24px; box-shadow: 0 8px 20px rgba(10, 132, 255, 0.2); }
-.btn-stats:hover { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(10, 132, 255, 0.4); }
-
-/* Dashboard Grid */
-#dashboard {
-  display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 32px;
-  margin-bottom: 60px;
-}
-
-/* Cards */
-.card {
-  border-radius: var(--radius-card); padding: 0;
-  display: flex; flex-direction: column;
-  transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-  overflow: hidden;
-  background: rgba(255,255,255,0.02);
-}
-.card:hover { transform: translateY(-12px); border-color: rgba(255,255,255,0.2); background: rgba(255,255,255,0.04); }
-
-.card-header { position: relative; height: 180px; width: 100%; overflow: hidden; border-bottom: 1px solid var(--glass-border); }
-.card-img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.6s ease; }
-.card:hover .card-img { transform: scale(1.08); }
-.card-gradient-overlay {
-  position: absolute; inset: 0;
-  background: linear-gradient(to bottom, transparent 0%, rgba(0,0,0,0.2) 50%, rgba(0,0,0,0.8) 100%);
-}
-
-.badge-container { position: absolute; top: 16px; left: 16px; display: flex; gap: 8px; z-index: 10; flex-wrap: wrap; }
-.badge { padding: 6px 14px; border-radius: 20px; font-size: 0.75rem; font-weight: 700; color: #fff; border: 1px solid rgba(255,255,255,0.25); backdrop-filter: blur(12px); box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
-.badge-fire { background: var(--gradient-fire); }
-.badge-ok { background: var(--gradient-success); }
-
-.card-body { padding: 28px; display: flex; flex-direction: column; flex: 1; }
-.card h2 { margin: 0 0 10px 0; font-size: 1.5rem; font-weight: 800; line-height: 1.15; letter-spacing: -0.02em; }
-.stats { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; font-size: 0.95rem; font-weight: 600; flex-wrap: wrap; }
-.rating-text { background: var(--gradient-accent); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-.stats-text { color: var(--text-muted); }
-
-/* Description: No cutting off */
-.summary { font-size: 1rem; color: #e4e4e7; line-height: 1.6; margin-bottom: 24px; font-weight: 400; word-break: break-word; }
-
-.team-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
-.team-tag { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; padding: 4px 10px; border-radius: 8px; background: rgba(255,255,255,0.06); color: var(--text-muted); border: 1px solid rgba(255,255,255,0.1); letter-spacing: 0.05em; }
-
-.actions { margin-top: auto; }
-.btn { width: 100%; padding: 14px; border-radius: var(--radius-btn); font-size: 1rem; font-weight: 700; cursor: pointer; border: none; transition: 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
-.btn-primary { background: var(--gradient-accent); color: white; box-shadow: 0 4px 15px rgba(10, 132, 255, 0.2); }
-.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 25px rgba(10, 132, 255, 0.4); }
-
-/* Modal */
-.modal { position: fixed; inset: 0; z-index: 999; display: none; justify-content: center; align-items: center; padding: 40px; }
-.modal.show { display: flex; }
-.modal-bg { position: absolute; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(20px); }
-.modal-content {
-  position: relative; width: 100%; max-width: 1000px; height: 85vh;
-  background: #0a0a0a; border: 1px solid var(--glass-border); border-radius: 32px;
-  display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 50px 100px rgba(0,0,0,0.8);
-}
-.modal-header { padding: 24px 32px; border-bottom: 1px solid var(--glass-border); display: flex; justify-content: space-between; align-items: center; }
-.modal-body { padding: 32px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
-
-.response-row { background: rgba(255,255,255,0.03); border-radius: 20px; padding: 24px; margin-bottom: 20px; border: 1px solid var(--glass-border); }
-.qa-pair { margin-bottom: 16px; }
-.qa-label { color: #71717a; font-size: 0.75rem; text-transform: uppercase; display: block; margin-bottom: 6px; font-weight: 800; line-height: 1.4; letter-spacing: 0.05em; }
-.qa-val { color: #f4f4f5; font-size: 1rem; line-height: 1.5; word-break: break-word; }
-
-.skeleton { height: 350px; border-radius: 28px; background: #18181b; animation: pulse 1.5s infinite; }
-@keyframes pulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 0.8; } }
-@keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-
-/* --- RESPONSIVE FIXES --- */
-@media(max-width: 800px) {
-  .app-container { padding: 0 20px; }
-  .topbar { position: relative; top: 0; flex-direction: column; gap: 20px; padding: 24px; margin-top: 10px; }
-  .controls { width: 100%; flex-direction: column; align-items: stretch; gap: 12px; }
-  input.control-item, select.control-item, .btn-stats { width: 100% !important; height: 48px; }
-  #dashboard { grid-template-columns: 1fr; gap: 24px; }
-  .modal { padding: 0; }
-  .modal-content { height: 100%; border-radius: 0; }
-}
-</style>
-</head>
-<body>
-
-<div class="app-container">
-  <div class="frosted topbar">
-    <div class="brand">
-      <img src="https://i.imgur.com/oqrmQSC.png" alt="Logo">
-      <div class="brand-text">
-        <h1>Event Dashboard</h1>
-        <div class="brand-stat">
-            Events: <strong id="totalEvents">...</strong> | 
-            Attendance: <strong id="globalAttendance">...</strong>
-        </div>
-      </div>
-    </div>
-    <div class="controls">
-      <button onclick="openTeamStats()" class="control-item btn-stats">📊 Team Analytics</button>
-      <!-- Changed from Semester to Academic Year -->
-      <select id="yearFilter" class="control-item"><option value="">All Academic Years</option></select>
-      <select id="teamFilter" class="control-item"><option value="">All Teams</option></select>
-      <input id="search" class="control-item" type="text" placeholder="Search events..." autocomplete="off" />
-      <select id="sortMode" class="control-item">
-        <option value="rating">Top Rated</option>
-        <option value="recent">Most Recent</option>
-        <option value="attendance">Highest Attendance</option>
-        <option value="az">Alphabetical (A–Z)</option>
-      </select>
-    </div>
-  </div>
-
-  <div id="dashboard">
-    <div class="skeleton"></div><div class="skeleton"></div><div class="skeleton"></div>
-  </div>
-
-  <footer style="text-align:center; padding:40px 20px; color:var(--text-muted); font-size:0.85rem; font-weight:500;">
-    © 2026 Canyon Activities Board
-  </footer>
-</div>
-
-<div id="modal" class="modal">
-  <div class="modal-bg" data-close="true"></div>
-  <div class="modal-content">
-    <div class="modal-header">
-      <h3 style="margin:0; font-size:1.4rem; font-weight:800; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">Event Insights</h3>
-      <button class="btn" style="width:auto; padding:12px; background:transparent; font-size:2rem; color:#fff;" data-close="true">&times;</button>
-    </div>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
     
-    <div id="modalToolbar" style="padding: 14px 32px; display:flex; justify-content:space-between; align-items:center; background: rgba(255,255,255,0.03); border-bottom: 1px solid var(--glass-border);">
-      <div style="display:flex; gap:12px">
-        <button id="btnPDF" class="btn btn-secondary" style="width:auto; padding:8px 20px; font-size:0.85rem; font-weight:700;">Export PDF</button>
-        <button id="btnCSV" class="btn btn-secondary" style="width:auto; padding:8px 20px; font-size:0.85rem; font-weight:700;">Export CSV</button>
-      </div>
-      <select id="modalSort" style="background:transparent; border:none; color:var(--text-muted); font-size:0.95rem; outline:none; font-weight:700; cursor:pointer;">
-        <option value="worst">Sort: Critical First</option>
-        <option value="best">Sort: Positive First</option>
-        <option value="newest">Sort: Latest Feedback</option>
-      </select>
-    </div>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
 
-    <div id="modalBody" class="modal-body"></div>
-  </div>
-</div>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        night: {
+                            950: '#020617',
+                            900: '#0f172a',
+                            800: '#1e293b'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        
+        body {
+            font-family: "Inter", sans-serif;
+            background: #020617;
+            min-height: 100vh;
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: rgba(15,23,42,0.5); }
+        ::-webkit-scrollbar-thumb { background: rgba(167,139,250,0.3); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(167,139,250,0.6); }
+        
+        .custom-scroll::-webkit-scrollbar { width: 6px; }
+
+        /* NIGHT GLASS IMAGE BACKGROUND */
+        .night-bg {
+            position: fixed;
+            inset: 0;
+            width: 100vw;
+            height: 100vh;
+            background-image: url('https://i.imgur.com/J3ZEdiB.png');
+            background-size: cover;
+            background-position: center;
+            z-index: -2;
+            background-color: #020617;
+        }
+
+        /* Vignette effect */
+        .night-overlay {
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(circle at center, transparent 0%, #020617 150%);
+            opacity: 0.9;
+            z-index: -1;
+            pointer-events: none;
+        }
+
+        /* NIGHT GLASS CARDS */
+        .night-glass-card {
+            background: rgba(15, 23, 42, 0.45);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border: 1px solid rgba(167, 139, 250, 0.3);
+            box-shadow: 0 50px 100px rgba(0, 0, 0, 0.65), 0 0 80px rgba(124, 58, 237, 0.25);
+        }
+
+        .night-glass-card-subtle {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(167, 139, 250, 0.25);
+        }
+
+        /* LOGO RADIAL GLOW & FLOAT EFFECT */
+        .logo-box {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .logo-box::before {
+            content: "";
+            position: absolute;
+            width: 80px; 
+            height: 80px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(168, 85, 247, 0.65), rgba(99, 102, 241, 0.45), rgba(37, 99, 235, 0.2), transparent 75%);
+            filter: blur(24px);
+            animation: logoGlowPulse 4s infinite ease-in-out;
+            pointer-events: none;
+        }
+
+        @keyframes logoGlowPulse {
+            0%, 100% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.22); opacity: 1; }
+        }
+
+        /* NIGHT GLASS BUTTONS */
+        .night-btn-primary {
+            background: linear-gradient(135deg, #a855f7, #6366f1, #2563eb);
+            color: white;
+            box-shadow: 0 15px 35px rgba(99, 102, 241, 0.45);
+            transition: all 0.3s ease;
+        }
+        .night-btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 20px 45px rgba(99, 102, 241, 0.65);
+        }
+
+        .night-btn-link {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(167, 139, 250, 0.3);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .night-btn-link:hover {
+            background: rgba(30, 41, 59, 0.8);
+            border-color: rgba(168, 85, 247, 0.7);
+            transform: translateY(-3px);
+            box-shadow: 0 12px 30px rgba(124, 58, 237, 0.35);
+        }
+
+        /* INPUT STYLES */
+        .control-input {
+            width: 100%;
+            background: rgba(15, 23, 42, 0.65);
+            border: 1px solid rgba(167, 139, 250, 0.45);
+            color: #ffffff;
+            border-radius: 1rem;
+            padding: 0.75rem 1.1rem;
+            outline: none;
+            transition: all 0.3s ease;
+            font-size: 0.875rem;
+            height: 44px;
+        }
+        .control-input::placeholder { color: rgba(255, 255, 255, 0.5); }
+        .control-input:focus {
+            border-color: #60a5fa;
+            background: rgba(15, 23, 42, 0.85);
+            box-shadow: 0 0 25px rgba(96, 165, 250, 0.4);
+            transform: translateY(-1px);
+        }
+        
+        select.control-input {
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a78bfa' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 1rem center;
+            background-size: 1em;
+            padding-right: 2.5rem;
+        }
+        select.control-input option { background-color: #0f172a; color: #fff; }
+
+        /* SKELETON */
+        .skeleton {
+            border-radius: 1.5rem;
+            background: rgba(15, 23, 42, 0.5);
+            animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+            height: 400px;
+            border: 1px solid rgba(167, 139, 250, 0.15);
+        }
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: .5; }
+        }
+    </style>
+</head>
+<body class="text-white font-sans antialiased overflow-x-hidden relative selection:bg-purple-500/30">
+
+    <!-- Fullscreen Background Image -->
+    <div class="night-bg"></div>
+    <div class="night-overlay"></div>
+
+    <main class="relative z-10 max-w-[1440px] mx-auto px-4 sm:px-8 flex flex-col min-h-[100dvh] pb-10 pt-6">
+
+        <!-- Top Navigation (Night Glass Style) -->
+        <div class="night-glass-card rounded-[28px] py-4 px-6 sm:py-5 sm:px-8 mb-8 flex flex-col xl:flex-row justify-between items-start xl:items-center gap-5 sticky top-4 sm:top-6 z-40 border-purple-400/40 nav-header">
+            
+            <div class="flex items-center gap-4">
+                <div class="logo-box shrink-0">
+                    <img src="https://i.imgur.com/p2qZOL5.png" alt="Logo" class="card-logo h-10 w-auto sm:h-[48px] object-contain drop-shadow-md relative z-10">
+                </div>
+                <div class="flex flex-col">
+                    <h1 class="text-xl sm:text-[22px] font-extrabold tracking-tight text-white drop-shadow-md leading-none mb-1">Event Dashboard</h1>
+                    <div class="text-[11px] text-purple-200/80 font-bold uppercase tracking-widest">
+                        Events: <strong class="text-purple-300" id="totalEvents">...</strong> <span class="mx-1.5 text-purple-500/50">&bull;</span> 
+                        Attendance: <strong class="text-purple-300" id="globalAttendance">...</strong>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex flex-col sm:flex-row flex-wrap items-stretch xl:items-center gap-3 w-full xl:w-auto mt-2 xl:mt-0">
+                <button onclick="openTeamStats()" class="night-btn-link text-white flex items-center justify-center gap-2 font-bold transition-all w-full sm:w-auto px-5 !py-2.5 !h-auto rounded-xl text-sm shrink-0 shadow-md">
+                    <i data-lucide="bar-chart-2" class="w-4 h-4 text-purple-400"></i> Analytics
+                </button>
+                <select id="yearFilter" class="control-input w-full sm:w-auto flex-1 min-w-0 !mb-0 text-sm font-semibold !py-2.5 !h-auto shadow-sm"><option value="">All Academic Years</option></select>
+                <select id="teamFilter" class="control-input w-full sm:w-auto flex-1 min-w-0 !mb-0 text-sm font-semibold !py-2.5 !h-auto shadow-sm"><option value="">All Teams</option></select>
+                
+                <div class="relative w-full sm:w-auto flex-1 min-w-0">
+                    <i data-lucide="search" class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-purple-300/50"></i>
+                    <input id="search" class="control-input !pl-10 w-full !mb-0 text-sm font-semibold !py-2.5 !h-auto shadow-sm" type="text" placeholder="Search events..." autocomplete="off" />
+                </div>
+                
+                <select id="sortMode" class="control-input w-full sm:w-auto flex-1 min-w-0 !mb-0 text-sm font-semibold !py-2.5 !h-auto shadow-sm">
+                    <option value="rating">Top Rated</option>
+                    <option value="recent">Most Recent</option>
+                    <option value="attendance">Highest Attendance</option>
+                    <option value="az">Alphabetical (A–Z)</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Dashboard Grid -->
+        <div id="dashboard" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-auto">
+            <div class="skeleton"></div>
+            <div class="skeleton"></div>
+            <div class="skeleton"></div>
+            <div class="skeleton"></div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="mt-12 py-8 text-center text-purple-300/50 text-xs tracking-wider">
+            © <span id="year"></span> Canyon Activities Board
+        </footer>
+    </main>
+
+    <!-- Master Modal -->
+    <div id="masterModal" class="fixed inset-0 z-[1000] hidden items-center justify-center p-4 sm:p-6">
+        <div id="modalBackdrop" class="absolute inset-0 bg-black/80 backdrop-blur-md cursor-pointer" onclick="closeModal()"></div>
+        
+        <div id="modalCard" class="relative w-full max-w-5xl night-glass-card rounded-[36px] flex flex-col shadow-[0_0_80px_rgba(168,85,247,0.3)] border-purple-400/40 max-h-[90vh] overflow-hidden z-10">
+            
+            <!-- Header -->
+            <div class="flex justify-between items-center p-6 sm:p-8 border-b border-purple-500/20 bg-slate-900/30">
+                <div class="flex items-center gap-4 overflow-hidden">
+                    <div class="w-12 h-12 rounded-2xl bg-purple-500/20 flex items-center justify-center border border-purple-400/30 shrink-0 shadow-inner">
+                        <i data-lucide="activity" class="w-6 h-6 text-purple-300"></i>
+                    </div>
+                    <h3 id="modalTitle" class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight truncate drop-shadow-md">Event Insights</h3>
+                </div>
+                <button class="w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center rounded-2xl bg-slate-900/50 border border-purple-400/30 text-purple-200 hover:text-white hover:bg-slate-800 transition-all shrink-0 shadow-md hover:scale-105" onclick="closeModal()">
+                    <i data-lucide="x" class="w-5 h-5 sm:w-6 sm:h-6"></i>
+                </button>
+            </div>
+
+            <!-- Toolbar (Only for Event Insights) -->
+            <div id="modalToolbar" class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 px-6 sm:px-8 py-4 border-b border-purple-500/10 bg-slate-900/20">
+                <div class="flex gap-3 w-full sm:w-auto">
+                    <button id="btnPDF" class="flex-1 sm:flex-none night-btn-link text-white font-bold py-2.5 px-5 rounded-xl transition-all flex items-center justify-center gap-2 text-xs uppercase tracking-wide">
+                        <i data-lucide="file-text" class="w-4 h-4 text-rose-400"></i> Export PDF
+                    </button>
+                    <button id="btnCSV" class="flex-1 sm:flex-none night-btn-link text-white font-bold py-2.5 px-5 rounded-xl transition-all flex items-center justify-center gap-2 text-xs uppercase tracking-wide">
+                        <i data-lucide="file-spreadsheet" class="w-4 h-4 text-emerald-400"></i> Export CSV
+                    </button>
+                </div>
+                <select id="modalSort" class="control-input !h-auto !py-2.5 !w-full sm:!w-auto text-xs font-bold uppercase tracking-wide !mb-0 border-purple-400/30">
+                    <option value="worst">Sort: Critical First</option>
+                    <option value="best">Sort: Positive First</option>
+                    <option value="newest">Sort: Latest Feedback</option>
+                </select>
+            </div>
+
+            <!-- Scrollable Body -->
+            <div id="modalBody" class="p-6 sm:p-8 overflow-y-auto custom-scroll flex-1"></div>
+        </div>
+    </div>
 
 <script>
-const sheetID = "1ZUseZRskfgiYfaFKylCpjysVIB2PIA-xuKlA6kQy06E";
-const RAW_SHEET = "Survey Responses";
-const OVW_SHEET = "Response overview";
+    document.getElementById('year').textContent = new Date().getFullYear();
 
-let state = { 
-  briefMap: {}, 
-  imageMap: {}, 
-  attendanceMap: {}, 
-  surveysMap: {}, 
-  teamMap: {}, 
-  groups: {}, 
-  bgImages: [],
-  allTeams: new Set(),
-  academicYears: new Set(),
-  eventYearMap: {}
-};
+    const sheetID = "1ZUseZRskfgiYfaFKylCpjysVIB2PIA-xuKlA6kQy06E";
+    const RAW_SHEET = "Survey Responses";
+    const OVW_SHEET = "Response overview";
 
-let currentModal = { event: "", raw: [], mode: "worst" };
-
-const headerMap = {
-  eventName: ["CAB Event Name", "Market Event Name", "Which Event Would You Like To Survey?", "Which Student Market Would You Like To Survey?"],
-  rating: ["CAB Rating", "Market Rating", "How would you rate your overall experience at this event?", "How would you rate your overall experience at the Student Market?"]
-};
-
-// Full description mapping
-const labelMap = {
-  "Timestamp": "Timestamp",
-  "Student ID": "Student ID Number",
-  "CAB Event Name": "Which Event Would You Like To Survey?",
-  "CAB Rating": "How would you rate your overall experience at this event?",
-  "CAB First Time": "Was this your first time attending a CAB event?",
-  "CAB Hear About": "How did you hear about this event?",
-  "CAB Favorite Part": "What was your favorite part of the event?",
-  "CAB Improvements": "What would you change or improve for next time?",
-  "CAB Likely Return": "How likely are you to attend a CAB event again?",
-  "CAB Staff Connect": "Did any CAB Event Staff take the time to connect with you or talk to you during the event? (If so who?)",
-  "CAB Comments": "Any additional comments or suggestions for the CAB team?",
-  "Market Event Name": "Which Student Market Would You Like To Survey?",
-  "Market Rating": "How would you rate your overall experience at the Student Market?",
-  "MKT Favorite Part": "What did you enjoy most about this market?",
-  "MKT First Time": "Was this your first time attending a CAB Student Market?",
-  "MKT Variety Sat": "How satisfied were you with the variety of vendors?",
-  "MKT Purchase Made": "Did you make a purchase at the market?",
-  "MKT Comments": "Any additional comments or suggestions for the CAB team?"
-};
-
-const el = (tag, cls, html) => { const n = document.createElement(tag); if(cls) n.className = cls; if(html) n.innerHTML = html; return n; };
-
-function bleep(text) {
-  if (!text || typeof text !== "string") return text;
-  const badWords = /\b(fuck|shit|asshole|bitch|bastard|damn|crap|piss|dick|cunt|slut|whore)\b/gi;
-  return text.replace(badWords, "****");
-}
-
-function parseGvizDate(str) {
-  if (!str) return null;
-  if (str instanceof Date) return str;
-  if (typeof str === 'string' && str.startsWith('Date(')) {
-    const parts = str.match(/\d+/g);
-    if (parts) return new Date(parts[0], parts[1], parts[2] || 1, parts[3] || 0, parts[4] || 0, parts[5] || 0);
-  }
-  const d = new Date(str);
-  return isNaN(d.getTime()) ? null : d;
-}
-
-// Group dates into academic years (e.g. August 2026 to July 2027 becomes "2026-2027 Academic Year")
-function getAcademicYear(dateValue) {
-    const d = (dateValue instanceof Date) ? dateValue : parseGvizDate(dateValue);
-    if(!d) return "Unknown";
-    const year = d.getFullYear();
-    // Assuming Fall starts in August (Month index 7)
-    if (d.getMonth() >= 7) { 
-        return `${year}-${year + 1} Academic Year`;
-    } else {
-        return `${year - 1}-${year} Academic Year`;
-    }
-}
-
-async function init() {
-  try {
-    const fetchS = async (n) => {
-      const res = await fetch(`https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(n)}`);
-      const txt = await res.text();
-      const jsonText = txt.match(/\{.*\}/s)[0]; 
-      return JSON.parse(jsonText);
+    let state = { 
+        briefMap: {}, 
+        imageMap: {}, 
+        attendanceMap: {}, 
+        surveysMap: {}, 
+        teamMap: {}, 
+        groups: {}, 
+        allTeams: new Set(),
+        academicYears: new Set(),
+        eventYearMap: {}
     };
 
-    const [ovw, raw] = await Promise.all([fetchS(OVW_SHEET), fetchS(RAW_SHEET)]);
+    let currentModal = { event: "", raw: [], mode: "worst" };
 
-    ovw.table.rows.forEach(r => {
-      const n = r.c[0]?.v || "";
-      if (n) {
-        state.briefMap[n] = bleep(r.c[3]?.v || "");
-        state.imageMap[n] = r.c[4]?.v || "";
-        state.attendanceMap[n] = +r.c[5]?.v || 0;
-        state.surveysMap[n] = +r.c[2]?.v || 0;
-        const tRaw = r.c[6]?.v || "Unassigned";
-        const teams = tRaw.split(/[,&]/).map(t => t.trim()).filter(t => t.length > 0);
-        state.teamMap[n] = teams;
-        teams.forEach(t => state.allTeams.add(t));
-        if(r.c[4]?.v) state.bgImages.push(r.c[4].v);
-      }
-    });
+    const headerMap = {
+        eventName: ["CAB Event Name", "Market Event Name", "Which Event Would You Like To Survey?", "Which Student Market Would You Like To Survey?"],
+        rating: ["CAB Rating", "Market Rating", "How would you rate your overall experience at this event?", "How would you rate your overall experience at the Student Market?"]
+    };
 
-    const hdr = raw.table.cols.map(c => c.label);
-    raw.table.rows.forEach(r => {
-      const row = {};
-      hdr.forEach((h, i) => {
-        let val = r.c[i]?.v;
-        if (typeof val === 'string' && !val.startsWith('Date(')) val = bleep(val);
-        row[h] = val ?? "";
-      });
-      let ev = "Unknown";
-      for (const key of headerMap.eventName) { if (row[key]) { ev = row[key].toString().trim(); break; } }
-      if (!state.groups[ev]) state.groups[ev] = [];
-      state.groups[ev].push(row);
-    });
+    const labelMap = {
+        "Timestamp": "Timestamp",
+        "Student ID": "Student ID Number",
+        "CAB Event Name": "Which Event Would You Like To Survey?",
+        "CAB Rating": "How would you rate your overall experience at this event?",
+        "CAB First Time": "Was this your first time attending a CAB event?",
+        "CAB Hear About": "How did you hear about this event?",
+        "CAB Favorite Part": "What was your favorite part of the event?",
+        "CAB Improvements": "What would you change or improve for next time?",
+        "CAB Likely Return": "How likely are you to attend a CAB event again?",
+        "CAB Staff Connect": "Did any CAB Event Staff take the time to connect with you or talk to you during the event? (If so who?)",
+        "CAB Comments": "Any additional comments or suggestions for the CAB team?",
+        "Market Event Name": "Which Student Market Would You Like To Survey?",
+        "Market Rating": "How would you rate your overall experience at the Student Market?",
+        "MKT Favorite Part": "What did you enjoy most about this market?",
+        "MKT First Time": "Was this your first time attending a CAB Student Market?",
+        "MKT Variety Sat": "How satisfied were you with the variety of vendors?",
+        "MKT Purchase Made": "Did you make a purchase at the market?",
+        "MKT Comments": "Any additional comments or suggestions for the CAB team?"
+    };
 
-    // Populate Academic Years
-    Object.entries(state.groups).forEach(([evt, resps]) => {
-        if (evt === "Unknown") return;
-        const tsMs = resps.map(r => parseGvizDate(r.Timestamp)?.getTime()).filter(t => t);
-        if (tsMs.length > 0) {
-            const first = Math.min(...tsMs);
-            const ay = getAcademicYear(new Date(first));
-            state.eventYearMap[evt] = ay;
-            state.academicYears.add(ay);
-        } else {
-            state.eventYearMap[evt] = "Unknown";
-        }
-    });
-
-    document.getElementById("teamFilter").innerHTML += [...state.allTeams].sort().map(t => `<option value="${t}">${t}</option>`).join("");
-    
-    // Sort academic years descending (e.g. 2026-2027 before 2025-2026)
-    const yearSelect = document.getElementById("yearFilter");
-    const sortedYears = [...state.academicYears].sort((a,b) => b.localeCompare(a));
-    sortedYears.forEach(y => { yearSelect.innerHTML += `<option value="${y}">${y}</option>`; });
-    if (sortedYears.length > 0) yearSelect.value = sortedYears[0];
-
-    setBg();
-    render(); // Initial render will also calculate and set the dynamic top bar totals
-  } catch (e) { 
-    console.error(e);
-    document.getElementById("dashboard").innerHTML = `<div class="empty-state"><h3>Error Loading Data</h3></div>`;
-  }
-}
-
-function getScore(r) {
-  for (const key of headerMap.rating) {
-    const val = parseFloat(r[key]);
-    if (!isNaN(val) && val <= 5) return val;
-  }
-  return NaN;
-}
-
-function render(filter = "", sort = "rating") {
-  const dash = document.getElementById("dashboard"); dash.innerHTML = "";
-  const activeTeam = document.getElementById("teamFilter").value;
-  const activeYear = document.getElementById("yearFilter").value;
-  
-  let list = Object.entries(state.groups).filter(([k]) => k !== "Unknown");
-  
-  // Apply Filters
-  if(filter) list = list.filter(([k]) => k.toLowerCase().includes(filter.toLowerCase()));
-  if(activeTeam) list = list.filter(([k]) => (state.teamMap[k] || []).includes(activeTeam));
-  if(activeYear) list = list.filter(([k]) => state.eventYearMap[k] === activeYear);
-  
-  // Update Dynamic Statistics based on current filter view
-  let filteredEventsCount = list.length;
-  let filteredAttendance = list.reduce((sum, [evt]) => sum + (state.attendanceMap[evt] || 0), 0);
-  
-  document.getElementById("totalEvents").textContent = filteredEventsCount;
-  document.getElementById("globalAttendance").textContent = filteredAttendance.toLocaleString();
-  
-  const getRate = (r) => { const s = r.map(getScore).filter(x => !isNaN(x)); return s.length ? s.reduce((a,b)=>a+b,0)/s.length : 0; };
-  
-  // Sorting
-  if(sort === "rating") list.sort((a,b) => getRate(b[1]) - getRate(a[1]));
-  else if(sort === "recent") list.sort((a,b) => {
-    const f = (arr) => Math.min(...arr.map(r => parseGvizDate(r.Timestamp)?.getTime() || 0));
-    return f(b[1]) - f(a[1]);
-  });
-  else if(sort === "attendance") list.sort((a,b) => (state.attendanceMap[b[0]]||0) - (state.attendanceMap[a[0]]||0));
-  else if(sort === "az") list.sort((a,b) => a[0].localeCompare(b[0]));
-
-  if(list.length === 0) { dash.innerHTML = `<div class="empty-state"><h3>No events found.</h3></div>`; return; }
-
-  // Draw Cards
-  list.forEach(([evt, resps], idx) => {
-    const rate = getRate(resps);
-    const att = state.attendanceMap[evt];
-    const img = state.imageMap[evt];
-    const card = el("div", "frosted card");
-    card.style.animation = `fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards ${idx * 0.05}s`;
-    
-    let badges = "";
-    if(rate >= 4.5) badges += `<span class="badge badge-fire">🔥 Top Rated</span>`;
-    if(att > 300) badges += `<span class="badge badge-ok">👥 High Turnout</span>`;
-    
-    const head = el("div","card-header");
-    head.innerHTML = `<div class="badge-container">${badges}</div><img src="${img || 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=800'}" class="card-img"><div class="card-gradient-overlay"></div>`;
-    
-    const body = el("div", "card-body");
-    body.innerHTML = `
-      <div class="team-row">${(state.teamMap[evt] || []).map(t => `<span class="team-tag">${t}</span>`).join("")}</div>
-      <h2>${evt}</h2>
-      <div class="stats">
-        <span class="rating-text">${rate > 0 ? "★ "+rate.toFixed(1) : "No Rating"}</span>
-        <span class="stats-text">👥 ${att || "--"}</span>
-        <span class="stats-text">📝 ${state.surveysMap[evt] || resps.length} Surveys</span>
-      </div>
-      <div class="summary">${state.briefMap[evt] || "No overview summary provided for this event."}</div>
-      <div class="actions"><button class="btn btn-primary" onclick="openEventModal('${evt.replace(/'/g, "\\'")}')">View Details</button></div>
-    `;
-    card.append(head, body);
-    dash.appendChild(card);
-  });
-}
-
-function openTeamStats() {
-  const teams = {};
-  const activeYear = document.getElementById("yearFilter").value;
-  
-  const getRate = (r) => { const s = r.map(getScore).filter(x => !isNaN(x)); return s.length ? s.reduce((a,b)=>a+b,0)/s.length : 0; };
-  
-  Object.keys(state.groups).forEach(evt => {
-    // Only analyze teams for events currently in view based on year filter
-    if (activeYear && state.eventYearMap[evt] !== activeYear) return;
-
-    const eventTeams = state.teamMap[evt] || ["Unassigned"];
-    const att = state.attendanceMap[evt] || 0;
-    const rate = getRate(state.groups[evt]); 
-    eventTeams.forEach(t => {
-      if(!teams[t]) teams[t] = { name: t, events: 0, att: 0, rates: [] };
-      teams[t].events++;
-      teams[t].att += att;
-      if(rate > 0) teams[t].rates.push(rate);
-    });
-  });
-
-  const body = document.getElementById("modalBody");
-  body.innerHTML = `<h2 style="margin-bottom:28px; font-size:1.6rem; font-weight:800;">Hosting Team Performance ${activeYear ? '(' + activeYear + ')' : ''}</h2><div class="stats-grid" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:20px;"></div>`;
-  const grid = body.querySelector(".stats-grid");
-  
-  Object.values(teams).sort((a,b) => b.events - a.events).forEach(t => {
-    const avg = t.rates.length ? (t.rates.reduce((a,b)=>a+b,0)/t.rates.length).toFixed(2) : "N/A";
-    grid.innerHTML += `
-      <div class="response-row" style="display:flex; flex-direction:column; justify-content:space-between;">
-        <div>
-          <strong style="font-size:1.2rem; display:block; margin-bottom:8px;">${t.name}</strong>
-          <span style="color:var(--text-muted); font-size:0.9rem; font-weight:600;">${t.events} Projects | ${t.att.toLocaleString()} Attendees</span>
-        </div>
-        <div style="font-size:2rem; font-weight:900; color:#0A84FF; margin-top:16px;">★ ${avg}</div>
-      </div>`;
-  });
-  document.getElementById("modalToolbar").style.display = "none"; 
-  document.getElementById("modal").classList.add("show");
-}
-
-function openEventModal(evt) {
-  currentModal = { event: evt, raw: state.groups[evt], mode: "worst" };
-  document.getElementById("modalToolbar").style.display = "flex";
-  document.querySelector("#modal h3").textContent = evt;
-  document.getElementById("btnPDF").onclick = () => downloadPDF(evt, state.groups[evt]);
-  document.getElementById("btnCSV").onclick = () => downloadCSV(evt, state.groups[evt]);
-  renderModalBody();
-  document.getElementById("modal").classList.add("show");
-}
-
-function renderModalBody() {
-  const b = document.getElementById("modalBody"); b.innerHTML = "";
-  const s = currentModal.raw.map((r,i)=>({r, i, sc: getScore(r), ts: parseGvizDate(r.Timestamp)?.getTime() || 0}));
-  if(currentModal.mode==="worst") s.sort((a,b)=>(isNaN(a.sc)?9:a.sc)-(isNaN(b.sc)?9:b.sc));
-  if(currentModal.mode==="best") s.sort((a,b)=>(isNaN(b.sc)?-1:b.sc)-(isNaN(a.sc)?-1:a.sc));
-  if(currentModal.mode==="newest") s.sort((a,b)=>b.ts-a.ts);
-
-  s.forEach(({r, i, sc}) => {
-    const d = el("div", "response-row");
-    let h = `<div style="display:flex; justify-content:space-between; margin-bottom:16px; font-size:0.85rem; color:var(--text-muted); font-weight:700;"><span>SUBMISSION #${i+1}</span><strong>${isNaN(sc)?"":"SCORE: ★ "+sc}</strong></div>`;
-    for(let k in r) {
-      if(!r[k] || /Timestamp|Student ID/i.test(k)) continue;
-      h += `<div class="qa-pair"><span class="qa-label">${labelMap[k] || k}</span><div class="qa-val">${r[k]}</div></div>`;
+    function bleep(text) {
+        if (!text || typeof text !== "string") return text;
+        const badWords = /\b(fuck|shit|asshole|bitch|bastard|damn|crap|piss|dick|cunt|slut|whore)\b/gi;
+        return text.replace(badWords, "****");
     }
-    d.innerHTML = h; b.appendChild(d);
-  });
-}
 
-function downloadPDF(evt, resps) {
-  let h = `<html><head><title>${evt}</title><style>body{font-family:sans-serif;padding:30px; color:#000;} h2{color:#0A84FF; border-bottom:1px solid #ccc; padding-bottom:10px;}</style></head><body><h2>Event Insight Report: ${evt}</h2>`;
-  resps.forEach((r,i) => {
-    h+=`<div style="border:1px solid #ddd; padding:20px; border-radius:10px; margin-bottom:20px; page-break-inside:avoid;"><strong>Response Entry #${i+1}</strong><br><br>`;
-    for(let k in r) if(r[k] && !/Timestamp|Student ID/i.test(k)) h+=`<div style="margin-bottom:10px;"><small style="color:#666; text-transform:uppercase; font-size:10px;">${labelMap[k]||k}</small><div style="margin-top:2px;">${r[k]}</div></div>`;
-    h+=`</div>`;
-  });
-  const w = window.open(""); w.document.write(h); w.print();
-}
+    function parseGvizDate(str) {
+        if (!str) return null;
+        if (str instanceof Date) return str;
+        if (typeof str === 'string' && str.startsWith('Date(')) {
+            const parts = str.match(/\d+/g);
+            if (parts) return new Date(parts[0], parts[1], parts[2] || 1, parts[3] || 0, parts[4] || 0, parts[5] || 0);
+        }
+        const d = new Date(str);
+        return isNaN(d.getTime()) ? null : d;
+    }
 
-function downloadCSV(evt, resps) {
-  if(!resps.length) return;
-  const keys = Object.keys(resps[0]).filter(k => !/Timestamp|Student ID/i.test(k));
-  let csv = "Entry ID," + keys.map(k => `"${labelMap[k]||k}"`).join(",") + "\n";
-  resps.forEach((r, i) => csv += `${i+1},` + keys.map(k => `"${(r[k]||"").toString().replace(/"/g, '""')}"`).join(",") + "\n");
-  const blob = new Blob([csv], { type: 'text/csv' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement("a");
-  link.href = url; link.download = `GCU_${evt.replace(/\s+/g, '_')}_Report.csv`; link.click();
-}
+    function getAcademicYear(dateValue) {
+        const d = (dateValue instanceof Date) ? dateValue : parseGvizDate(dateValue);
+        if(!d) return "Unknown";
+        const year = d.getFullYear();
+        if (d.getMonth() >= 7) { 
+            return `${year}-${year + 1} Academic Year`;
+        } else {
+            return `${year - 1}-${year} Academic Year`;
+        }
+    }
 
-function setBg() {
-  if (state.bgImages.length) {
-    const img = state.bgImages[Math.floor(Math.random() * state.bgImages.length)];
-    document.body.style.backgroundImage = `linear-gradient(rgba(0,0,0,0.85), rgba(0,0,0,0.92)), url('${img}')`;
-    document.body.style.backgroundSize = "cover";
-    document.body.style.backgroundPosition = "center";
-  }
-}
+    function escapeHTML(str) {
+        if (!str) return '';
+        return str.toString().replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag));
+    }
 
-// Event Listeners for Filters
-document.getElementById("search").oninput = e => render(e.target.value, document.getElementById("sortMode").value);
-document.getElementById("sortMode").onchange = e => render(document.getElementById("search").value, e.target.value);
-document.getElementById("teamFilter").onchange = () => render(document.getElementById("search").value, document.getElementById("sortMode").value);
-document.getElementById("yearFilter").onchange = () => render(document.getElementById("search").value, document.getElementById("sortMode").value);
-document.getElementById("modalSort").onchange = e => { currentModal.mode = e.target.value; renderModalBody(); };
-document.body.onclick = e => { if(e.target.dataset.close) document.getElementById("modal").classList.remove("show"); };
+    async function init() {
+        lucide.createIcons();
+        
+        // GSAP Entrance Animations for Nav Header
+        const tl = gsap.timeline();
+        tl.fromTo(".nav-header", { opacity: 0, y: -20 }, { opacity: 1, y: 0, duration: 0.8, ease: "power3.out" })
+          .fromTo(".logo-box img", { scale: 0, rotation: 360 }, { scale: 1, rotation: 0, duration: 0.9, ease: "elastic.out(1, 0.5)" }, "-=0.4");
+        
+        gsap.to(".card-logo", { y: -4, duration: 2.2, repeat: -1, yoyo: true, ease: "sine.inOut" });
+        
+        try {
+            const fetchS = async (n) => {
+                const res = await fetch(`https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(n)}`);
+                const txt = await res.text();
+                const jsonText = txt.match(/\{.*\}/s)[0]; 
+                return JSON.parse(jsonText);
+            };
 
-init();
+            const [ovw, raw] = await Promise.all([fetchS(OVW_SHEET), fetchS(RAW_SHEET)]);
+
+            ovw.table.rows.forEach(r => {
+                const n = r.c[0]?.v || "";
+                if (n) {
+                    state.briefMap[n] = bleep(r.c[3]?.v || "");
+                    state.imageMap[n] = r.c[4]?.v || "";
+                    state.attendanceMap[n] = +r.c[5]?.v || 0;
+                    state.surveysMap[n] = +r.c[2]?.v || 0;
+                    const tRaw = r.c[6]?.v || "Unassigned";
+                    const teams = tRaw.split(/[,&]/).map(t => t.trim()).filter(t => t.length > 0);
+                    state.teamMap[n] = teams;
+                    teams.forEach(t => state.allTeams.add(t));
+                }
+            });
+
+            const hdr = raw.table.cols.map(c => c.label);
+            raw.table.rows.forEach(r => {
+                const row = {};
+                hdr.forEach((h, i) => {
+                    let val = r.c[i]?.v;
+                    if (typeof val === 'string' && !val.startsWith('Date(')) val = bleep(val);
+                    row[h] = val ?? "";
+                });
+                let ev = "Unknown";
+                for (const key of headerMap.eventName) { if (row[key]) { ev = row[key].toString().trim(); break; } }
+                if (!state.groups[ev]) state.groups[ev] = [];
+                state.groups[ev].push(row);
+            });
+
+            // Populate Academic Years
+            Object.entries(state.groups).forEach(([evt, resps]) => {
+                if (evt === "Unknown") return;
+                const tsMs = resps.map(r => parseGvizDate(r.Timestamp)?.getTime()).filter(t => t);
+                if (tsMs.length > 0) {
+                    const first = Math.min(...tsMs);
+                    const ay = getAcademicYear(new Date(first));
+                    state.eventYearMap[evt] = ay;
+                    state.academicYears.add(ay);
+                } else {
+                    state.eventYearMap[evt] = "Unknown";
+                }
+            });
+
+            document.getElementById("teamFilter").innerHTML += [...state.allTeams].sort().map(t => `<option value="${t}">${t}</option>`).join("");
+            
+            const yearSelect = document.getElementById("yearFilter");
+            const sortedYears = [...state.academicYears].sort((a,b) => b.localeCompare(a));
+            sortedYears.forEach(y => { yearSelect.innerHTML += `<option value="${y}">${y}</option>`; });
+            if (sortedYears.length > 0) yearSelect.value = sortedYears[0];
+
+            render(); 
+        } catch (e) { 
+            console.error(e);
+            document.getElementById("dashboard").innerHTML = `<div class="col-span-full flex flex-col items-center justify-center py-20 text-purple-300/50"><i data-lucide="alert-triangle" class="w-12 h-12 mb-4 text-rose-500/50"></i><h3 class="text-xl font-bold text-white mb-2">Error Loading Data</h3><p>Could not connect to Google Sheets.</p></div>`;
+            lucide.createIcons();
+        }
+    }
+
+    function getScore(r) {
+        for (const key of headerMap.rating) {
+            const val = parseFloat(r[key]);
+            if (!isNaN(val) && val <= 5) return val;
+        }
+        return NaN;
+    }
+
+    function render(filter = "", sort = "rating") {
+        const dash = document.getElementById("dashboard"); dash.innerHTML = "";
+        const activeTeam = document.getElementById("teamFilter").value;
+        const activeYear = document.getElementById("yearFilter").value;
+        
+        let list = Object.entries(state.groups).filter(([k]) => k !== "Unknown");
+        
+        // Apply Filters
+        if(filter) list = list.filter(([k]) => k.toLowerCase().includes(filter.toLowerCase()));
+        if(activeTeam) list = list.filter(([k]) => (state.teamMap[k] || []).includes(activeTeam));
+        if(activeYear) list = list.filter(([k]) => state.eventYearMap[k] === activeYear);
+        
+        // Update Dynamic Statistics
+        let filteredEventsCount = list.length;
+        let filteredAttendance = list.reduce((sum, [evt]) => sum + (state.attendanceMap[evt] || 0), 0);
+        
+        document.getElementById("totalEvents").textContent = filteredEventsCount;
+        document.getElementById("globalAttendance").textContent = filteredAttendance.toLocaleString();
+        
+        const getRate = (r) => { const s = r.map(getScore).filter(x => !isNaN(x)); return s.length ? s.reduce((a,b)=>a+b,0)/s.length : 0; };
+        
+        // Sorting
+        if(sort === "rating") list.sort((a,b) => getRate(b[1]) - getRate(a[1]));
+        else if(sort === "recent") list.sort((a,b) => {
+            const f = (arr) => Math.min(...arr.map(r => parseGvizDate(r.Timestamp)?.getTime() || 0));
+            return f(b[1]) - f(a[1]);
+        });
+        else if(sort === "attendance") list.sort((a,b) => (state.attendanceMap[b[0]]||0) - (state.attendanceMap[a[0]]||0));
+        else if(sort === "az") list.sort((a,b) => a[0].localeCompare(b[0]));
+
+        if(list.length === 0) { 
+            dash.innerHTML = `<div class="col-span-full flex flex-col items-center justify-center py-20 text-purple-300/50"><i data-lucide="search-x" class="w-12 h-12 mb-4 text-purple-400/30"></i><h3 class="text-xl font-bold text-white mb-2">No events found</h3><p>Try adjusting your filters.</p></div>`; 
+            lucide.createIcons();
+            return; 
+        }
+
+        // Draw Cards (Night Glass Style)
+        list.forEach(([evt, resps], idx) => {
+            const rate = getRate(resps);
+            const att = state.attendanceMap[evt];
+            const img = state.imageMap[evt] || 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=800';
+            const surveys = state.surveysMap[evt] || resps.length;
+            const summary = state.briefMap[evt] || "No overview summary provided for this event.";
+            
+            let badges = "";
+            if(rate >= 4.5) badges += `<span class="px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-gradient-to-r from-rose-500 to-orange-500 text-white shadow-lg border border-white/20 backdrop-blur-md flex items-center gap-1"><i data-lucide="flame" class="w-3 h-3"></i> Top Rated</span>`;
+            if(att > 300) badges += `<span class="px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg border border-white/20 backdrop-blur-md flex items-center gap-1"><i data-lucide="users" class="w-3 h-3"></i> High Turnout</span>`;
+            
+            const teamsHtml = (state.teamMap[evt] || []).map(t => `<span class="px-2 py-0.5 rounded border border-purple-500/20 bg-slate-900/60 text-purple-300 text-[9px] font-bold uppercase tracking-widest">${escapeHTML(t)}</span>`).join("");
+
+            const cardHtml = `
+                <div class="night-glass-card-subtle rounded-[28px] overflow-hidden flex flex-col transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_15px_40px_rgba(168,85,247,0.2)] hover:border-purple-400/50 cursor-pointer group dashboard-card opacity-0" onclick="openEventModal('${evt.replace(/'/g, "\\'")}')">
+                    <div class="relative h-48 border-b border-purple-500/20 overflow-hidden">
+                        <div class="absolute top-4 left-4 flex flex-wrap gap-2 z-10">${badges}</div>
+                        <img src="${img}" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110">
+                        <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent pointer-events-none"></div>
+                    </div>
+                    <div class="p-6 flex flex-col flex-1 bg-slate-900/30">
+                        <div class="flex flex-wrap gap-1.5 mb-3">${teamsHtml}</div>
+                        <h3 class="text-xl font-extrabold mb-4 text-white leading-tight tracking-tight">${escapeHTML(evt)}</h3>
+                        
+                        <div class="flex flex-wrap gap-2 mb-4">
+                            <span class="px-2.5 py-1 rounded-lg text-xs font-bold uppercase bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-md flex items-center gap-1 border border-purple-400/30">
+                                <i data-lucide="star" class="w-3 h-3"></i> ${rate > 0 ? rate.toFixed(1) : "N/A"}
+                            </span>
+                            <span class="px-2.5 py-1 rounded-lg text-xs font-bold uppercase bg-slate-900/80 text-purple-200 border border-purple-400/30 flex items-center gap-1 shadow-inner">
+                                <i data-lucide="users" class="w-3 h-3 text-purple-400"></i> ${att || "--"}
+                            </span>
+                            <span class="px-2.5 py-1 rounded-lg text-xs font-bold uppercase bg-slate-900/80 text-purple-200 border border-purple-400/30 flex items-center gap-1 shadow-inner">
+                                <i data-lucide="file-text" class="w-3 h-3 text-purple-400"></i> ${surveys}
+                            </span>
+                        </div>
+                        
+                        <div class="mb-6 cursor-pointer group/summary" onclick="event.stopPropagation(); const p = this.querySelector('p'); p.classList.toggle('line-clamp-3'); const s = this.querySelector('.read-more-text'); s.textContent = p.classList.contains('line-clamp-3') ? 'Read more' : 'Show less';">
+                            <p class="text-sm text-purple-200/70 leading-relaxed line-clamp-3 transition-all duration-300 font-medium">${escapeHTML(summary)}</p>
+                            <span class="read-more-text text-[10px] font-bold tracking-widest uppercase text-purple-400 mt-2 inline-block opacity-0 group-hover/summary:opacity-100 transition-opacity">Read more</span>
+                        </div>
+                        
+                        <div class="mt-auto">
+                            <button class="w-full night-btn-link text-white font-bold py-3.5 rounded-xl transition-all border-purple-400/40 flex justify-center items-center gap-2 text-xs uppercase tracking-wide group-hover:bg-slate-800">
+                                View Insights <i data-lucide="arrow-right" class="w-4 h-4 text-purple-400 group-hover:translate-x-1 transition-transform"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            dash.insertAdjacentHTML('beforeend', cardHtml);
+        });
+
+        lucide.createIcons();
+
+        // Animate cards in
+        gsap.to(".dashboard-card", {
+            opacity: 1,
+            y: 0,
+            duration: 0.8,
+            stagger: 0.1,
+            ease: "power3.out",
+            clearProps: "transform" // prevents conflicts with hover CSS
+        });
+    }
+
+    function openTeamStats() {
+        const teams = {};
+        const activeYear = document.getElementById("yearFilter").value;
+        
+        const getRate = (r) => { const s = r.map(getScore).filter(x => !isNaN(x)); return s.length ? s.reduce((a,b)=>a+b,0)/s.length : 0; };
+        
+        Object.keys(state.groups).forEach(evt => {
+            if (activeYear && state.eventYearMap[evt] !== activeYear) return;
+
+            const eventTeams = state.teamMap[evt] || ["Unassigned"];
+            const att = state.attendanceMap[evt] || 0;
+            const rate = getRate(state.groups[evt]); 
+            eventTeams.forEach(t => {
+                if(!teams[t]) teams[t] = { name: t, events: 0, att: 0, rates: [] };
+                teams[t].events++;
+                teams[t].att += att;
+                if(rate > 0) teams[t].rates.push(rate);
+            });
+        });
+
+        const body = document.getElementById("modalBody");
+        const titleSuffix = activeYear ? ` <span class="text-purple-400/60 text-lg">(${activeYear})</span>` : '';
+        
+        let contentHtml = `<h2 class="text-3xl font-extrabold text-white mb-8 tracking-tight">Team Performance${titleSuffix}</h2>`;
+        contentHtml += `<div class="grid grid-cols-1 md:grid-cols-2 gap-5">`;
+        
+        Object.values(teams).sort((a,b) => b.events - a.events).forEach(t => {
+            const avg = t.rates.length ? (t.rates.reduce((a,b)=>a+b,0)/t.rates.length).toFixed(2) : "N/A";
+            contentHtml += `
+                <div class="night-glass-card-subtle rounded-3xl p-6 border-purple-400/30 flex flex-col justify-between shadow-inner hover:border-purple-400/60 transition-colors">
+                    <div>
+                        <strong class="text-xl font-bold text-white block mb-3">${escapeHTML(t.name)}</strong>
+                        <div class="flex flex-wrap gap-2 text-[10px] font-bold uppercase tracking-widest text-purple-200">
+                            <span class="bg-slate-900/80 px-2.5 py-1 rounded-md border border-purple-500/20">${t.events} Projects</span>
+                            <span class="bg-slate-900/80 px-2.5 py-1 rounded-md border border-purple-500/20">${t.att.toLocaleString()} Attendees</span>
+                        </div>
+                    </div>
+                    <div class="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500 mt-6 flex items-center gap-2 drop-shadow-sm">
+                        <i data-lucide="star" class="w-8 h-8 text-purple-400"></i> ${avg}
+                    </div>
+                </div>`;
+        });
+        contentHtml += `</div>`;
+        
+        body.innerHTML = contentHtml;
+        document.getElementById("modalToolbar").style.display = "none"; 
+        
+        showModal("Team Analytics");
+        lucide.createIcons();
+    }
+
+    function openEventModal(evt) {
+        currentModal = { event: evt, raw: state.groups[evt], mode: "worst" };
+        document.getElementById("modalToolbar").style.display = "flex";
+        document.getElementById("btnPDF").onclick = () => downloadPDF(evt, state.groups[evt]);
+        document.getElementById("btnCSV").onclick = () => downloadCSV(evt, state.groups[evt]);
+        renderModalBody();
+        showModal(evt);
+    }
+
+    function renderModalBody() {
+        const b = document.getElementById("modalBody"); b.innerHTML = "";
+        const s = currentModal.raw.map((r,i)=>({r, i, sc: getScore(r), ts: parseGvizDate(r.Timestamp)?.getTime() || 0}));
+        if(currentModal.mode==="worst") s.sort((a,b)=>(isNaN(a.sc)?9:a.sc)-(isNaN(b.sc)?9:b.sc));
+        if(currentModal.mode==="best") s.sort((a,b)=>(isNaN(b.sc)?-1:b.sc)-(isNaN(a.sc)?-1:a.sc));
+        if(currentModal.mode==="newest") s.sort((a,b)=>b.ts-a.ts);
+
+        const summary = state.briefMap[currentModal.event] || "No overview summary provided for this event.";
+
+        let html = `
+            <div class="night-glass-card-subtle !bg-purple-900/20 rounded-[28px] p-6 sm:p-8 border-purple-400/40 mb-8 shadow-inner">
+                <h4 class="text-[11px] font-bold text-purple-300 uppercase tracking-widest mb-3 flex items-center gap-2"><i data-lucide="sparkles" class="w-4 h-4"></i> AI Overview Summary</h4>
+                <p class="text-white text-sm sm:text-base leading-relaxed font-medium">${escapeHTML(summary)}</p>
+            </div>
+            <div class="flex flex-col gap-5">
+        `;
+        
+        s.forEach(({r, i, sc}) => {
+            html += `<div class="night-glass-card-subtle rounded-3xl p-6 sm:p-8 border-purple-400/20 hover:border-purple-400/40 transition-colors">
+                        <div class="flex justify-between items-center mb-6 pb-5 border-b border-purple-500/20">
+                            <span class="text-[10px] font-bold text-purple-300 uppercase tracking-widest bg-slate-900/60 px-3 py-1.5 rounded-lg border border-purple-500/20">Submission #${i+1}</span>
+                            ${!isNaN(sc) ? `<span class="text-sm font-bold text-emerald-400 bg-emerald-900/20 border border-emerald-500/30 px-3.5 py-1.5 rounded-xl flex items-center gap-1.5 shadow-inner"><i data-lucide="star" class="w-4 h-4"></i> ${sc}</span>` : ''}
+                        </div>
+                        <div class="flex flex-col gap-6">`;
+            
+            for(let k in r) {
+                if(!r[k] || /Timestamp|Student ID/i.test(k)) continue;
+                html += `<div>
+                            <span class="block text-[10px] font-bold text-purple-400/70 uppercase tracking-widest mb-2">${escapeHTML(labelMap[k] || k)}</span>
+                            <div class="text-purple-100 text-sm leading-relaxed whitespace-pre-wrap font-medium">${escapeHTML(r[k])}</div>
+                         </div>`;
+            }
+            html += `</div></div>`;
+        });
+        html += '</div>';
+        
+        b.innerHTML = html;
+        lucide.createIcons();
+    }
+
+    function showModal(title) {
+        document.getElementById('modalTitle').textContent = title;
+        const modal = document.getElementById('masterModal');
+        modal.style.display = 'flex';
+        modal.classList.remove('hidden');
+        
+        gsap.fromTo("#modalBackdrop", { opacity: 0 }, { opacity: 1, duration: 0.4 });
+        gsap.fromTo("#modalCard", { scale: 0.9, opacity: 0, y: 30 }, { scale: 1, opacity: 1, y: 0, duration: 0.5, ease: "back.out(1.2)" });
+    }
+
+    function closeModal() {
+        gsap.to("#modalCard", { scale: 0.9, opacity: 0, y: 30, duration: 0.3, ease: "power2.in" });
+        gsap.to("#modalBackdrop", { opacity: 0, duration: 0.3, onComplete: () => {
+            const modal = document.getElementById('masterModal');
+            modal.style.display = 'none';
+            modal.classList.add('hidden');
+            document.getElementById("modalBody").innerHTML = ""; // Clear memory
+        }});
+    }
+
+    function downloadPDF(evt, resps) {
+        let h = `<html><head><title>${evt}</title><style>body{font-family:sans-serif;padding:30px; color:#000;} h2{color:#0A84FF; border-bottom:1px solid #ccc; padding-bottom:10px;}</style></head><body><h2>Event Insight Report: ${evt}</h2>`;
+        resps.forEach((r,i) => {
+            h+=`<div style="border:1px solid #ddd; padding:20px; border-radius:10px; margin-bottom:20px; page-break-inside:avoid;"><strong>Response Entry #${i+1}</strong><br><br>`;
+            for(let k in r) if(r[k] && !/Timestamp|Student ID/i.test(k)) h+=`<div style="margin-bottom:10px;"><small style="color:#666; text-transform:uppercase; font-size:10px;">${escapeHTML(labelMap[k]||k)}</small><div style="margin-top:2px;">${escapeHTML(r[k])}</div></div>`;
+            h+=`</div>`;
+        });
+        const w = window.open(""); w.document.write(h); w.print();
+    }
+
+    function downloadCSV(evt, resps) {
+        if(!resps.length) return;
+        const keys = Object.keys(resps[0]).filter(k => !/Timestamp|Student ID/i.test(k));
+        let csv = "Entry ID," + keys.map(k => `"${(labelMap[k]||k).replace(/"/g, '""')}"`).join(",") + "\n";
+        resps.forEach((r, i) => csv += `${i+1},` + keys.map(k => `"${(r[k]||"").toString().replace(/"/g, '""')}"`).join(",") + "\n");
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url; link.download = `GCU_${evt.replace(/\s+/g, '_')}_Report.csv`; link.click();
+    }
+
+    // Event Listeners for Filters
+    document.getElementById("search").oninput = e => render(e.target.value, document.getElementById("sortMode").value);
+    document.getElementById("sortMode").onchange = e => render(document.getElementById("search").value, e.target.value);
+    document.getElementById("teamFilter").onchange = () => render(document.getElementById("search").value, document.getElementById("sortMode").value);
+    document.getElementById("yearFilter").onchange = () => render(document.getElementById("search").value, document.getElementById("sortMode").value);
+    document.getElementById("modalSort").onchange = e => { currentModal.mode = e.target.value; renderModalBody(); };
+
+    window.onload = init;
 </script>
 </body>
 </html>
