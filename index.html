@@ -1,295 +1,467 @@
 <!DOCTYPE html>
-<html lang="en" class="dark">
+<html lang="en">
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    <title>GCU Event Dashboard — Pro Edition</title>
+    <meta name="theme-color" content="#131316" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <title>CAB Event Dashboard</title>
     <link rel="icon" type="image/png" href="https://i.imgur.com/wR5HGeC.png" />
     <link rel="apple-touch-icon" href="https://i.imgur.com/wR5HGeC.png" />
 
-    <!-- GSAP for Smooth Animations -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
-
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Google Fonts: Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    
-    <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@latest"></script>
-
-    <script>
-        tailwind.config = {
-            darkMode: 'class',
-            theme: {
-                extend: {
-                    fontFamily: { sans: ['Inter', 'sans-serif'] },
-                    colors: {
-                        night: {
-                            950: '#020617',
-                            900: '#0f172a',
-                            800: '#1e293b'
-                        }
-                    }
-                }
-            }
-        }
-    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
     <style>
+        /* Same palette and components as the VIP Check In app */
+        :root {
+            --app-bg: #131316;
+            --card-bg: rgba(28, 28, 34, 0.68);
+            --solid-bg: #1c1c22;
+            --modal-bg: rgba(28, 28, 34, 0.62);
+            --modal-backdrop: linear-gradient(rgba(9, 9, 11, 0.4), rgba(9, 9, 11, 0.4)), #131316 url('https://i.imgur.com/APGH0Wv.png') center / cover no-repeat;
+            --sidebar-bg: rgba(22, 22, 26, 0.6);
+            --highlight-bg: rgba(255, 255, 255, 0.1);
+            --inset-bg: rgba(12, 12, 16, 0.45);
+            --accent-blue: #2563eb;
+            --accent-blue-hover: #1d4ed8;
+            --accent-purple: #8b5cf6;
+            --text-main: #ffffff;
+            --text-muted: #9ca3af;
+            --text-dim: #71717a;
+            --line: rgba(39, 39, 42, 0.8);
+            --line-strong: #3f3f46;
+
+            --success-text: #4ade80;
+            --success-bg: rgba(74, 222, 128, 0.1);
+            --warning-text: #fbbf24;
+            --warning-bg: rgba(251, 191, 36, 0.1);
+            --danger-text: #f87171;
+            --danger-bg: rgba(248, 113, 113, 0.1);
+
+            --radius-lg: 14px;
+            --radius-xl: 24px;
+            --font-stack: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        html { background-color: var(--app-bg); color-scheme: dark; }
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        
         body {
-            font-family: "Inter", sans-serif;
-            background: #020617;
-            min-height: 100vh;
+            margin: 0;
+            font-family: var(--font-stack);
+            font-size: 14px;
+            color: var(--text-main);
+            background-color: transparent;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
+        #bg-container {
+            position: fixed; inset: 0; z-index: -1; pointer-events: none;
+            background: #131316 url('https://i.imgur.com/APGH0Wv.png') center / cover no-repeat;
+        }
+        #bg-container::after { content: ''; position: absolute; inset: 0; background: rgba(19, 19, 22, 0.25); }
 
-        /* Custom scrollbar */
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: rgba(15,23,42,0.5); }
-        ::-webkit-scrollbar-thumb { background: rgba(167,139,250,0.3); border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: rgba(167,139,250,0.6); }
-        
-        .custom-scroll::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #52525b; }
 
-        /* NIGHT GLASS IMAGE BACKGROUND */
-        .night-bg {
-            position: fixed;
-            inset: 0;
-            width: 100vw;
-            height: 100vh;
-            background-image: url('https://i.imgur.com/J3ZEdiB.png');
-            background-size: cover;
-            background-position: center;
-            z-index: -2;
-            background-color: #020617;
-        }
+        svg.i { width: 16px; height: 16px; flex-shrink: 0; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 
-        /* Vignette effect */
-        .night-overlay {
-            position: fixed;
-            inset: 0;
-            background: radial-gradient(circle at center, transparent 0%, #020617 150%);
-            opacity: 0.9;
-            z-index: -1;
-            pointer-events: none;
-        }
+        /* ── APP SHELL: sidebar + main ── */
+        .app-container { display: flex; height: 100vh; width: 100%; overflow: hidden; }
 
-        /* NIGHT GLASS CARDS */
-        .night-glass-card {
-            background: rgba(15, 23, 42, 0.45);
-            backdrop-filter: blur(30px);
-            -webkit-backdrop-filter: blur(30px);
-            border: 1px solid rgba(167, 139, 250, 0.3);
-            box-shadow: 0 50px 100px rgba(0, 0, 0, 0.65), 0 0 80px rgba(124, 58, 237, 0.25);
+        .sidebar {
+            width: 256px; flex-shrink: 0;
+            background: var(--sidebar-bg);
+            border-right: 1px solid var(--line);
+            display: flex; flex-direction: column;
+            padding: 28px 16px 16px;
+            overflow-y: auto;
         }
+        .side-brand { display: flex; align-items: center; gap: 12px; padding: 0 8px 22px; }
+        .side-brand img { height: 34px; width: auto; }
+        .side-brand .t { font-weight: 700; font-size: 15px; line-height: 1.2; }
+        .side-brand .s { color: var(--text-muted); font-size: 12px; }
 
-        .night-glass-card-subtle {
-            background: rgba(15, 23, 42, 0.6);
-            backdrop-filter: blur(15px);
-            -webkit-backdrop-filter: blur(15px);
-            border: 1px solid rgba(167, 139, 250, 0.25);
+        .side-event { padding: 0 8px 18px; }
+        .side-event label { display: block; color: var(--text-dim); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+        .side-event select {
+            width: 100%; background: var(--card-bg); color: var(--text-main);
+            border: 1px solid var(--line); border-radius: 12px;
+            padding: 10px 32px 10px 12px; font: 600 13px var(--font-stack); outline: none; cursor: pointer;
+            appearance: none; -webkit-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat; background-position: right 10px center; background-size: 14px;
         }
+        .side-event select option { background: var(--solid-bg); }
+        .mobile-event { display: none; }
 
-        /* LOGO RADIAL GLOW & FLOAT EFFECT */
-        .logo-box {
-            position: relative;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+        .side-nav { display: flex; flex-direction: column; gap: 4px; }
+        .nav-link {
+            display: flex; align-items: center; gap: 12px;
+            padding: 11px 16px; border-radius: 12px;
+            color: var(--text-muted); background: transparent; border: none;
+            font: 500 14px var(--font-stack); cursor: pointer; text-align: left;
+            transition: color 0.15s, background 0.15s;
         }
+        .nav-link svg { width: 18px; height: 18px; flex-shrink: 0; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+        .nav-link:hover { color: #fff; background: rgba(39, 39, 42, 0.5); }
+        .nav-link.active { color: #fff; background: var(--highlight-bg); }
+        .nav-link .count { margin-left: auto; font-size: 11px; font-weight: 600; color: var(--text-dim); }
 
-        .logo-box::before {
-            content: "";
-            position: absolute;
-            width: 80px; 
-            height: 80px;
-            border-radius: 50%;
-            background: radial-gradient(circle, rgba(168, 85, 247, 0.65), rgba(99, 102, 241, 0.45), rgba(37, 99, 235, 0.2), transparent 75%);
-            filter: blur(24px);
-            animation: logoGlowPulse 4s infinite ease-in-out;
-            pointer-events: none;
+        .side-bottom { margin-top: auto; padding-top: 16px; display: flex; flex-direction: column; gap: 10px; }
+        .side-card {
+            background: var(--card-bg); color: #fff; border: 1px solid var(--line);
+            border-radius: 24px; padding: 20px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.15);
         }
+        .side-card .tag { display: inline-block; background: var(--accent-purple); color: #fff; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 8px; margin-bottom: 8px; }
+        .side-card .big { font-size: 30px; font-weight: 700; letter-spacing: -0.02em; }
+        .side-card p { margin: 2px 0 14px; font-size: 12px; color: var(--text-muted); }
+        .side-card button { width: 100%; background: var(--accent-blue); color: #fff; border: none; border-radius: 9999px; padding: 10px; font: 500 13px var(--font-stack); cursor: pointer; transition: background 0.15s; }
+        .side-card button:hover { background: var(--accent-blue-hover); }
+        .side-foot { color: var(--text-dim); font-size: 11px; text-align: center; padding-top: 4px; }
 
-        @keyframes logoGlowPulse {
-            0%, 100% { transform: scale(1); opacity: 0.8; }
-            50% { transform: scale(1.22); opacity: 1; }
+        .main { flex: 1; display: flex; flex-direction: column; min-width: 0; height: 100%; overflow-y: auto; overscroll-behavior: contain; }
+        .app-header {
+            display: flex; align-items: center; justify-content: space-between; gap: 16px;
+            padding: 18px 32px; border-bottom: 1px solid var(--line);
         }
+        .header-search { position: relative; width: 320px; max-width: 100%; }
+        .header-search svg { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); width: 15px; height: 15px; fill: none; stroke: var(--text-dim); stroke-width: 2.2; stroke-linecap: round; pointer-events: none; }
+        .header-search input {
+            width: 100%; background: var(--card-bg); border: 1px solid var(--line);
+            border-radius: 9999px; padding: 10px 16px 10px 42px;
+            color: #fff; font: 14px var(--font-stack); outline: none; transition: border-color 0.15s;
+        }
+        .header-search input::placeholder { color: var(--text-dim); }
+        .header-search input:focus { border-color: #52525b; }
+        .header-actions { display: flex; align-items: center; gap: 12px; margin-left: auto; }
+        .header-avatar { width: 40px; height: 40px; border-radius: 50%; background: #fff; display: flex; align-items: center; justify-content: center; overflow: hidden; border: 1px solid var(--line-strong); flex-shrink: 0; }
+        .header-avatar img { width: 72%; height: auto; }
 
-        /* NIGHT GLASS BUTTONS */
-        .night-btn-primary {
-            background: linear-gradient(135deg, #a855f7, #6366f1, #2563eb);
-            color: white;
-            box-shadow: 0 15px 35px rgba(99, 102, 241, 0.45);
-            transition: all 0.3s ease;
-        }
-        .night-btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 20px 45px rgba(99, 102, 241, 0.65);
-        }
+        .content { flex: 1 0 auto; padding: 32px; }
+        .view { max-width: 1280px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px; }
 
-        .night-btn-link {
-            background: rgba(15, 23, 42, 0.6);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(167, 139, 250, 0.3);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        .night-btn-link:hover {
-            background: rgba(30, 41, 59, 0.8);
-            border-color: rgba(168, 85, 247, 0.7);
-            transform: translateY(-3px);
-            box-shadow: 0 12px 30px rgba(124, 58, 237, 0.35);
-        }
+        .greeting { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+        .greeting .hi { color: var(--text-muted); font-size: 14px; margin: 0 0 4px; }
+        .greeting h1 { margin: 0; font-size: 24px; font-weight: 700; }
 
-        /* INPUT STYLES */
-        .control-input {
-            width: 100%;
-            background: rgba(15, 23, 42, 0.65);
-            border: 1px solid rgba(167, 139, 250, 0.45);
-            color: #ffffff;
-            border-radius: 1rem;
-            padding: 0.75rem 1.1rem;
-            outline: none;
-            transition: all 0.3s ease;
-            font-size: 0.875rem;
-            height: 44px;
-        }
-        .control-input::placeholder { color: rgba(255, 255, 255, 0.5); }
-        .control-input:focus {
-            border-color: #60a5fa;
-            background: rgba(15, 23, 42, 0.85);
-            box-shadow: 0 0 25px rgba(96, 165, 250, 0.4);
-            transform: translateY(-1px);
-        }
-        
-        select.control-input {
-            appearance: none;
-            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23a78bfa' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
-            background-repeat: no-repeat;
-            background-position: right 1rem center;
-            background-size: 1em;
-            padding-right: 2.5rem;
-        }
-        select.control-input option { background-color: #0f172a; color: #fff; }
+        .seg { display: inline-flex; align-items: center; background: var(--card-bg); border: 1px solid var(--line); border-radius: 9999px; padding: 4px; gap: 2px; }
+        .seg button { background: transparent; border: none; color: var(--text-muted); padding: 7px 16px; border-radius: 9999px; font: 500 13px var(--font-stack); cursor: pointer; transition: 0.15s; white-space: nowrap; }
+        .seg button:hover { color: #fff; }
+        .seg button.on { background: #3f3f46; color: #fff; box-shadow: 0 1px 2px rgba(0,0,0,0.3); }
 
-        /* SKELETON */
-        .skeleton {
-            border-radius: 1.5rem;
-            background: rgba(15, 23, 42, 0.5);
-            animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-            height: 400px;
-            border: 1px solid rgba(167, 139, 250, 0.15);
+        .card { background: var(--card-bg); border: 1px solid var(--line); border-radius: var(--radius-xl); padding: 24px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); }
+
+        /* Overview */
+        .overview-top { display: flex; justify-content: space-between; align-items: center; gap: 24px; }
+        .big-number { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; }
+        .big-number .n { font-size: 48px; font-weight: 700; letter-spacing: -0.03em; line-height: 1; }
+        .big-number .of { font-size: 20px; font-weight: 500; color: var(--text-dim); }
+        .trend { display: inline-flex; align-items: center; gap: 4px; color: var(--success-text); background: var(--success-bg); padding: 4px 8px; border-radius: 6px; font-size: 12px; font-weight: 600; }
+        .progress-ring {
+            --p: 0; --ring: 18px;
+            width: 132px; height: 132px; border-radius: 50%; flex-shrink: 0; position: relative;
+            display: flex; align-items: center; justify-content: center;
         }
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: .5; }
+        .progress-ring::before {
+            content: ''; position: absolute; inset: 0; border-radius: 50%;
+            background: conic-gradient(var(--accent-purple) calc(var(--p) * 1%), rgba(255, 255, 255, 0.12) 0);
+            -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - var(--ring)), #000 calc(100% - var(--ring) + 1px));
+                    mask: radial-gradient(farthest-side, transparent calc(100% - var(--ring)), #000 calc(100% - var(--ring) + 1px));
+        }
+        .progress-ring .hole { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .progress-ring .hole b { font-size: 22px; font-weight: 700; }
+        .progress-ring .hole span { font-size: 11px; color: var(--text-muted); }
+
+        .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; padding-top: 22px; margin-top: 22px; border-top: 1px solid var(--line); }
+        .stat-grid .k { color: var(--text-muted); font-size: 12px; margin-bottom: 8px; }
+        .stat-grid .v { display: flex; align-items: center; gap: 8px; font-size: 20px; font-weight: 700; }
+        .dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+
+        /* Events section */
+        .table-container { background: var(--card-bg); border: 1px solid var(--line); border-radius: var(--radius-xl); overflow: hidden; }
+        .filter-row { display: flex; gap: 10px; align-items: center; padding: 20px 24px; flex-wrap: wrap; }
+        .filter-row h2 { margin: 0 auto 0 0; font-size: 17px; font-weight: 600; }
+        .filter-row select.modern-input { width: auto; min-width: 170px; border-radius: 9999px; }
+        .filter-row-2 { padding-top: 0; }
+        .table-search { flex: 1; width: auto; min-width: 220px; }
+
+        .event-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; padding: 0 24px 24px; }
+        .event-card {
+            background: var(--inset-bg); border: 1px solid var(--line); border-radius: 18px;
+            overflow: hidden; display: flex; flex-direction: column; cursor: pointer;
+            transition: border-color 0.15s, transform 0.15s;
+            animation: fadeIn 0.35s ease-out both;
+        }
+        .event-card:hover { border-color: var(--line-strong); transform: translateY(-2px); }
+        .event-card .img { position: relative; height: 150px; background: var(--solid-bg); }
+        .event-card .img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .event-card .badges { position: absolute; top: 12px; left: 12px; display: flex; gap: 6px; flex-wrap: wrap; }
+        .event-card .body { padding: 16px 18px 18px; display: flex; flex-direction: column; gap: 10px; flex: 1; }
+        .event-card h3 { margin: 0; font-size: 16px; font-weight: 600; line-height: 1.3; }
+        .event-card .summary { margin: 0; color: var(--text-muted); font-size: 13px; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+        .event-card .metrics { display: flex; gap: 6px; flex-wrap: wrap; margin-top: auto; padding-top: 4px; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+
+        .chip { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 500; padding: 3px 9px; border-radius: 6px; white-space: nowrap; color: var(--text-muted); background: rgba(255,255,255,0.06); }
+        .chip svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+        .chip.purple { color: #c4b5fd; background: rgba(139, 92, 246, 0.12); }
+        .chip.green { color: var(--success-text); background: var(--success-bg); }
+        .chip.amber { color: var(--warning-text); background: var(--warning-bg); }
+        .chip.red { color: var(--danger-text); background: var(--danger-bg); }
+        .chip.solid { color: #fff; background: rgba(19, 19, 22, 0.8); }
+
+        .empty { grid-column: 1 / -1; text-align: center; padding: 56px 16px; color: var(--text-muted); }
+        .empty h3 { margin: 0 0 6px; color: #fff; font-size: 17px; font-weight: 600; }
+        .empty p { margin: 0; }
+        .skeleton { height: 300px; border-radius: 18px; background: var(--inset-bg); border: 1px solid var(--line); animation: pulse 1.5s ease-in-out infinite; }
+        @keyframes pulse { 50% { opacity: 0.5; } }
+
+        /* Inputs & buttons */
+        .modern-input {
+            width: 100%; background: var(--inset-bg); border: 1px solid var(--line);
+            padding: 0 16px; height: 42px; border-radius: 12px;
+            color: var(--text-main); outline: none; font: 14px var(--font-stack);
+            transition: border-color 0.15s;
+        }
+        .modern-input::placeholder { color: var(--text-dim); }
+        select.modern-input {
+            appearance: none; -webkit-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat; background-position: right 12px center; background-size: 15px;
+            padding-right: 36px; cursor: pointer;
+        }
+        select.modern-input option { background-color: var(--solid-bg); color: var(--text-main); }
+        .modern-input:focus { border-color: #52525b; }
+
+        .btn-action {
+            background: var(--accent-blue); border: none; padding: 10px 20px;
+            border-radius: 9999px; color: #fff; font: 500 14px var(--font-stack);
+            cursor: pointer; transition: background 0.15s, transform 0.1s;
+            display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+        }
+        .btn-action:hover { background: var(--accent-blue-hover); }
+        .btn-action:active { transform: scale(0.97); }
+        .btn-action svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+        .btn-action.secondary { background: var(--card-bg); border: 1px solid var(--line-strong); color: #e4e4e7; }
+        .btn-action.secondary:hover { background: var(--highlight-bg); }
+
+        /* Modal */
+        .modal-overlay { position: fixed; inset: 0; background: var(--modal-backdrop); z-index: 10000; display: none; align-items: center; justify-content: center; padding: 20px; overflow: hidden; overscroll-behavior: contain; }
+        .modal-overlay.open { display: flex; animation: overlayIn 0.2s ease-out; }
+        @keyframes overlayIn { from { opacity: 0; } to { opacity: 1; } }
+        .modal-content { background: var(--modal-bg); border: 1px solid rgba(63,63,70,0.5); box-shadow: 0 25px 50px rgba(0,0,0,0.5); padding: 32px; border-radius: var(--radius-xl); width: 100%; max-width: 860px; position: relative; max-height: 90vh; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; transform: translateZ(0); animation: fadeIn 0.25s ease-out; }
+        body.modal-open, body.modal-open .main { overflow: hidden; }
+        .close-modal { position: absolute; top: 16px; right: 16px; width: 34px; height: 34px; border-radius: 50%; background: var(--card-bg); border: 1px solid var(--line-strong); color: var(--text-muted); font-size: 1.3rem; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 10; }
+        .close-modal:hover { color: #fff; }
+        .page-title { margin: 0 0 4px; font-size: 22px; font-weight: 700; padding-right: 44px; }
+        .page-sub { margin: 0 0 20px; color: var(--text-muted); font-size: 14px; line-height: 1.5; }
+        .modal-toolbar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 24px; }
+        .modal-toolbar select.modern-input { width: auto; min-width: 200px; border-radius: 9999px; margin-left: auto; }
+
+        .ai-summary { background: rgba(139, 92, 246, 0.08); border: 1px solid rgba(139, 92, 246, 0.25); border-radius: 18px; padding: 18px 20px; margin-bottom: 24px; }
+        .section-label { font-size: 12px; font-weight: 600; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.06em; margin: 0 0 10px; display: flex; align-items: center; gap: 6px; }
+        .ai-summary .section-label { color: #c4b5fd; }
+        .ai-summary p { margin: 0; line-height: 1.6; font-size: 14px; }
+
+        .resp-list { display: flex; flex-direction: column; gap: 12px; }
+        .resp { background: var(--inset-bg); border: 1px solid var(--line); border-radius: 18px; overflow: hidden; }
+        .resp-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 14px 20px; border-bottom: 1px solid var(--line); }
+        .resp-head .n { font-size: 13px; font-weight: 600; color: var(--text-muted); }
+        .resp-row { padding: 14px 20px; border-bottom: 1px solid var(--line); }
+        .resp-row:last-child { border-bottom: none; }
+        .resp-row .k { color: var(--text-muted); font-size: 12px; margin-bottom: 4px; }
+        .resp-row .v { font-size: 14px; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere; }
+
+        .team-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+        .team-card { background: var(--inset-bg); border: 1px solid var(--line); border-radius: 18px; padding: 18px 20px; display: flex; flex-direction: column; gap: 14px; }
+        .team-card .name { font-size: 15px; font-weight: 600; }
+        .team-card .chips { display: flex; gap: 6px; flex-wrap: wrap; }
+        .team-card .score { display: flex; align-items: baseline; gap: 6px; font-size: 30px; font-weight: 700; letter-spacing: -0.02em; }
+        .team-card .score small { font-size: 13px; font-weight: 500; color: var(--text-dim); }
+        .bar { height: 6px; border-radius: 9999px; background: rgba(255,255,255,0.08); overflow: hidden; }
+        .bar span { display: block; height: 100%; background: var(--accent-purple); border-radius: inherit; }
+
+        /* Mobile bottom nav */
+        .mobile-bottom-nav { display: none; position: fixed; bottom: 0; left: 0; right: 0; z-index: 9999; background: rgba(22, 22, 26, 0.94); border-top: 1px solid var(--line); padding: 4px 0 calc(4px + env(safe-area-inset-bottom)); justify-content: space-around; }
+        .mob-nav-btn { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; background: none; border: none; color: var(--text-dim); font: 500 10px var(--font-stack); cursor: pointer; padding: 8px 0 4px; flex: 1; min-width: 0; }
+        .mob-nav-btn.active { color: #fff; }
+        .mob-nav-btn svg { stroke: currentColor; stroke-width: 2; width: 22px; height: 22px; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+
+        /* ── RESPONSIVE ── */
+        @media (max-width: 1100px) {
+            .header-actions .btn-action span.lbl { display: none; }
+        }
+        @media (max-width: 768px) {
+            .app-container { height: auto; min-height: 100vh; overflow: visible; }
+            .sidebar { display: none; }
+            .main { height: auto; overflow: visible; }
+            .app-header { border-bottom: none; padding: 12px 16px; padding-top: calc(12px + env(safe-area-inset-top)); gap: 10px; flex-wrap: nowrap; }
+            .header-actions { margin-left: 0; }
+            .header-actions .btn-action { display: none; }
+            .mobile-event { display: block; flex: 1; min-width: 0; padding: 0; }
+            .mobile-event label { display: none; }
+            .mobile-event select { font-size: 16px; padding: 12px 36px 12px 14px; border-radius: 9999px; }
+            .content { padding: 16px 16px 96px; }
+            .mobile-bottom-nav { display: flex; }
+
+            .greeting h1 { font-size: 20px; }
+            .seg { width: 100%; overflow-x: auto; }
+            .seg button { flex: 1; padding: 7px 10px; }
+            .card { padding: 18px; }
+            .big-number .n { font-size: 38px; }
+            .big-number .of { font-size: 16px; }
+            .progress-ring { width: 96px; height: 96px; --ring: 13px; }
+            .progress-ring .hole b { font-size: 17px; }
+            .stat-grid { gap: 12px; }
+            .stat-grid .v { font-size: 18px; }
+
+            .filter-row { padding: 16px; }
+            .filter-row h2 { width: 100%; margin-bottom: 4px; }
+            .filter-row > select.modern-input { flex: 1 1 auto; }
+            .table-search { flex: 1 1 100%; min-width: 0; }
+            .table-search input { height: 46px; font-size: 16px; }
+            .modern-input { height: 46px; font-size: 16px; }
+            .event-grid { padding: 0 16px 16px; grid-template-columns: 1fr; }
+
+            .modal-overlay { padding: 0; align-items: flex-end; }
+            .modal-content { padding: 24px 18px calc(24px + env(safe-area-inset-bottom)); border-radius: 24px 24px 0 0; max-height: 92vh; }
+            .modal-toolbar .btn-action { flex: 1 1 auto; }
+            .modal-toolbar select.modern-input { width: 100%; margin-left: 0; }
+            .resp-head, .resp-row { padding-left: 16px; padding-right: 16px; }
         }
     </style>
 </head>
-<body class="text-white font-sans antialiased overflow-x-hidden relative selection:bg-purple-500/30">
+<body>
+<div id="bg-container"></div>
 
-    <!-- Fullscreen Background Image -->
-    <div class="night-bg"></div>
-    <div class="night-overlay"></div>
+<div class="app-container">
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+        <div class="side-brand">
+            <img src="https://i.imgur.com/p2qZOL5.png" alt="CAB">
+            <div><div class="t">Event Dashboard</div><div class="s">Canyon Activities Board</div></div>
+        </div>
+        <div class="side-event">
+            <label for="yearFilter">Academic year</label>
+            <select id="yearFilter"><option value="">All academic years</option></select>
+        </div>
+        <nav class="side-nav">
+            <button class="nav-link active" id="nav-events" onclick="showEvents()"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Events<span class="count" id="navCountEvents"></span></button>
+            <button class="nav-link" id="nav-teams" onclick="openTeamStats()"><svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Team Analytics</button>
+        </nav>
+        <div class="side-bottom">
+            <div class="side-card">
+                <span class="tag">Attendance</span>
+                <div class="big" id="sideAttendance">0</div>
+                <p>attendees across <span id="sideEvents">0</span> events</p>
+                <button onclick="openTeamStats()">View team analytics</button>
+            </div>
+            <div class="side-foot">© <span id="year"></span> Canyon Activities Board</div>
+        </div>
+    </aside>
 
-    <main class="relative z-10 max-w-[1440px] mx-auto px-4 sm:px-8 flex flex-col min-h-[100dvh] pb-10 pt-6">
+    <main class="main">
+        <!-- HEADER -->
+        <header class="app-header">
+            <!-- Phones: the sidebar is hidden, so the year picker lives here -->
+            <div class="mobile-event side-event">
+                <label for="yearFilterMobile">Academic year</label>
+                <select id="yearFilterMobile"><option value="">All academic years</option></select>
+            </div>
+            <div class="header-actions">
+                <button class="btn-action" onclick="openTeamStats()"><svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg><span class="lbl">Team analytics</span></button>
+                <div class="header-avatar" title="CAB"><img src="https://i.imgur.com/p2qZOL5.png" alt="CAB"></div>
+            </div>
+        </header>
 
-        <!-- Top Navigation (Night Glass Style) -->
-        <div class="night-glass-card rounded-[28px] py-4 px-6 sm:py-5 sm:px-8 mb-8 flex flex-col xl:flex-row justify-between items-start xl:items-center gap-5 sticky top-4 sm:top-6 z-40 border-purple-400/40 nav-header">
-            
-            <div class="flex items-center gap-4">
-                <div class="logo-box shrink-0">
-                    <img src="https://i.imgur.com/p2qZOL5.png" alt="Logo" class="card-logo h-10 w-auto sm:h-[48px] object-contain drop-shadow-md relative z-10">
+        <div class="content">
+            <div class="view">
+                <div class="greeting">
+                    <div>
+                        <p class="hi">Hi CAB team,</p>
+                        <h1>📊 <span id="greetYear">Event insights</span></h1>
+                    </div>
+                    <div class="seg" id="sortSeg">
+                        <button class="on" data-sort="rating">Top rated</button>
+                        <button data-sort="recent">Recent</button>
+                        <button data-sort="attendance">Attendance</button>
+                        <button data-sort="az">A–Z</button>
+                    </div>
                 </div>
-                <div class="flex flex-col">
-                    <h1 class="text-xl sm:text-[22px] font-extrabold tracking-tight text-white drop-shadow-md leading-none mb-1">Event Dashboard</h1>
-                    <div class="text-[11px] text-purple-200/80 font-bold uppercase tracking-widest">
-                        Events: <strong class="text-purple-300" id="totalEvents">...</strong> <span class="mx-1.5 text-purple-500/50">&bull;</span> 
-                        Attendance: <strong class="text-purple-300" id="globalAttendance">...</strong>
+
+                <!-- Overview -->
+                <div class="card">
+                    <div class="overview-top">
+                        <div>
+                            <h2 style="margin:0 0 18px; font-size:17px; font-weight:600;">Overview</h2>
+                            <div class="big-number">
+                                <span class="n" id="totalAttendance">0</span>
+                                <span class="of">attendees</span>
+                                <span class="trend"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg><span id="topRatedCount">0</span> top rated</span>
+                            </div>
+                        </div>
+                        <div class="progress-ring" id="ratingRing"><div class="hole"><b id="ringRating">–</b><span>avg rating</span></div></div>
+                    </div>
+                    <div class="stat-grid">
+                        <div><div class="k">Events</div><div class="v"><span class="dot" style="background:#60a5fa"></span><span id="totalEvents">0</span></div></div>
+                        <div><div class="k">Surveys</div><div class="v"><span class="dot" style="background:var(--success-text)"></span><span id="totalSurveys">0</span></div></div>
+                        <div><div class="k">Teams</div><div class="v"><span class="dot" style="background:var(--warning-text)"></span><span id="totalTeams">0</span></div></div>
+                    </div>
+                </div>
+
+                <!-- Events -->
+                <div class="table-container">
+                    <div class="filter-row">
+                        <h2>Events</h2>
+                        <select id="teamFilter" class="modern-input"><option value="">All teams</option></select>
+                    </div>
+                    <div class="filter-row filter-row-2">
+                        <div class="header-search table-search">
+                            <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                            <input type="text" id="search" placeholder="Search events" autocomplete="off">
+                        </div>
+                    </div>
+                    <div class="event-grid" id="dashboard">
+                        <div class="skeleton"></div>
+                        <div class="skeleton"></div>
+                        <div class="skeleton"></div>
+                        <div class="skeleton"></div>
                     </div>
                 </div>
             </div>
-
-            <div class="flex flex-col sm:flex-row flex-wrap items-stretch xl:items-center gap-3 w-full xl:w-auto mt-2 xl:mt-0">
-                <button onclick="openTeamStats()" class="night-btn-link text-white flex items-center justify-center gap-2 font-bold transition-all w-full sm:w-auto px-5 !py-2.5 !h-auto rounded-xl text-sm shrink-0 shadow-md">
-                    <i data-lucide="bar-chart-2" class="w-4 h-4 text-purple-400"></i> Analytics
-                </button>
-                <select id="yearFilter" class="control-input w-full sm:w-auto flex-1 min-w-0 !mb-0 text-sm font-semibold !py-2.5 !h-auto shadow-sm"><option value="">All Academic Years</option></select>
-                <select id="teamFilter" class="control-input w-full sm:w-auto flex-1 min-w-0 !mb-0 text-sm font-semibold !py-2.5 !h-auto shadow-sm"><option value="">All Teams</option></select>
-                
-                <div class="relative w-full sm:w-auto flex-1 min-w-0">
-                    <i data-lucide="search" class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-purple-300/50"></i>
-                    <input id="search" class="control-input !pl-10 w-full !mb-0 text-sm font-semibold !py-2.5 !h-auto shadow-sm" type="text" placeholder="Search events..." autocomplete="off" />
-                </div>
-                
-                <select id="sortMode" class="control-input w-full sm:w-auto flex-1 min-w-0 !mb-0 text-sm font-semibold !py-2.5 !h-auto shadow-sm">
-                    <option value="rating">Top Rated</option>
-                    <option value="recent">Most Recent</option>
-                    <option value="attendance">Highest Attendance</option>
-                    <option value="az">Alphabetical (A–Z)</option>
-                </select>
-            </div>
         </div>
-
-        <!-- Dashboard Grid -->
-        <div id="dashboard" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-auto">
-            <div class="skeleton"></div>
-            <div class="skeleton"></div>
-            <div class="skeleton"></div>
-            <div class="skeleton"></div>
-        </div>
-
-        <!-- Footer -->
-        <footer class="mt-12 py-8 text-center text-purple-300/50 text-xs tracking-wider">
-            © <span id="year"></span> Canyon Activities Board
-        </footer>
     </main>
+</div>
 
-    <!-- Master Modal -->
-    <div id="masterModal" class="fixed inset-0 z-[1000] hidden items-center justify-center p-4 sm:p-6">
-        <div id="modalBackdrop" class="absolute inset-0 bg-black/80 backdrop-blur-md cursor-pointer" onclick="closeModal()"></div>
-        
-        <div id="modalCard" class="relative w-full max-w-5xl night-glass-card rounded-[36px] flex flex-col shadow-[0_0_80px_rgba(168,85,247,0.3)] border-purple-400/40 max-h-[90vh] overflow-hidden z-10">
-            
-            <!-- Header -->
-            <div class="flex justify-between items-center p-6 sm:p-8 border-b border-purple-500/20 bg-slate-900/30">
-                <div class="flex items-center gap-4 overflow-hidden">
-                    <div class="w-12 h-12 rounded-2xl bg-purple-500/20 flex items-center justify-center border border-purple-400/30 shrink-0 shadow-inner">
-                        <i data-lucide="activity" class="w-6 h-6 text-purple-300"></i>
-                    </div>
-                    <h3 id="modalTitle" class="text-2xl sm:text-3xl font-extrabold text-white tracking-tight truncate drop-shadow-md">Event Insights</h3>
-                </div>
-                <button class="w-10 h-10 sm:w-12 sm:h-12 flex items-center justify-center rounded-2xl bg-slate-900/50 border border-purple-400/30 text-purple-200 hover:text-white hover:bg-slate-800 transition-all shrink-0 shadow-md hover:scale-105" onclick="closeModal()">
-                    <i data-lucide="x" class="w-5 h-5 sm:w-6 sm:h-6"></i>
-                </button>
-            </div>
+<!-- Mobile bottom nav -->
+<nav class="mobile-bottom-nav">
+    <button class="mob-nav-btn active" id="mob-events" onclick="showEvents()"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Events</button>
+    <button class="mob-nav-btn" id="mob-teams" onclick="openTeamStats()"><svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Analytics</button>
+</nav>
 
-            <!-- Toolbar (Only for Event Insights) -->
-            <div id="modalToolbar" class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 px-6 sm:px-8 py-4 border-b border-purple-500/10 bg-slate-900/20">
-                <div class="flex gap-3 w-full sm:w-auto">
-                    <button id="btnPDF" class="flex-1 sm:flex-none night-btn-link text-white font-bold py-2.5 px-5 rounded-xl transition-all flex items-center justify-center gap-2 text-xs uppercase tracking-wide">
-                        <i data-lucide="file-text" class="w-4 h-4 text-rose-400"></i> Export PDF
-                    </button>
-                    <button id="btnCSV" class="flex-1 sm:flex-none night-btn-link text-white font-bold py-2.5 px-5 rounded-xl transition-all flex items-center justify-center gap-2 text-xs uppercase tracking-wide">
-                        <i data-lucide="file-spreadsheet" class="w-4 h-4 text-emerald-400"></i> Export CSV
-                    </button>
-                </div>
-                <select id="modalSort" class="control-input !h-auto !py-2.5 !w-full sm:!w-auto text-xs font-bold uppercase tracking-wide !mb-0 border-purple-400/30">
-                    <option value="worst">Sort: Critical First</option>
-                    <option value="best">Sort: Positive First</option>
-                    <option value="newest">Sort: Latest Feedback</option>
-                </select>
-            </div>
-
-            <!-- Scrollable Body -->
-            <div id="modalBody" class="p-6 sm:p-8 overflow-y-auto custom-scroll flex-1"></div>
+<!-- Modal -->
+<div id="masterModal" class="modal-overlay" onclick="if (event.target === this) closeModal()">
+    <div class="modal-content" id="modalCard">
+        <button class="close-modal" onclick="closeModal()" aria-label="Close">&times;</button>
+        <h2 class="page-title" id="modalTitle">Event insights</h2>
+        <p class="page-sub" id="modalSub"></p>
+        <div class="modal-toolbar" id="modalToolbar">
+            <button id="btnPDF" class="btn-action secondary"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Export PDF</button>
+            <button id="btnCSV" class="btn-action secondary"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Download CSV</button>
+            <select id="modalSort" class="modern-input">
+                <option value="worst">Lowest rated first</option>
+                <option value="best">Highest rated first</option>
+                <option value="newest">Latest feedback</option>
+            </select>
         </div>
+        <div id="modalBody"></div>
     </div>
+</div>
 
 <script>
     document.getElementById('year').textContent = new Date().getFullYear();
@@ -298,19 +470,29 @@
     const RAW_SHEET = "Survey Responses";
     const OVW_SHEET = "Response overview";
 
-    let state = { 
-        briefMap: {}, 
-        imageMap: {}, 
-        attendanceMap: {}, 
-        surveysMap: {}, 
-        teamMap: {}, 
-        groups: {}, 
+    let state = {
+        briefMap: {},
+        imageMap: {},
+        attendanceMap: {},
+        surveysMap: {},
+        teamMap: {},
+        groups: {},
         allTeams: new Set(),
         academicYears: new Set(),
         eventYearMap: {}
     };
 
     let currentModal = { event: "", raw: [], mode: "worst" };
+    let currentSort = "rating";
+    let visibleEvents = [];
+
+    const ICON = {
+        star: '<svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>',
+        users: '<svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
+        file: '<svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>',
+        flame: '<svg viewBox="0 0 24 24"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.07-2.14-.22-4.05 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.15.43-2.29 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>',
+        sparkles: '<svg class="i" viewBox="0 0 24 24"><path d="M12 3l1.9 5.8L20 11l-6.1 2.2L12 19l-1.9-5.8L4 11l6.1-2.2z"/></svg>'
+    };
 
     const headerMap = {
         eventName: ["CAB Event Name", "Market Event Name", "Which Event Would You Like To Survey?", "Which Student Market Would You Like To Survey?"],
@@ -359,7 +541,7 @@
         const d = (dateValue instanceof Date) ? dateValue : parseGvizDate(dateValue);
         if(!d) return "Unknown";
         const year = d.getFullYear();
-        if (d.getMonth() >= 7) { 
+        if (d.getMonth() >= 7) {
             return `${year}-${year + 1} Academic Year`;
         } else {
             return `${year - 1}-${year} Academic Year`;
@@ -371,21 +553,40 @@
         return str.toString().replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag));
     }
 
+    function getScore(r) {
+        for (const key of headerMap.rating) {
+            const val = parseFloat(r[key]);
+            if (!isNaN(val) && val <= 5) return val;
+        }
+        return NaN;
+    }
+
+    function getRate(resps) {
+        const s = resps.map(getScore).filter(x => !isNaN(x));
+        return s.length ? s.reduce((a,b)=>a+b,0)/s.length : 0;
+    }
+
+    function ratingChipClass(rate) {
+        if (!rate) return "";
+        if (rate >= 4) return "green";
+        if (rate >= 3) return "amber";
+        return "red";
+    }
+
+    function activeYear() { return document.getElementById("yearFilter").value; }
+
+    function setYear(value) {
+        document.getElementById("yearFilter").value = value;
+        document.getElementById("yearFilterMobile").value = value;
+        render();
+    }
+
     async function init() {
-        lucide.createIcons();
-        
-        // GSAP Entrance Animations for Nav Header
-        const tl = gsap.timeline();
-        tl.fromTo(".nav-header", { opacity: 0, y: -20 }, { opacity: 1, y: 0, duration: 0.8, ease: "power3.out" })
-          .fromTo(".logo-box img", { scale: 0, rotation: 360 }, { scale: 1, rotation: 0, duration: 0.9, ease: "elastic.out(1, 0.5)" }, "-=0.4");
-        
-        gsap.to(".card-logo", { y: -4, duration: 2.2, repeat: -1, yoyo: true, ease: "sine.inOut" });
-        
         try {
             const fetchS = async (n) => {
                 const res = await fetch(`https://docs.google.com/spreadsheets/d/${sheetID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(n)}`);
                 const txt = await res.text();
-                const jsonText = txt.match(/\{.*\}/s)[0]; 
+                const jsonText = txt.match(/\{.*\}/s)[0];
                 return JSON.parse(jsonText);
             };
 
@@ -419,13 +620,12 @@
                 state.groups[ev].push(row);
             });
 
-            // Populate Academic Years
+            // Academic year of each event = year of its first survey response
             Object.entries(state.groups).forEach(([evt, resps]) => {
                 if (evt === "Unknown") return;
                 const tsMs = resps.map(r => parseGvizDate(r.Timestamp)?.getTime()).filter(t => t);
                 if (tsMs.length > 0) {
-                    const first = Math.min(...tsMs);
-                    const ay = getAcademicYear(new Date(first));
+                    const ay = getAcademicYear(new Date(Math.min(...tsMs)));
                     state.eventYearMap[evt] = ay;
                     state.academicYears.add(ay);
                 } else {
@@ -433,144 +633,126 @@
                 }
             });
 
-            document.getElementById("teamFilter").innerHTML += [...state.allTeams].sort().map(t => `<option value="${t}">${t}</option>`).join("");
-            
-            const yearSelect = document.getElementById("yearFilter");
+            document.getElementById("teamFilter").innerHTML += [...state.allTeams].sort().map(t => `<option value="${escapeHTML(t)}">${escapeHTML(t)}</option>`).join("");
+
             const sortedYears = [...state.academicYears].sort((a,b) => b.localeCompare(a));
-            sortedYears.forEach(y => { yearSelect.innerHTML += `<option value="${y}">${y}</option>`; });
-            if (sortedYears.length > 0) yearSelect.value = sortedYears[0];
-
-            render(); 
-        } catch (e) { 
+            const yearOptions = sortedYears.map(y => `<option value="${escapeHTML(y)}">${escapeHTML(y)}</option>`).join("");
+            document.getElementById("yearFilter").innerHTML += yearOptions;
+            document.getElementById("yearFilterMobile").innerHTML += yearOptions;
+            if (sortedYears.length > 0) setYear(sortedYears[0]);
+            else render();
+        } catch (e) {
             console.error(e);
-            document.getElementById("dashboard").innerHTML = `<div class="col-span-full flex flex-col items-center justify-center py-20 text-purple-300/50"><i data-lucide="alert-triangle" class="w-12 h-12 mb-4 text-rose-500/50"></i><h3 class="text-xl font-bold text-white mb-2">Error Loading Data</h3><p>Could not connect to Google Sheets.</p></div>`;
-            lucide.createIcons();
+            document.getElementById("dashboard").innerHTML = `<div class="empty"><h3>Error loading data</h3><p>Could not connect to Google Sheets.</p></div>`;
         }
     }
 
-    function getScore(r) {
-        for (const key of headerMap.rating) {
-            const val = parseFloat(r[key]);
-            if (!isNaN(val) && val <= 5) return val;
-        }
-        return NaN;
-    }
-
-    function render(filter = "", sort = "rating") {
-        const dash = document.getElementById("dashboard"); dash.innerHTML = "";
+    function render() {
+        const dash = document.getElementById("dashboard");
+        const filter = document.getElementById("search").value.trim().toLowerCase();
         const activeTeam = document.getElementById("teamFilter").value;
-        const activeYear = document.getElementById("yearFilter").value;
-        
-        let list = Object.entries(state.groups).filter(([k]) => k !== "Unknown");
-        
-        // Apply Filters
-        if(filter) list = list.filter(([k]) => k.toLowerCase().includes(filter.toLowerCase()));
-        if(activeTeam) list = list.filter(([k]) => (state.teamMap[k] || []).includes(activeTeam));
-        if(activeYear) list = list.filter(([k]) => state.eventYearMap[k] === activeYear);
-        
-        // Update Dynamic Statistics
-        let filteredEventsCount = list.length;
-        let filteredAttendance = list.reduce((sum, [evt]) => sum + (state.attendanceMap[evt] || 0), 0);
-        
-        document.getElementById("totalEvents").textContent = filteredEventsCount;
-        document.getElementById("globalAttendance").textContent = filteredAttendance.toLocaleString();
-        
-        const getRate = (r) => { const s = r.map(getScore).filter(x => !isNaN(x)); return s.length ? s.reduce((a,b)=>a+b,0)/s.length : 0; };
-        
+        const year = activeYear();
+
+        // Year applies to the overview; team and search only narrow the event list
+        const yearList = Object.entries(state.groups).filter(([k]) => k !== "Unknown" && (!year || state.eventYearMap[k] === year));
+
+        let list = yearList;
+        if (filter) list = list.filter(([k]) => k.toLowerCase().includes(filter));
+        if (activeTeam) list = list.filter(([k]) => (state.teamMap[k] || []).includes(activeTeam));
+
+        // Overview
+        const attendance = yearList.reduce((sum, [evt]) => sum + (state.attendanceMap[evt] || 0), 0);
+        const surveys = yearList.reduce((sum, [evt, r]) => sum + (state.surveysMap[evt] || r.length), 0);
+        const allScores = yearList.flatMap(([, r]) => r.map(getScore)).filter(x => !isNaN(x));
+        const avg = allScores.length ? allScores.reduce((a,b)=>a+b,0) / allScores.length : 0;
+        const teams = new Set(yearList.flatMap(([evt]) => state.teamMap[evt] || []));
+
+        document.getElementById("greetYear").textContent = year ? year.replace(" Academic Year", " events") : "All events";
+        document.getElementById("totalAttendance").textContent = attendance.toLocaleString();
+        document.getElementById("totalEvents").textContent = yearList.length;
+        document.getElementById("totalSurveys").textContent = surveys.toLocaleString();
+        document.getElementById("totalTeams").textContent = teams.size;
+        document.getElementById("topRatedCount").textContent = yearList.filter(([, r]) => getRate(r) >= 4.5).length;
+        document.getElementById("ringRating").textContent = avg ? avg.toFixed(2) : "–";
+        document.getElementById("ratingRing").style.setProperty("--p", avg ? (avg / 5 * 100).toFixed(1) : 0);
+        document.getElementById("navCountEvents").textContent = yearList.length;
+        document.getElementById("sideAttendance").textContent = attendance.toLocaleString();
+        document.getElementById("sideEvents").textContent = yearList.length;
+
         // Sorting
-        if(sort === "rating") list.sort((a,b) => getRate(b[1]) - getRate(a[1]));
-        else if(sort === "recent") list.sort((a,b) => {
+        list = [...list];
+        if (currentSort === "rating") list.sort((a,b) => getRate(b[1]) - getRate(a[1]));
+        else if (currentSort === "recent") list.sort((a,b) => {
             const f = (arr) => Math.min(...arr.map(r => parseGvizDate(r.Timestamp)?.getTime() || 0));
             return f(b[1]) - f(a[1]);
         });
-        else if(sort === "attendance") list.sort((a,b) => (state.attendanceMap[b[0]]||0) - (state.attendanceMap[a[0]]||0));
-        else if(sort === "az") list.sort((a,b) => a[0].localeCompare(b[0]));
+        else if (currentSort === "attendance") list.sort((a,b) => (state.attendanceMap[b[0]]||0) - (state.attendanceMap[a[0]]||0));
+        else if (currentSort === "az") list.sort((a,b) => a[0].localeCompare(b[0]));
 
-        if(list.length === 0) { 
-            dash.innerHTML = `<div class="col-span-full flex flex-col items-center justify-center py-20 text-purple-300/50"><i data-lucide="search-x" class="w-12 h-12 mb-4 text-purple-400/30"></i><h3 class="text-xl font-bold text-white mb-2">No events found</h3><p>Try adjusting your filters.</p></div>`; 
-            lucide.createIcons();
-            return; 
+        visibleEvents = list.map(([evt]) => evt);
+
+        if (list.length === 0) {
+            dash.innerHTML = `<div class="empty"><h3>No events found</h3><p>Try adjusting your filters.</p></div>`;
+            return;
         }
 
-        // Draw Cards (Night Glass Style)
-        list.forEach(([evt, resps], idx) => {
+        dash.innerHTML = list.map(([evt, resps], idx) => {
             const rate = getRate(resps);
             const att = state.attendanceMap[evt];
             const img = state.imageMap[evt] || 'https://images.unsplash.com/photo-1492684223066-81342ee5ff30?w=800';
-            const surveys = state.surveysMap[evt] || resps.length;
+            const count = state.surveysMap[evt] || resps.length;
             const summary = state.briefMap[evt] || "No overview summary provided for this event.";
-            
+
             let badges = "";
-            if(rate >= 4.5) badges += `<span class="px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-gradient-to-r from-rose-500 to-orange-500 text-white shadow-lg border border-white/20 backdrop-blur-md flex items-center gap-1"><i data-lucide="flame" class="w-3 h-3"></i> Top Rated</span>`;
-            if(att > 300) badges += `<span class="px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg border border-white/20 backdrop-blur-md flex items-center gap-1"><i data-lucide="users" class="w-3 h-3"></i> High Turnout</span>`;
-            
-            const teamsHtml = (state.teamMap[evt] || []).map(t => `<span class="px-2 py-0.5 rounded border border-purple-500/20 bg-slate-900/60 text-purple-300 text-[9px] font-bold uppercase tracking-widest">${escapeHTML(t)}</span>`).join("");
+            if (rate >= 4.5) badges += `<span class="chip solid">${ICON.flame} Top rated</span>`;
+            if (att > 300) badges += `<span class="chip solid">${ICON.users} High turnout</span>`;
 
-            const cardHtml = `
-                <div class="night-glass-card-subtle rounded-[28px] overflow-hidden flex flex-col transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_15px_40px_rgba(168,85,247,0.2)] hover:border-purple-400/50 cursor-pointer group dashboard-card opacity-0" onclick="openEventModal('${evt.replace(/'/g, "\\'")}')">
-                    <div class="relative h-48 border-b border-purple-500/20 overflow-hidden">
-                        <div class="absolute top-4 left-4 flex flex-wrap gap-2 z-10">${badges}</div>
-                        <img src="${img}" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110">
-                        <div class="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/20 to-transparent pointer-events-none"></div>
+            const teamsHtml = (state.teamMap[evt] || []).map(t => `<span class="chip purple">${escapeHTML(t)}</span>`).join("");
+
+            return `
+                <div class="event-card" data-idx="${idx}" style="animation-delay:${Math.min(idx, 12) * 40}ms">
+                    <div class="img">
+                        <img src="${escapeHTML(img)}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">
+                        <div class="badges">${badges}</div>
                     </div>
-                    <div class="p-6 flex flex-col flex-1 bg-slate-900/30">
-                        <div class="flex flex-wrap gap-1.5 mb-3">${teamsHtml}</div>
-                        <h3 class="text-xl font-extrabold mb-4 text-white leading-tight tracking-tight">${escapeHTML(evt)}</h3>
-                        
-                        <div class="flex flex-wrap gap-2 mb-4">
-                            <span class="px-2.5 py-1 rounded-lg text-xs font-bold uppercase bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-md flex items-center gap-1 border border-purple-400/30">
-                                <i data-lucide="star" class="w-3 h-3"></i> ${rate > 0 ? rate.toFixed(1) : "N/A"}
-                            </span>
-                            <span class="px-2.5 py-1 rounded-lg text-xs font-bold uppercase bg-slate-900/80 text-purple-200 border border-purple-400/30 flex items-center gap-1 shadow-inner">
-                                <i data-lucide="users" class="w-3 h-3 text-purple-400"></i> ${att || "--"}
-                            </span>
-                            <span class="px-2.5 py-1 rounded-lg text-xs font-bold uppercase bg-slate-900/80 text-purple-200 border border-purple-400/30 flex items-center gap-1 shadow-inner">
-                                <i data-lucide="file-text" class="w-3 h-3 text-purple-400"></i> ${surveys}
-                            </span>
-                        </div>
-                        
-                        <div class="mb-6 cursor-pointer group/summary" onclick="event.stopPropagation(); const p = this.querySelector('p'); p.classList.toggle('line-clamp-3'); const s = this.querySelector('.read-more-text'); s.textContent = p.classList.contains('line-clamp-3') ? 'Read more' : 'Show less';">
-                            <p class="text-sm text-purple-200/70 leading-relaxed line-clamp-3 transition-all duration-300 font-medium">${escapeHTML(summary)}</p>
-                            <span class="read-more-text text-[10px] font-bold tracking-widest uppercase text-purple-400 mt-2 inline-block opacity-0 group-hover/summary:opacity-100 transition-opacity">Read more</span>
-                        </div>
-                        
-                        <div class="mt-auto">
-                            <button class="w-full night-btn-link text-white font-bold py-3.5 rounded-xl transition-all border-purple-400/40 flex justify-center items-center gap-2 text-xs uppercase tracking-wide group-hover:bg-slate-800">
-                                View Insights <i data-lucide="arrow-right" class="w-4 h-4 text-purple-400 group-hover:translate-x-1 transition-transform"></i>
-                            </button>
+                    <div class="body">
+                        ${teamsHtml ? `<div class="metrics" style="margin-top:0; padding-top:0">${teamsHtml}</div>` : ''}
+                        <h3>${escapeHTML(evt)}</h3>
+                        <p class="summary">${escapeHTML(summary)}</p>
+                        <div class="metrics">
+                            <span class="chip ${ratingChipClass(rate)}">${ICON.star} ${rate > 0 ? rate.toFixed(1) : "N/A"}</span>
+                            <span class="chip">${ICON.users} ${att ? att.toLocaleString() : "--"}</span>
+                            <span class="chip">${ICON.file} ${count} surveys</span>
                         </div>
                     </div>
-                </div>
-            `;
-            
-            dash.insertAdjacentHTML('beforeend', cardHtml);
-        });
+                </div>`;
+        }).join("");
+    }
 
-        lucide.createIcons();
+    function setNav(which) {
+        document.getElementById("nav-events").classList.toggle("active", which === "events");
+        document.getElementById("nav-teams").classList.toggle("active", which === "teams");
+        document.getElementById("mob-events").classList.toggle("active", which === "events");
+        document.getElementById("mob-teams").classList.toggle("active", which === "teams");
+    }
 
-        // Animate cards in
-        gsap.to(".dashboard-card", {
-            opacity: 1,
-            y: 0,
-            duration: 0.8,
-            stagger: 0.1,
-            ease: "power3.out",
-            clearProps: "transform" // prevents conflicts with hover CSS
-        });
+    function showEvents() {
+        closeModal();
+        document.querySelector(".main").scrollTo({ top: 0, behavior: "smooth" });
+        window.scrollTo({ top: 0, behavior: "smooth" });
     }
 
     function openTeamStats() {
         const teams = {};
-        const activeYear = document.getElementById("yearFilter").value;
-        
-        const getRate = (r) => { const s = r.map(getScore).filter(x => !isNaN(x)); return s.length ? s.reduce((a,b)=>a+b,0)/s.length : 0; };
-        
+        const year = activeYear();
+
         Object.keys(state.groups).forEach(evt => {
-            if (activeYear && state.eventYearMap[evt] !== activeYear) return;
+            if (evt === "Unknown") return;
+            if (year && state.eventYearMap[evt] !== year) return;
 
             const eventTeams = state.teamMap[evt] || ["Unassigned"];
             const att = state.attendanceMap[evt] || 0;
-            const rate = getRate(state.groups[evt]); 
+            const rate = getRate(state.groups[evt]);
             eventTeams.forEach(t => {
                 if(!teams[t]) teams[t] = { name: t, events: 0, att: 0, rates: [] };
                 teams[t].events++;
@@ -579,48 +761,48 @@
             });
         });
 
-        const body = document.getElementById("modalBody");
-        const titleSuffix = activeYear ? ` <span class="text-purple-400/60 text-lg">(${activeYear})</span>` : '';
-        
-        let contentHtml = `<h2 class="text-3xl font-extrabold text-white mb-8 tracking-tight">Team Performance${titleSuffix}</h2>`;
-        contentHtml += `<div class="grid grid-cols-1 md:grid-cols-2 gap-5">`;
-        
-        Object.values(teams).sort((a,b) => b.events - a.events).forEach(t => {
-            const avg = t.rates.length ? (t.rates.reduce((a,b)=>a+b,0)/t.rates.length).toFixed(2) : "N/A";
-            contentHtml += `
-                <div class="night-glass-card-subtle rounded-3xl p-6 border-purple-400/30 flex flex-col justify-between shadow-inner hover:border-purple-400/60 transition-colors">
+        const rows = Object.values(teams).sort((a,b) => b.events - a.events);
+        document.getElementById("modalBody").innerHTML = rows.length ? `<div class="team-grid">${rows.map(t => {
+            const avg = t.rates.length ? t.rates.reduce((a,b)=>a+b,0)/t.rates.length : 0;
+            return `
+                <div class="team-card">
                     <div>
-                        <strong class="text-xl font-bold text-white block mb-3">${escapeHTML(t.name)}</strong>
-                        <div class="flex flex-wrap gap-2 text-[10px] font-bold uppercase tracking-widest text-purple-200">
-                            <span class="bg-slate-900/80 px-2.5 py-1 rounded-md border border-purple-500/20">${t.events} Projects</span>
-                            <span class="bg-slate-900/80 px-2.5 py-1 rounded-md border border-purple-500/20">${t.att.toLocaleString()} Attendees</span>
+                        <div class="name">${escapeHTML(t.name)}</div>
+                        <div class="chips" style="margin-top:8px">
+                            <span class="chip">${t.events} ${t.events === 1 ? "event" : "events"}</span>
+                            <span class="chip">${t.att.toLocaleString()} attendees</span>
                         </div>
                     </div>
-                    <div class="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500 mt-6 flex items-center gap-2 drop-shadow-sm">
-                        <i data-lucide="star" class="w-8 h-8 text-purple-400"></i> ${avg}
+                    <div>
+                        <div class="score">${avg ? avg.toFixed(2) : "N/A"}<small>avg rating</small></div>
+                        <div class="bar" style="margin-top:10px"><span style="width:${(avg / 5 * 100).toFixed(1)}%"></span></div>
                     </div>
                 </div>`;
-        });
-        contentHtml += `</div>`;
-        
-        body.innerHTML = contentHtml;
-        document.getElementById("modalToolbar").style.display = "none"; 
-        
-        showModal("Team Analytics");
-        lucide.createIcons();
+        }).join("")}</div>` : `<div class="empty"><h3>No team data</h3><p>No events for this academic year yet.</p></div>`;
+
+        document.getElementById("modalToolbar").style.display = "none";
+        setNav("teams");
+        showModal("Team analytics", year || "All academic years");
     }
 
     function openEventModal(evt) {
         currentModal = { event: evt, raw: state.groups[evt], mode: "worst" };
+        document.getElementById("modalSort").value = "worst";
         document.getElementById("modalToolbar").style.display = "flex";
         document.getElementById("btnPDF").onclick = () => downloadPDF(evt, state.groups[evt]);
         document.getElementById("btnCSV").onclick = () => downloadCSV(evt, state.groups[evt]);
         renderModalBody();
-        showModal(evt);
+        const rate = getRate(state.groups[evt]);
+        const att = state.attendanceMap[evt];
+        const sub = [
+            rate ? `${rate.toFixed(1)} avg rating` : null,
+            att ? `${att.toLocaleString()} attendees` : null,
+            `${state.groups[evt].length} responses`
+        ].filter(Boolean).join(" · ");
+        showModal(evt, sub);
     }
 
     function renderModalBody() {
-        const b = document.getElementById("modalBody"); b.innerHTML = "";
         const s = currentModal.raw.map((r,i)=>({r, i, sc: getScore(r), ts: parseGvizDate(r.Timestamp)?.getTime() || 0}));
         if(currentModal.mode==="worst") s.sort((a,b)=>(isNaN(a.sc)?9:a.sc)-(isNaN(b.sc)?9:b.sc));
         if(currentModal.mode==="best") s.sort((a,b)=>(isNaN(b.sc)?-1:b.sc)-(isNaN(a.sc)?-1:a.sc));
@@ -629,58 +811,50 @@
         const summary = state.briefMap[currentModal.event] || "No overview summary provided for this event.";
 
         let html = `
-            <div class="night-glass-card-subtle !bg-purple-900/20 rounded-[28px] p-6 sm:p-8 border-purple-400/40 mb-8 shadow-inner">
-                <h4 class="text-[11px] font-bold text-purple-300 uppercase tracking-widest mb-3 flex items-center gap-2"><i data-lucide="sparkles" class="w-4 h-4"></i> AI Overview Summary</h4>
-                <p class="text-white text-sm sm:text-base leading-relaxed font-medium">${escapeHTML(summary)}</p>
+            <div class="ai-summary">
+                <div class="section-label">${ICON.sparkles} AI overview summary</div>
+                <p>${escapeHTML(summary)}</p>
             </div>
-            <div class="flex flex-col gap-5">
-        `;
-        
+            <div class="section-label">Responses</div>
+            <div class="resp-list">`;
+
         s.forEach(({r, i, sc}) => {
-            html += `<div class="night-glass-card-subtle rounded-3xl p-6 sm:p-8 border-purple-400/20 hover:border-purple-400/40 transition-colors">
-                        <div class="flex justify-between items-center mb-6 pb-5 border-b border-purple-500/20">
-                            <span class="text-[10px] font-bold text-purple-300 uppercase tracking-widest bg-slate-900/60 px-3 py-1.5 rounded-lg border border-purple-500/20">Submission #${i+1}</span>
-                            ${!isNaN(sc) ? `<span class="text-sm font-bold text-emerald-400 bg-emerald-900/20 border border-emerald-500/30 px-3.5 py-1.5 rounded-xl flex items-center gap-1.5 shadow-inner"><i data-lucide="star" class="w-4 h-4"></i> ${sc}</span>` : ''}
-                        </div>
-                        <div class="flex flex-col gap-6">`;
-            
-            for(let k in r) {
+            html += `<div class="resp">
+                        <div class="resp-head">
+                            <span class="n">Submission #${i+1}</span>
+                            ${!isNaN(sc) ? `<span class="chip ${ratingChipClass(sc)}">${ICON.star} ${sc}</span>` : ''}
+                        </div>`;
+            for (let k in r) {
                 if(!r[k] || /Timestamp|Student ID/i.test(k)) continue;
-                html += `<div>
-                            <span class="block text-[10px] font-bold text-purple-400/70 uppercase tracking-widest mb-2">${escapeHTML(labelMap[k] || k)}</span>
-                            <div class="text-purple-100 text-sm leading-relaxed whitespace-pre-wrap font-medium">${escapeHTML(r[k])}</div>
-                         </div>`;
+                html += `<div class="resp-row"><div class="k">${escapeHTML(labelMap[k] || k)}</div><div class="v">${escapeHTML(r[k])}</div></div>`;
             }
-            html += `</div></div>`;
+            html += `</div>`;
         });
         html += '</div>';
-        
-        b.innerHTML = html;
-        lucide.createIcons();
+
+        document.getElementById("modalBody").innerHTML = html;
     }
 
-    function showModal(title) {
+    function showModal(title, sub) {
         document.getElementById('modalTitle').textContent = title;
+        document.getElementById('modalSub').textContent = sub || "";
         const modal = document.getElementById('masterModal');
-        modal.style.display = 'flex';
-        modal.classList.remove('hidden');
-        
-        gsap.fromTo("#modalBackdrop", { opacity: 0 }, { opacity: 1, duration: 0.4 });
-        gsap.fromTo("#modalCard", { scale: 0.9, opacity: 0, y: 30 }, { scale: 1, opacity: 1, y: 0, duration: 0.5, ease: "back.out(1.2)" });
+        modal.classList.add('open');
+        document.getElementById('modalCard').scrollTop = 0;
+        document.body.classList.add('modal-open');
     }
 
     function closeModal() {
-        gsap.to("#modalCard", { scale: 0.9, opacity: 0, y: 30, duration: 0.3, ease: "power2.in" });
-        gsap.to("#modalBackdrop", { opacity: 0, duration: 0.3, onComplete: () => {
-            const modal = document.getElementById('masterModal');
-            modal.style.display = 'none';
-            modal.classList.add('hidden');
-            document.getElementById("modalBody").innerHTML = ""; // Clear memory
-        }});
+        const modal = document.getElementById('masterModal');
+        if (!modal.classList.contains('open')) { setNav("events"); return; }
+        modal.classList.remove('open');
+        document.body.classList.remove('modal-open');
+        document.getElementById("modalBody").innerHTML = "";
+        setNav("events");
     }
 
     function downloadPDF(evt, resps) {
-        let h = `<html><head><title>${evt}</title><style>body{font-family:sans-serif;padding:30px; color:#000;} h2{color:#0A84FF; border-bottom:1px solid #ccc; padding-bottom:10px;}</style></head><body><h2>Event Insight Report: ${evt}</h2>`;
+        let h = `<html><head><title>${escapeHTML(evt)}</title><style>body{font-family:sans-serif;padding:30px; color:#000;} h2{color:#0A84FF; border-bottom:1px solid #ccc; padding-bottom:10px;}</style></head><body><h2>Event Insight Report: ${escapeHTML(evt)}</h2>`;
         resps.forEach((r,i) => {
             h+=`<div style="border:1px solid #ddd; padding:20px; border-radius:10px; margin-bottom:20px; page-break-inside:avoid;"><strong>Response Entry #${i+1}</strong><br><br>`;
             for(let k in r) if(r[k] && !/Timestamp|Student ID/i.test(k)) h+=`<div style="margin-bottom:10px;"><small style="color:#666; text-transform:uppercase; font-size:10px;">${escapeHTML(labelMap[k]||k)}</small><div style="margin-top:2px;">${escapeHTML(r[k])}</div></div>`;
@@ -700,12 +874,24 @@
         link.href = url; link.download = `GCU_${evt.replace(/\s+/g, '_')}_Report.csv`; link.click();
     }
 
-    // Event Listeners for Filters
-    document.getElementById("search").oninput = e => render(e.target.value, document.getElementById("sortMode").value);
-    document.getElementById("sortMode").onchange = e => render(document.getElementById("search").value, e.target.value);
-    document.getElementById("teamFilter").onchange = () => render(document.getElementById("search").value, document.getElementById("sortMode").value);
-    document.getElementById("yearFilter").onchange = () => render(document.getElementById("search").value, document.getElementById("sortMode").value);
+    // Filters
+    document.getElementById("search").oninput = render;
+    document.getElementById("teamFilter").onchange = render;
+    document.getElementById("yearFilter").onchange = e => setYear(e.target.value);
+    document.getElementById("yearFilterMobile").onchange = e => setYear(e.target.value);
     document.getElementById("modalSort").onchange = e => { currentModal.mode = e.target.value; renderModalBody(); };
+    document.getElementById("sortSeg").addEventListener("click", e => {
+        const btn = e.target.closest("button[data-sort]");
+        if (!btn) return;
+        currentSort = btn.dataset.sort;
+        document.querySelectorAll("#sortSeg button").forEach(b => b.classList.toggle("on", b === btn));
+        render();
+    });
+    document.getElementById("dashboard").addEventListener("click", e => {
+        const card = e.target.closest(".event-card");
+        if (card) openEventModal(visibleEvents[+card.dataset.idx]);
+    });
+    document.addEventListener("keydown", e => { if (e.key === "Escape") closeModal(); });
 
     window.onload = init;
 </script>
