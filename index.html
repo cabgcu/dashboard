@@ -13,6 +13,7 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <style>
         /* Same palette and components as the VIP Check In app */
@@ -334,10 +335,65 @@
             .modal-toolbar select.modern-input { width: 100%; margin-left: 0; }
             .resp-head, .resp-row { padding-left: 16px; padding-right: 16px; }
         }
+
+        /* ── LOGIN ── */
+        body.locked .app-container, body.locked .mobile-bottom-nav { display: none !important; }
+        #login-screen { position: fixed; inset: 0; z-index: 50000; display: none; align-items: center; justify-content: center; padding: 16px; overflow-y: auto; }
+        body.locked #login-screen { display: flex; }
+        .login-card {
+            width: 100%; max-width: 400px; padding: 40px 32px; margin: auto;
+            border-radius: var(--radius-xl); text-align: center;
+            background: var(--card-bg); border: 1px solid var(--line);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.4);
+            animation: fadeIn 0.4s ease-out;
+        }
+        .login-card img { height: 60px; margin-bottom: 20px; }
+        .login-card h2 { margin: 0 0 8px; font-size: 22px; font-weight: 700; }
+        .login-card .lead { color: var(--text-muted); font-size: 14px; margin: 0 0 24px; line-height: 1.5; }
+        .login-card .modern-input { text-align: center; margin-bottom: 10px; }
+        .login-card .btn-action { width: 100%; padding: 14px; font-size: 15px; font-weight: 600; margin-top: 8px; }
+        .login-card .check-row { justify-content: center; margin: 6px 0 4px; }
+        .form-error { color: var(--danger-text); font-size: 13px; font-weight: 600; margin: 6px 0 0; min-height: 0; }
+        .form-error:empty { display: none; }
+        .form-ok { color: var(--success-text); font-size: 13px; font-weight: 600; margin: 6px 0 0; }
+        .form-ok:empty { display: none; }
+        .check-row { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-muted); cursor: pointer; }
+        .check-row input { width: 16px; height: 16px; accent-color: var(--accent-purple); cursor: pointer; }
+        .sec-form { display: flex; flex-direction: column; gap: 10px; max-width: 420px; }
+        .sec-form .hint { color: var(--text-muted); font-size: 13px; margin: 0 0 6px; line-height: 1.5; }
+        .sec-form .btn-action { align-self: flex-start; margin-top: 4px; }
     </style>
 </head>
-<body>
+<body class="locked">
 <div id="bg-container"></div>
+
+<!-- LOGIN SCREEN -->
+<div id="login-screen">
+    <div class="login-card">
+        <img src="https://i.imgur.com/p2qZOL5.png" alt="CAB">
+        <h2 id="loginTitle">Event Dashboard</h2>
+
+        <p class="lead" id="loginLoading">Checking sign-in…</p>
+
+        <form id="loginForm" style="display:none" onsubmit="event.preventDefault(); handleLogin();">
+            <p class="lead">Enter the dashboard password to view event insights.</p>
+            <input type="password" id="loginPassword" class="modern-input" placeholder="Password" autocomplete="current-password">
+            <label class="check-row"><input type="checkbox" id="loginRemember" checked> Keep me signed in on this device for 30 days</label>
+            <p class="form-error" id="loginError"></p>
+            <button type="submit" class="btn-action" id="loginBtn">Log in</button>
+        </form>
+
+        <form id="setupForm" style="display:none" onsubmit="event.preventDefault(); handleSetup();">
+            <p class="lead">No dashboard password yet. Create one below — you'll need the VIP Check In staff password to confirm you're on the CAB team.</p>
+            <input type="password" id="setupStaff" class="modern-input" placeholder="VIP Check In password" autocomplete="off">
+            <input type="password" id="setupNew" class="modern-input" placeholder="New dashboard password" autocomplete="new-password">
+            <input type="password" id="setupConfirm" class="modern-input" placeholder="Confirm dashboard password" autocomplete="new-password">
+            <input type="text" id="setupSheet" class="modern-input" placeholder="Google Sheet link" autocomplete="off">
+            <p class="form-error" id="setupError"></p>
+            <button type="submit" class="btn-action" id="setupBtn">Create password</button>
+        </form>
+    </div>
+</div>
 
 <div class="app-container">
     <!-- SIDEBAR -->
@@ -353,6 +409,8 @@
         <nav class="side-nav">
             <button class="nav-link active" id="nav-events" onclick="showEvents()"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Events<span class="count" id="navCountEvents"></span></button>
             <button class="nav-link" id="nav-teams" onclick="openTeamStats()"><svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Team Analytics</button>
+            <button class="nav-link" id="nav-security" onclick="openSecurity()"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Security</button>
+            <button class="nav-link" onclick="handleLogout()"><svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Log out</button>
         </nav>
         <div class="side-bottom">
             <div class="side-card">
@@ -442,6 +500,7 @@
 <nav class="mobile-bottom-nav">
     <button class="mob-nav-btn active" id="mob-events" onclick="showEvents()"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Events</button>
     <button class="mob-nav-btn" id="mob-teams" onclick="openTeamStats()"><svg viewBox="0 0 24 24"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Analytics</button>
+    <button class="mob-nav-btn" id="mob-security" onclick="openSecurity()"><svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>Security</button>
 </nav>
 
 <!-- Modal -->
@@ -466,7 +525,14 @@
 <script>
     document.getElementById('year').textContent = new Date().getFullYear();
 
-    const sheetID = "1ZUseZRskfgiYfaFKylCpjysVIB2PIA-xuKlA6kQy06E";
+    // Same Supabase project as VIP Check In. The dashboard password and the
+    // Google Sheet ID live there (see supabase-setup.sql); the Sheet ID is only
+    // handed to the page after the right password is entered.
+    const SUPABASE_URL = 'https://raraxpjsftqxhwkpwpab.supabase.co';
+    const SUPABASE_KEY = 'sb_publishable_p4FqN3nJTT5GFNU_xqZtYg_7fPtkKhS';
+    const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    let sheetID = "";
     const RAW_SHEET = "Survey Responses";
     const OVW_SHEET = "Response overview";
 
@@ -732,6 +798,8 @@
     function setNav(which) {
         document.getElementById("nav-events").classList.toggle("active", which === "events");
         document.getElementById("nav-teams").classList.toggle("active", which === "teams");
+        document.getElementById("nav-security").classList.toggle("active", which === "security");
+        document.getElementById("mob-security").classList.toggle("active", which === "security");
         document.getElementById("mob-events").classList.toggle("active", which === "events");
         document.getElementById("mob-teams").classList.toggle("active", which === "teams");
     }
@@ -893,7 +961,196 @@
     });
     document.addEventListener("keydown", e => { if (e.key === "Escape") closeModal(); });
 
-    window.onload = init;
+    // ── LOGIN ──
+    // Sign-in is remembered per device: for 30 days when "Keep me signed in" is ticked,
+    // otherwise until the browser tab closes. Logging out clears both.
+    const AUTH_KEY = 'cab_dashboard_auth';
+    const AUTH_REMEMBER_MS = 30 * 24 * 60 * 60 * 1000;
+
+    function rememberLogin(sheet, keep) {
+        try {
+            sessionStorage.setItem(AUTH_KEY, sheet);
+            if (keep) localStorage.setItem(AUTH_KEY, JSON.stringify({ sheet, until: Date.now() + AUTH_REMEMBER_MS }));
+            else localStorage.removeItem(AUTH_KEY);
+        } catch (e) { /* storage blocked (private mode) — stay signed in for this page only */ }
+    }
+
+    function forgetLogin() {
+        try { sessionStorage.removeItem(AUTH_KEY); localStorage.removeItem(AUTH_KEY); } catch (e) {}
+    }
+
+    function rememberedSheet() {
+        try {
+            const s = sessionStorage.getItem(AUTH_KEY);
+            if (s) return s;
+            const saved = JSON.parse(localStorage.getItem(AUTH_KEY) || "null");
+            if (saved && saved.sheet && saved.until > Date.now()) return saved.sheet;
+            localStorage.removeItem(AUTH_KEY);
+        } catch (e) {}
+        return "";
+    }
+
+    // Accepts a full Google Sheets link or a bare ID
+    function parseSheetId(text) {
+        const v = (text || "").trim();
+        const m = v.match(/\/spreadsheets\/d\/([\w-]+)/);
+        return m ? m[1] : (/^[\w-]{20,}$/.test(v) ? v : "");
+    }
+
+    function unlock(sheet) {
+        sheetID = sheet;
+        document.body.classList.remove("locked");
+        init();
+    }
+
+    function showLoginForm(which) {
+        document.getElementById("loginLoading").style.display = "none";
+        document.getElementById("loginForm").style.display = which === "login" ? "block" : "none";
+        document.getElementById("setupForm").style.display = which === "setup" ? "block" : "none";
+        document.getElementById("loginTitle").textContent = which === "setup" ? "Set up dashboard login" : "Event Dashboard";
+        document.getElementById(which === "setup" ? "setupStaff" : "loginPassword").focus();
+    }
+
+    async function startAuth() {
+        const remembered = rememberedSheet();
+        if (remembered) return unlock(remembered);
+
+        const { data, error } = await _supabase.rpc("dashboard_is_setup");
+        if (error) {
+            console.error("Could not reach the login check. Run supabase-setup.sql.", error);
+            document.getElementById("loginLoading").textContent = "Couldn't reach the login service. Refresh to try again.";
+            return;
+        }
+        showLoginForm(data === true ? "login" : "setup");
+    }
+
+    async function handleLogin() {
+        const input = document.getElementById("loginPassword");
+        const err = document.getElementById("loginError");
+        const btn = document.getElementById("loginBtn");
+        if (!input.value) return;
+
+        err.textContent = "";
+        btn.disabled = true;
+        const { data, error } = await _supabase.rpc("dashboard_login", { pass: input.value });
+        btn.disabled = false;
+        if (error) {
+            console.error(error);
+            err.textContent = "Couldn't check the password — try again.";
+            return;
+        }
+        if (!data) {
+            err.textContent = "Incorrect password.";
+            input.value = "";
+            input.focus();
+            return;
+        }
+        input.value = "";
+        rememberLogin(data, document.getElementById("loginRemember").checked);
+        unlock(data);
+    }
+
+    async function handleSetup() {
+        const staff = document.getElementById("setupStaff").value;
+        const pass = document.getElementById("setupNew").value;
+        const confirmPass = document.getElementById("setupConfirm").value;
+        const sheet = parseSheetId(document.getElementById("setupSheet").value);
+        const err = document.getElementById("setupError");
+        const btn = document.getElementById("setupBtn");
+
+        err.textContent = "";
+        if (!staff || !pass) return err.textContent = "Fill in every field.";
+        if (pass.length < 8) return err.textContent = "Use at least 8 characters for the dashboard password.";
+        if (pass !== confirmPass) return err.textContent = "Dashboard passwords don't match.";
+        if (!sheet) return err.textContent = "Paste the Google Sheet link (docs.google.com/spreadsheets/d/…).";
+
+        btn.disabled = true;
+        const { data, error } = await _supabase.rpc("dashboard_setup", { staff_pass: staff, new_pass: pass, new_sheet_id: sheet });
+        btn.disabled = false;
+        if (error) {
+            console.error(error);
+            return err.textContent = "Couldn't save — make sure supabase-setup.sql has been run.";
+        }
+        if (data !== true) {
+            // Wrong staff password, or someone finished setup in the meantime
+            const { data: done } = await _supabase.rpc("dashboard_is_setup");
+            if (done === true) { showLoginForm("login"); document.getElementById("loginError").textContent = "A dashboard password already exists — log in with it."; return; }
+            document.getElementById("setupStaff").value = "";
+            document.getElementById("setupStaff").focus();
+            return err.textContent = "VIP Check In password is incorrect.";
+        }
+        rememberLogin(sheet, true);
+        unlock(sheet);
+    }
+
+    function handleLogout() {
+        if (!confirm("Log out of the Event Dashboard on this device?")) return;
+        forgetLogin();
+        location.reload();
+    }
+
+    function openSecurity() {
+        document.getElementById("modalBody").innerHTML = `
+            <form class="sec-form" onsubmit="event.preventDefault(); saveSecurity();">
+                <div class="section-label">Change password or Google Sheet</div>
+                <p class="hint">Enter the current dashboard password, then fill in what you want to change. Leave a field blank to keep it as it is. Devices already signed in stay signed in until they log out or 30 days pass.</p>
+                <input type="password" id="secCurrent" class="modern-input" placeholder="Current dashboard password" autocomplete="current-password">
+                <input type="password" id="secNew" class="modern-input" placeholder="New password (optional)" autocomplete="new-password">
+                <input type="password" id="secConfirm" class="modern-input" placeholder="Confirm new password" autocomplete="new-password">
+                <input type="text" id="secSheet" class="modern-input" placeholder="New Google Sheet link (optional)" autocomplete="off">
+                <p class="form-error" id="secError"></p>
+                <p class="form-ok" id="secOk"></p>
+                <button type="submit" class="btn-action" id="secBtn">Save changes</button>
+            </form>
+            <div class="section-label" style="margin-top:28px">This device</div>
+            <button class="btn-action secondary" onclick="handleLogout()">Log out</button>`;
+        document.getElementById("modalToolbar").style.display = "none";
+        setNav("security");
+        showModal("Security", "Dashboard login");
+    }
+
+    async function saveSecurity() {
+        const current = document.getElementById("secCurrent");
+        const pass = document.getElementById("secNew").value;
+        const confirmPass = document.getElementById("secConfirm").value;
+        const sheetText = document.getElementById("secSheet").value.trim();
+        const sheet = sheetText ? parseSheetId(sheetText) : "";
+        const err = document.getElementById("secError");
+        const ok = document.getElementById("secOk");
+        const btn = document.getElementById("secBtn");
+
+        err.textContent = ok.textContent = "";
+        if (!current.value) return err.textContent = "Enter the current dashboard password.";
+        if (!pass && !sheetText) return err.textContent = "Nothing to change.";
+        if (pass && pass.length < 8) return err.textContent = "Use at least 8 characters for the new password.";
+        if (pass !== confirmPass) return err.textContent = "New passwords don't match.";
+        if (sheetText && !sheet) return err.textContent = "That doesn't look like a Google Sheet link.";
+
+        btn.disabled = true;
+        const { data, error } = await _supabase.rpc("dashboard_update", { current_pass: current.value, new_pass: pass || null, new_sheet_id: sheet || null });
+        btn.disabled = false;
+        if (error) {
+            console.error(error);
+            return err.textContent = "Couldn't save — try again.";
+        }
+        if (data !== true) {
+            current.value = "";
+            current.focus();
+            return err.textContent = "Current password is incorrect.";
+        }
+        ["secCurrent", "secNew", "secConfirm", "secSheet"].forEach(id => document.getElementById(id).value = "");
+        if (sheet && sheet !== sheetID) {
+            let keep = false;
+            try { keep = !!localStorage.getItem(AUTH_KEY); } catch (e) {}
+            rememberLogin(sheet, keep);
+            ok.textContent = "Saved. Reloading with the new sheet…";
+            setTimeout(() => location.reload(), 900);
+            return;
+        }
+        ok.textContent = pass ? "Password changed." : "Saved.";
+    }
+
+    window.onload = startAuth;
 </script>
 </body>
 </html>
